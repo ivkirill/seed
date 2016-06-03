@@ -166,6 +166,8 @@
 	// AMD. Определение модуля
 	/* парсим все аргументы, при необходимости заполняем дефолтными значениями. Далее передаем в функцию обновления */
 	berry.define = function(name, depents, callback, data) {
+		console.log('DEFINE', name);
+		
 		//Если первый полученный аргумент Объект и второй функция или не передан, то значит мы получили конфиг и обработаем его через специальную функцию.
 		if (typeof arguments[0] === "object") {
 			return berry._config(arguments[0], arguments[1]);
@@ -179,8 +181,8 @@
 			// создаем объект конфигурации модуля
 			var config = {};
 
-			// парсим все входящие аргументы функции, определяем их тип и заполняем внутренний объект аргументов
-			for (var i = 0; i < arguments.length; i++) {
+			// парсим все входящие аргументы функции, определяем их тип и заполняем объект конфигурации
+			for (var i = 0; i < (( arguments.length > 3 ) ? 3 : arguments.length); i++) {
 				var argument = arguments[i];
 
 				// если аргумент является строкой, то значит это название модуля (name)
@@ -206,21 +208,22 @@
 				};
 			
 			//находим модуль, если такого модуля нет - создаем новый пустой.
-			var module = (this.defined[config.name]) ? (this.defined[config.name]) : (this.defined[config.name] = {
+			var module = (berry.defined[config.name]) ? (berry.defined[config.name]) : (berry.defined[config.name] = {
 				name: config.name,
 				depents: config.depents,
 				callback: config.callback,
-				data: config.data,
-				,
+				data: config.data
 			});
 
-			return berry._update(module);
+			return berry._update(module, config);
 		}
 	}
 	
-	// AMD. Обновляем состояние определенных модулей, при необходмости создаем новый модуль
+	// AMD. Обновляем состояние определенных модулей
 	berry._update = function(module, config) {
-//		if( module.name != berry.config.AMD.plugins_name ) module.depents =  berry.unique( module.depents.concat([berry.config.AMD.plugins_name]) );
+		var config = config || {};
+		
+		//if( module.name != berry.config.AMD.plugins_name ) module.depents =  berry.unique( module.depents.concat([berry.config.AMD.plugins_name]) );
 			
 		// если переданы зависимости, до добавим их к текущим
 		if ( berry.isArray(config.depents) ) module.depents = berry.unique( module.depents.concat(config.depents) );
@@ -245,8 +248,7 @@
 
 		//загружаем модуль если он необходим и все еще не был загружен
 		if (this.STATE == 'ready' && module.data.inited !== true) return this._call( module );
-		
-		return module;
+		else return module;
 	}
 
 	// AMD. Вызов модуля
@@ -355,9 +357,9 @@
 		response.then(function(val) {
 			// после определения всех модулей, запускаем callback-функцию, если она есть
 			if (callback) (callback)();
+			
+			return true;
 		});
-		
-		return false;
 	};
 
 	// AMD. Получение библиотеки по url
@@ -372,7 +374,7 @@
 			this._xhr(url).then(function(response) {
 				if (berry.config.debug) console.info('Модуль ' + module.name + ' загружен', response);
 
-				module.response = response;
+				module.response = new Function('', response);
 				
 				// передадим исполнение callback-функции в спец метод
 				berry._callback(module);
@@ -430,10 +432,9 @@
 	
 	// AMD. Прокидывание переменных из callback-функцию в зависимые модули
 	berry._scope = function(module) {
-		if (this.config.debug) console.info('callback-фунция: ', name);
+		if (this.config.debug) console.info('callback-фунция: ', module);
 		
 		console.log('_SCOPE', module);
-		return false;
 
 //		var a = module.response;
 //		(a)();
@@ -441,23 +442,27 @@
 //		module.returned = module.response.apply((module.callback)(module.storage));
 //console.log( module.response.call() );
 
-		module.storage = this._storage(module);
+console.log('RESPONSE', module.response);
 
-		module.returned = module.callback(module.storage);
-		
-//		var a = new Function('a', 'return (' + module.returned + ')(a)');
-		
-//		console.log('RESPONSE: ', a);
+//		var a = new Function('', 'return (' + module.callback + ')(Array.prototype.slice.apply(arguments), 0)');
 
-//		console.log('CALLBACK: ', module.callback );
+		console.log('CALLBACK: ', module.callback );
+
+		module.storage = ['abc', true, {'window': 'local'}];//this._storage(module);
 		
+		console.log('STORAGE: ', module.storage );
+
+		module.callback.call( module.storage );
+
+				
+//		module.returned = module.callback.call( module.storage.slice );
 //		console.log('RETURNED: ', module.returned );
 		
-//		console.log('FUNC', a);
-		
+	
 		if (module.returned) module.storage[module.name] = module.returned;
 		
-		module.callback = (module.storage.length > 0) ? function() {} : false;
+//		module.callback = (module.storage.length > 0) ? function() {} : false;
+		module.callback = function() {};
 		if (this.config.debug) console.info(name + ' storage: ', module.storage);
 
 		// вернем значение callback-функции модуля
@@ -491,23 +496,32 @@
 		// создаем пустой обьект для локализации
 		this.core.locale = {};
 		
-		var plugins;
-		// определяем модуль с основными библиотеками
-		/*
-		if( berry.config.AMD.plugins_name && berry.config.AMD.plugins_path ) {
-			this.define(berry.config.AMD.plugins_name, { path: berry.config.AMD.plugins_path }, function(plugins) {
-				console.log('PLUGINS', plugins, arguments[0]);
-				berry._config(plugins, false, null);	
-			});
-		}
-		*/
-
 		this.ready(function() {
 			if (berry.config.debug) {}
 			console.log('%cDOM ready', 'color: #409f00; font-weight: bold');
 			
 			berry.STATE = 'ready';
-			berry._init();	
+
+			var plugins = new Promise(function(resolve, reject) {
+				resolve();
+		
+				// определяем модуль с основными библиотеками
+				if( berry.config.AMD.plugins_name && berry.config.AMD.plugins_path ) {
+
+					berry.define(berry.config.AMD.plugins_name, { path: berry.config.AMD.plugins_path }, function() {
+						//console.log('PLUGINS', arguments );
+						//resolve(berry._config(plugins, false, null));
+					});
+				}
+				else {
+					resolve(true);
+				}
+			});
+			
+			plugins.then(function(resolve) {
+				console.log('RESOLVE');
+				berry._init();	
+			});
 		});
 	}
 

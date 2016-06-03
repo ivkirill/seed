@@ -151,5 +151,3 @@ berry.plugins = {
 		"path" : "/js/berry/jquery.berry.zoom.js"
 	}
 };
-
-console.log( this )
