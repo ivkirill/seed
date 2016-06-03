@@ -58,6 +58,7 @@
 	};
 
 	berry.isArray = function(arr) {
+
 		return Object.prototype.toString.call(arr) === '[object Array]'; // ;)
 	}
 
@@ -67,6 +68,7 @@
 
 	berry.isFunction = function(func) {
 		return Object.prototype.toString.call(func) === '[object Function]'; // ;)
+
 	}
 	
 	berry.ready = function(func) {
@@ -171,7 +173,10 @@
 	/* парсим все аргументы, при необходимости заполняем дефолтными значениями. Далее передаем в функцию обновления */
 	berry.define = function(name, depents, callback, data) {
 		//Если первый полученный аргумент Объект и второй функция или не передан, то значит мы получили конфиг и обработаем его через специальную функцию.
+
 		if (berry.isObject(arguments[0]) /* typeof value === 'object' пропустит null */) {
+
+
 			return berry._config(arguments[0], arguments[1]);
 		}
 		//Если первый аргумент не является строкой, то сообщаем об ошибке и возвращаем false
@@ -184,7 +189,10 @@
 			var config = {};
 
 			// парсим все входящие аргументы функции, определяем их тип и заполняем внутренний объект аргументов
+
 			for (var i = 0, l = arguments.length; i < l; i++) {
+
+
 				var argument = arguments[i];
 
 				// если аргумент является строкой, то значит это название модуля (name)
@@ -197,7 +205,10 @@
 				else if ( berry.isFunction(argument) ) config.callback = argument;
 
 				// если аргумент является обьектом, то значит это обьект дополнительных данных модуля
+
 				else if ( berry.isObject(argument) /* typeof value === 'object' пропустит null */ ) config.data = argument;
+
+
 			}
 
 			// если аргументы не нашли, то поставим их значение по умолчанию равным false
@@ -214,8 +225,7 @@
 				name: config.name,
 				depents: config.depents,
 				callback: config.callback,
-				data: config.data,
-				,
+				data: config.data
 			});
 
 			return berry._update(module);
@@ -241,6 +251,9 @@
 		if( !module.storage ) module.storage = [];
 
 
+
+
+
 		if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
 
 		//первоначальная инцииализация дефолтных значений
@@ -262,12 +275,16 @@
 			// если в были определены зависимости для модуля и параметр require не равен null, то проверим весь список зависимостей и загрузим их
 			if (module.depents.length > 0 && module.data.require !== null) {
 
+
+
+
 				berry.stack = [module.name];
 				// проверим массив зависимостей, если в нем есть значения (0, null, false), то такой модуль не будем загружать
 				/*
 					По логике мы можем передать в массиве зависимостей не только имя модуля, от который зависит текущий модуль,
 					но и булевые значения или число элементов DOM, test по регулярному выражения - любое проверочное уравнение, которое возвращает true\false.
 				*/
+
 
 				var check = !module.depents.some(function(depent) {
 					// если существует хотя бы одна зависимость,
@@ -277,39 +294,48 @@
 					return !depent;
 				});
 
+
+
 				// если перерменная необходимости загрузки все еще true, то модуль надо вызвать
 				if (check === true) {
 
 					//Запустим обновление модулей рекурсивно проверяя зависимости
+
+
+
 					module.depents.forEach(function(depent) {
 						if (typeof depent === 'string') {
 							//добавим зависимость в массив
 							berry.stack.push( berry.defined[depent] );
 
+
 							berry._call( berry.defined[depent] ).then(function(module){
-                                // модуль загружен;
-                                //
-                                berry.stack.pop();
-                                if (berry.stack.length === 1 && berry.stack === module.name) {
-                                    // все зависимости разрешены!!!
-                                    // нужно решить, что далее с этим делать;)
-                                }
-                            }, function(module){
-                                // нет необходимости грузить модуль;
-                            });
+
+			        	                        // модуль загружен;
+								berry.stack.pop();
+				                                if (berry.stack.length === 1 && berry.stack === module.name) {
+									// все зависимости разрешены!!!
+									// нужно решить, что далее с этим делать;)
+								}
+							}, function(module){
+				                                // нет необходимости грузить модуль;
+							});
 						}
 					});
 
 					if (module.data.require === true) {
-						berry.get(module).then(function(module){
-                            resolve(module);
-                        }, function(error, module){
-                           // ошибка при загрузке модуля;
-                           reject(module);
-                        });
-					} else {
-                        resolve(module);
-                    }
+						berry.get(module).then(function(module) {
+							resolve(module);
+			                        }, function(error, module){
+							// ошибка при загрузке модуля;
+							reject(module);
+        			                });
+					}
+					else {
+						resolve(module);
+					}
+
+
 				}
 
 				// если перерменная необходимости загрузки равна false, то значит нет необходимости грузить модуль
@@ -317,18 +343,21 @@
 					// сбросим параметр require в null, это необходимо? если данный модуль будет вызван позже и пройдет проверку необходимости загрузки
 					module.data.require = null;
 					reject(module);
+
 				}
 			}
 
-			/ параметр require не равен null, тогда обновим параметры модуль используя обьект аргументов
+			// параметр require не равен null, тогда обновим параметры модуль используя обьект аргументов
 			else {
 				berry.get(module).then(function(module){
-                   resolve(module);
-                }, function(error, module)r
-                   // ошибка при загрузке модуля;
-                   reject(module);
-                });
+					resolve(module);
+		                }, function(error, module) {
+					// ошибка при загрузке модуля;
+                			reject(module);
+				});
 			}
+
+
 		});
 	}
 
@@ -387,6 +416,7 @@
 	berry.get = function(module, url) {
 		console.log('GET', module);
 		
+
         var self = this;
         return new Promise(function(resolve, reject){
             // URL модуля
@@ -420,6 +450,8 @@
                 resolve(module);
             }
         });
+
+
 	}
 	
 	// AMD. Загрузка библиотеки	по url
