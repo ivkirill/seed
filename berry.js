@@ -39,9 +39,7 @@
 		for (var i = 1; i < arguments.length; i++) {
 			if (!arguments[i]) continue;
 			for (var key in arguments[i]) {
-				if (arguments[i].hasOwnProperty(key)) {
-					obj[key] = arguments[i][key];
-				}
+				if (arguments[i].hasOwnProperty(key)) obj[key] = arguments[i][key];
 			}
 		}
 		return obj;
@@ -51,31 +49,26 @@
 	berry.unique = function(arr) {
 		var a = [];
 		for (var i=0, l=arr.length; i<l; i++) {
-			if (a.indexOf(arr[i]) === -1 && arr[i] !== '')
-            a.push(arr[i]);
+			if (a.indexOf(arr[i]) === -1 && arr[i] !== '') a.push(arr[i]);
 		}
 		return a;
 	};
 
 	berry.isArray = function(arr) {
-
-		return Object.prototype.toString.call(arr) === '[object Array]'; // ;)
+		return Object.prototype.toString.call(arr) === '[object Array]';
 	}
 
 	berry.isObject = function(obj) {
-		return Object.prototype.toString.call(obj) === '[object Object]'; // ;)
+		return Object.prototype.toString.call(obj) === '[object Object]';
 	}
 
 	berry.isFunction = function(func) {
-		return Object.prototype.toString.call(func) === '[object Function]'; // ;)
+		return Object.prototype.toString.call(func) === '[object Function]';
 	}
 	
 	berry.ready = function(func) {
-		if (document.readyState != 'loading') {
-			func();
-		} else {
-			document.addEventListener('DOMContentLoaded', func);
-		}
+		if (document.readyState != 'loading') func();
+		else document.addEventListener('DOMContentLoaded', func);
 	}
 
 	// AMD функционал
@@ -98,9 +91,7 @@
 			return false;
 		}
 
-		if (typeof arguments[1] != 'function') {
-			callback = undefined;
-		}
+		if (typeof arguments[1] != 'function') callback = undefined;
 
 		if (typeof depents == 'string') {
 			var name = depents;
@@ -175,9 +166,7 @@
 		
 		//Если первый полученный аргумент Объект и второй функция или не передан, то значит мы получили конфиг и обработаем его через специальную функцию.
 
-		if (berry.isObject(arguments[0]) /* typeof value === 'object' пропустит null */) {
-
-
+		if (berry.isObject(arguments[0])) {
 			return berry._config(arguments[0], arguments[1]);
 		}
 		//Если первый аргумент не является строкой, то сообщаем об ошибке и возвращаем false
@@ -203,7 +192,6 @@
 				else if ( berry.isFunction(argument) ) config.callback = argument;
 
 				// если аргумент является обьектом, то значит это обьект дополнительных данных модуля
-
 				else if ( berry.isObject(argument) /* typeof value === 'object' пропустит null */ ) config.data = argument;
 			}
 
@@ -247,11 +235,7 @@
 		
 		// создаем хранилище переменных модуля
 		if( !module.storage ) module.storage = [];
-
 		if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
-
-		//первоначальная инцииализация дефолтных значений
-		//if (!module.inited) args.inited = false;
 
 		//загружаем модуль если он необходим и все еще не был загружен
 		if (this.STATE == 'ready' && module.data.inited !== true) return this._call( module );
@@ -292,17 +276,15 @@
 							//добавим зависимость в массив
 							berry.stack.push( berry.defined[depent] );
 
-
 							berry._call( berry.defined[depent] ).then(function(module){
-
-			        	                        // модуль загружен;
+       	                        // модуль загружен;
 								berry.stack.pop();
-				                                if (berry.stack.length === 1 && berry.stack === module.name) {
+                                if (berry.stack.length === 1 && berry.stack === module.name) {
 									// все зависимости разрешены!!!
 									// нужно решить, что далее с этим делать;)
 								}
 							}, function(module){
-				                                // нет необходимости грузить модуль;
+                                // нет необходимости грузить модуль;
 							});
 						}
 					});
@@ -310,10 +292,10 @@
 					if (module.data.require === true) {
 						berry.get(module).then(function(module) {
 							resolve(module);
-			                        }, function(error, module){
+						}, function(error, module){
 							// ошибка при загрузке модуля;
 							reject(module);
-        			                });
+        			    });
 					}
 					else {
 						resolve(module);
@@ -332,9 +314,9 @@
 			else {
 				berry.get(module).then(function(module){
 					resolve(module);
-		                }, function(error, module) {
+				}, function(error, module) {
 					// ошибка при загрузке модуля;
-                			reject(module);
+					reject(module);
 				});
 			}
 		});
@@ -404,7 +386,7 @@
                 berry._xhr(url).then(function(response) {
                     if (berry.config.debug) console.info('Модуль ' + module.name + ' загружен', response);
 
-                    module.response = new Function('', response);
+                    module.response = berry._exec(response);
 
                     // передадим исполнение callback-функции в спец метод
                     berry._callback(module);
@@ -429,7 +411,7 @@
         });
 	}
 	
-	// AMD. Загрузка библиотеки	по url
+	// AMD. Загрузка файла по url
 	berry._xhr = function(url) {
 		// возвращаем новый Promise
 		return new Promise(function(resolve, reject) {
@@ -483,11 +465,12 @@ console.log('RESPONSE', module.response);
 
 		console.log('CALLBACK: ', module.callback );
 
-		module.storage = ['abc', true, {'window': 'local'}];//this._storage(module);
+//		module.storage = {1:'abc', '2':true, 'window': 'local'};
+		module.storage = this._storage(module);
 		
 		console.log('STORAGE: ', module.storage );
 
-		module.callback.call( module.storage );
+		module.callback.apply(module.response.call(), module.storage);
 
 				
 //		module.returned = module.callback.call( module.storage.slice );
@@ -524,6 +507,11 @@ console.log('RESPONSE', module.response);
 		return storage;
 	}
 
+	// AMD. Исполняем внешний скрипт
+	berry._exec = function(source) {
+		return new Function('', source);
+	}
+	
 	// инициалиация ядра
 	berry.init = function() {
 		this.core = {};
@@ -532,29 +520,28 @@ console.log('RESPONSE', module.response);
 		this.core.locale = {};
 		
 		this.ready(function() {
-			if (berry.config.debug) {}
-			console.log('%cDOM ready', 'color: #409f00; font-weight: bold');
+			if (berry.config.debug) console.log('%cDOM ready', 'color: #409f00; font-weight: bold');
 			
 			berry.STATE = 'ready';
 
 			var plugins = new Promise(function(resolve, reject) {
-				resolve();
-		
 				// определяем модуль с основными библиотеками
 				if( berry.config.AMD.plugins_name && berry.config.AMD.plugins_path ) {
+					berry._xhr(berry.config.AMD.plugins_path).then(function(xhr) {
+						// создаем функцию для исполнения внешнего в нашей области видимости
+						berry._exec(xhr).call();
 
-					berry.define(berry.config.AMD.plugins_name, { path: berry.config.AMD.plugins_path }, function() {
-						//console.log('PLUGINS', arguments );
-						//resolve(berry._config(plugins, false, null));
+						// библиотеки загружены, грузим модули
+						resolve();
 					});
 				}
 				else {
-					resolve(true);
+					// библиотек нет, грузим модули
+					resolve();
 				}
 			});
 			
 			plugins.then(function(resolve) {
-				console.log('RESOLVE');
 				berry._init();	
 			});
 		});

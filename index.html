@@ -18,6 +18,10 @@
 			return 'c';
 		});
 		
+		// определение модуля 'jquery.1.12.4' с указанным path в обьекте (изменено следование аргументов для примера работы)
+		define('jquery.1.12.4', {path: 'https://code.jquery.com/jquery-1.12.4.min.js'}, function() {
+			return $;
+		});
 	
 		
 	/*		
@@ -46,12 +50,7 @@
 			return $;
 		});
 
-		// определение модуля 'jquery.1.12.4' с указанным path в обьекте (изменено следование аргументов для примера работы)
-		define('jquery.1.12.4', function() {
-			console.log("module 'jquery.1.12.4' loaded", arguments);
-			
-			return $;
-		}, {path: 'https://code.jquery.com/jquery-1.12.4.min.js'});
+
 		
 		//кастомный список плагинов проекта
 		var plugins = {
