@@ -8,23 +8,30 @@
   </head>
   <body>
     <script>
+		
 		define('module1', function() {
 			console.log('TEST A', arguments, this);
 			return 'g';
 		});		
 
 		define('module2', {path: '/js/berry/berry.test.js'}, function(a, b) {
-			console.log('TEST TEST', this);
+			console.log('TEST TEST', this, a, b);
 			return 'c';
 		});
-		
+				
 		// определение модуля 'jquery.1.12.4' с указанным path в обьекте (изменено следование аргументов для примера работы)
 		define('jquery.1.12.4', {path: 'https://code.jquery.com/jquery-1.12.4.min.js'}, function() {
+			console.log('jQuery version', $.fn.jquery, this);
 			return $;
 		});
-	
 		
-	/*		
+		// определение модуля 'jquery.2.2.4' с указанным path в обьекте (изменено следование аргументов для примера работы)
+		define('jquery.2.2.4', {path: 'https://code.jquery.com/jquery-2.2.4.min.js'}, function() {
+			console.log('jQuery version', $.fn.jquery, this);
+			return $;
+		});
+
+		/*		
 		// определение модуля 'menu'
 		define('menu2', [ true, 'common.cookie'], function() {
 			var a = 1;

@@ -465,12 +465,13 @@ console.log('RESPONSE', module.response);
 
 		console.log('CALLBACK: ', module.callback );
 
-//		module.storage = {1:'abc', '2':true, 'window': 'local'};
-		module.storage = this._storage(module);
+		module.storage = {1:'abc', '2':true, 'window': 'local'};
+//		module.storage = this._storage(module);
 		
 		console.log('STORAGE: ', module.storage );
 
-		module.callback.apply(module.response.call(), module.storage);
+		module.callback.call(module.response.call(), module.storage);
+//		module.callback.apply(module.storage);
 
 				
 //		module.returned = module.callback.call( module.storage.slice );
@@ -509,7 +510,7 @@ console.log('RESPONSE', module.response);
 
 	// AMD. Исполняем внешний скрипт
 	berry._exec = function(source) {
-		return new Function('', source);
+		return new Function('','return (function(){' + source + '})(null)');
 	}
 	
 	// инициалиация ядра
@@ -554,6 +555,8 @@ console.log('RESPONSE', module.response);
 		$.define = berry.define;
 		$.require = berry.require;
 	}
+	
+	console.log(window.jQuery)
 
 	// ярлыки
 	if (!window.define) window.define = berry.define;
