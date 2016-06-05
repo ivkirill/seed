@@ -4,11 +4,11 @@
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-(function(window, document, undefined) {
+(function(window, document, unmodules) {
 	'use strict';
 	
 	// добавим заглушку консоли, если ее нет
-	if (typeof console == "undefined") {
+	if (typeof console == "unmodules") {
 		window.console = {
 			log: function() {},
 			error: function() {},
@@ -72,8 +72,10 @@
 	}
 
 	// AMD функционал
+	// ключи модулей (имена)
+	berry.defined = [];
 	// модули, которые были определены
-	berry.defined = {};
+	berry.modules = [];
 
 	berry.STATE = 'loading';
 	
@@ -91,11 +93,11 @@
 			return false;
 		}
 
-		if (typeof arguments[1] != 'function') callback = undefined;
+		if (typeof arguments[1] != 'function') callback = unmodules;
 
 		if (typeof depents == 'string') {
 			var name = depents;
-			var module = self.defined[name];
+			var module = self.modules[name];
 			if (!module) {
 				console.error('Модуль ' + name + ' не определен в системе');
 				return false;
@@ -201,45 +203,53 @@
 			if (!config.data) config.data = { 
 					inited : false,  // если data был пустой, то значит модуль не был инициализован и необходим
 					require : true,
+					pending : false, // статус ожидания загрузки
 					path: (/\.(css|js)$/.test(config.name) ) ? config.name : false
 				};
 			
-			//находим модуль, если такого модуля нет - создаем новый пустой.
-			var module = (berry.defined[config.name]) ? (berry.defined[config.name]) : (berry.defined[config.name] = {
+			// находим модуль, если такого модуля нет - создаем новый пустой.
+			var module = (berry.modules[config.name]) ? (berry.modules[config.name]) : (berry.modules[config.name] = {
 				name: config.name,
 				depents: config.depents,
 				callback: config.callback,
 				data: config.data
 			});
-
+			
+			// добавляем имя модуля в массив определенных
+			berry.defined.push(module.name);
+			
 			return berry._update(module, config);
 		}
 	}
 	
 	// AMD. Обновляем состояние определенных модулей
 	berry._update = function(module, config) {
-		var config = config || {};
-		
-		//if( module.name != berry.config.AMD.plugins_name ) module.depents =  berry.unique( module.depents.concat([berry.config.AMD.plugins_name]) );
+		return new Promise(function(resolve, reject) {	
+			var config = config || {};
 			
-		// если переданы зависимости, до добавим их к текущим
-		if ( berry.isArray(config.depents) ) module.depents = berry.unique( module.depents.concat(config.depents) );
-		
-		//обновляем общие данные
-		if ( typeof config.data === 'object' ) {
-			module.data.path = config.data.path;
-			module.data.require = (config.data.require === null) ? false : true;
-		} else {
-			module.data.require = true;
-		}
-		
-		// создаем хранилище переменных модуля
-		if( !module.storage ) module.storage = [];
-		if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
+			//if( module.name != berry.config.AMD.plugins_name ) module.depents =  berry.unique( module.depents.concat([berry.config.AMD.plugins_name]) );
+				
+			// если переданы зависимости, до добавим их к текущим
+			if ( berry.isArray(config.depents) ) module.depents = berry.unique( module.depents.concat(config.depents) );
+			
+			//обновляем общие данные
+			if ( typeof config.data === 'object' ) {
+				module.data.path = config.data.path;
+				module.data.require = (config.data.require === null) ? false : true;
+			} else {
+				module.data.require = true;
+			}
+			
+			// создаем хранилище переменных модуля
+			if( !module.storage ) module.storage = [];
+			if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
+			
+			
 
-		//загружаем модуль если он необходим и все еще не был загружен
-		if (this.STATE == 'ready' && module.data.inited !== true) return this._call( module );
-		else return module;
+			//загружаем модуль если он необходим и все еще не был загружен
+			if (berry.STATE == 'ready' && module.data.inited !== true) return resolve(berry._call( module ));
+			else return resolve(module);
+		});
 	}
 
 	// AMD. Вызов модуля
@@ -254,11 +264,8 @@
 
 				berry.stack = [module.name];
 				// проверим массив зависимостей, если в нем есть значения (0, null, false), то такой модуль не будем загружать
-				/*
-					По логике мы можем передать в массиве зависимостей не только имя модуля, от который зависит текущий модуль,
-					но и булевые значения или число элементов DOM, test по регулярному выражения - любое проверочное уравнение, которое возвращает true\false.
-				*/
-
+				// По логике мы можем передать в массиве зависимостей не только имя модуля, от который зависит текущий модуль,
+				// но и булевые значения или число элементов DOM, test по регулярному выражения - любое проверочное уравнение, которое возвращает true\false.
 				var check = !module.depents.some(function(depent) {
 					// если существует хотя бы одна зависимость,
                     // которая обращается в false, то выходим из цикла,
@@ -268,15 +275,16 @@
 				});
 
 				// если перерменная необходимости загрузки все еще true, то модуль надо вызвать
-				if (check === true) {
+				if (check === true && module.data.pending == false) {
+					module.data.pending = true;
 
 					//Запустим обновление модулей рекурсивно проверяя зависимости
 					module.depents.forEach(function(depent) {
 						if (typeof depent === 'string') {
 							//добавим зависимость в массив
-							berry.stack.push( berry.defined[depent] );
-
-							berry._call( berry.defined[depent] ).then(function(module){
+							berry.stack.push( berry.modules[depent] );
+						
+							berry._call( berry.modules[depent] ).then(function(module){
        	                        // модуль загружен;
 								berry.stack.pop();
                                 if (berry.stack.length === 1 && berry.stack === module.name) {
@@ -289,7 +297,7 @@
 						}
 					});
 
-					if (module.data.require === true) {
+					if (module.data.require === true && module.data.inited === false) {
 						berry.get(module).then(function(module) {
 							resolve(module);
 						}, function(error, module){
@@ -316,36 +324,12 @@
 					resolve(module);
 				}, function(error, module) {
 					// ошибка при загрузке модуля;
+					console.log(module, error)
 					reject(module);
 				});
 			}
 		});
 	}
-
-	// AMD. Вызов всех определенных модулей
-	/* Инициализируем все модули, которые были определены ранее */
-	berry._init = function() {
-		var promises = [];
-		
-		for (var module in berry.defined) {
-			berry._update(berry.defined[module]);
-		}
-		
-		/*
-		console.log('promises', promises);
-		
-		Promise.all(promises).then(function(module) {
-			console.log('PROMISE', module);
-		});
-		*/
-	}
-	
-	// AMD. Вызов всех определенных модулей
-	/* Инициализируем все модули, которые были определены ранее */
-	berry._request = function(module) {
-		return berry._call(berry.defined[module]);
-	}
-	
 
 	// AMD. Определения конфига
 	berry._config = function(config, callback, require) {
@@ -376,7 +360,7 @@
 	// AMD. Получение библиотеки по url
 	berry.get = function(module, url) {
 		console.log('GET', module);
-		
+	
 		return new Promise(function(resolve, reject){
             // URL модуля
             var url = url || module.data.path || false;
@@ -415,9 +399,15 @@
 	berry._xhr = function(url) {
 		// возвращаем новый Promise
 		return new Promise(function(resolve, reject) {
+			// проверим что пришло на выход
+			if( typeof url != 'string' ) {
+				reject(Error("Wrong URL type: ", url));
+				return false;
+			}
+			
 			// создаем get запрос к серверу
 			var xhr = new XMLHttpRequest();
-			xhr.open('GET', url);
+			xhr.open('GET', url, true);
 			xhr.onload = function() {
 				if (xhr.status == 200) resolve(xhr.response) 
 				else reject(Error(xhr.statusText)); // ошибка, отдаем её статус
@@ -425,15 +415,15 @@
 			
 			// отлавливаем ошибки сети
 			xhr.onerror = function() {
-				кeject(Error("Network Error"));
+				reject(Error("Network Error"));
 			};			
 			
 			// Делаем запрос
-			xhr.send();			
+			xhr.send();
 		});
 	}		
 
-	// AMD. Исполнение callback-функции
+	// AMD. Изменение статуса модуля, передача ответа в функцию _scope
 	berry._callback = function(module) {
 		console.log('_CALLBACK:', module);
 
@@ -451,41 +441,20 @@
 	berry._scope = function(module) {
 		if (this.config.debug) console.info('callback-фунция: ', module);
 		
-		console.log('_SCOPE', module);
-
-//		var a = module.response;
-//		(a)();
+		// получим сборку хранилищ родительских модулей
+		module.storage = this._storage(module);
+		// добавим объект хранилища к текущему модулю
+		module.storage[module.name] = module.returned;
 		
-//		module.returned = module.response.apply((module.callback)(module.storage));
-//console.log( module.response.call() );
-
-console.log('RESPONSE', module.response);
-
-//		var a = new Function('', 'return (' + module.callback + ')(Array.prototype.slice.apply(arguments), 0)');
-
-		console.log('CALLBACK: ', module.callback );
-
-		module.storage = {1:'abc', '2':true, 'window': 'local'};
-//		module.storage = this._storage(module);
+		console.log('RESPONSE', module.response)
 		
-		console.log('STORAGE: ', module.storage );
-
-		module.callback.call(module.response.call(), module.storage);
-//		module.callback.apply(module.storage);
-
-				
-//		module.returned = module.callback.call( module.storage.slice );
-//		console.log('RETURNED: ', module.returned );
-		
-	
-		if (module.returned) module.storage[module.name] = module.returned;
-		
-//		module.callback = (module.storage.length > 0) ? function() {} : false;
+		// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
+		module.callback.call(module.response.apply(this), module.storage);
+		// сбросим callback
 		module.callback = function() {};
+		
 		if (this.config.debug) console.info(name + ' storage: ', module.storage);
-
-		// вернем значение callback-функции модуля
-		return module.returned;
+		return true;
 	}
 
 	// AMD. Сохраняем значение callback-функции, нужно для прокидывания в зависмые модули
@@ -498,7 +467,7 @@ console.log('RESPONSE', module.response);
 			module.depents.forEach(function(name) {
 				// т.к. зависимость может быть не только по модулю, то делаем через try\catch
 				try {
-					berry.extend(storage, berry.defined[name].storage);
+					berry.extend(storage, berry.modules[name].storage);
 				} catch (e) {
 					if (berry.config.debug) console.log(e)
 				}
@@ -510,7 +479,17 @@ console.log('RESPONSE', module.response);
 
 	// AMD. Исполняем внешний скрипт
 	berry._exec = function(source) {
-		return new Function('','return (function(){' + source + '})(null)');
+		return new Function('','return (function(){' + source + '})(window)');
+	}
+	
+	// AMD. Вызов всех определенных модулей
+	/* Инициализируем все модули, которые были определены ранее */
+	berry._init = function() {
+		return Promise.all(
+			berry.defined.map(function(module) {
+				berry._call( berry.modules[module] )
+			})
+		)
 	}
 	
 	// инициалиация ядра
@@ -525,7 +504,7 @@ console.log('RESPONSE', module.response);
 			
 			berry.STATE = 'ready';
 
-			var plugins = new Promise(function(resolve, reject) {
+			var coreplugins = new Promise(function(resolve, reject) {
 				// определяем модуль с основными библиотеками
 				if( berry.config.AMD.plugins_name && berry.config.AMD.plugins_path ) {
 					berry._xhr(berry.config.AMD.plugins_path).then(function(xhr) {
@@ -542,19 +521,21 @@ console.log('RESPONSE', module.response);
 				}
 			});
 			
-			plugins.then(function(resolve) {
+			coreplugins.then(function(resolve) {
 				berry._init();	
 			});
 		});
 	}
 
 	// обратная совместимость с seed 1.0
+	/*
 	if (!window.$) {
 		window.$ = {};
 
 		$.define = berry.define;
 		$.require = berry.require;
 	}
+	*/
 	
 	console.log(window.jQuery)
 
