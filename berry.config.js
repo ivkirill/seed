@@ -98,56 +98,56 @@ berry.plugins = {
 
 // библиотеки berry
 	"berry.buy" : {
-		"path" : "/js/berry/jquery.berry.buy.js"
+		"path" : "/js/seed/jquery.seed.buy.js"
 	},
 	"berry.basket" : {
-		"path" : "/js/berry/jquery.berry.basket.js",
+		"path" : "/js/seed/jquery.seed.basket.js",
 		"depents": ['berry.gform', 'common.json']
 	},
 	"berry.carousel" : {
-		"path" : "/js/berry/jquery.berry.carousel.js",
+		"path" : "/js/seed/jquery.seed.carousel.js",
 		"depents": ['common.easing']
 	},
 	"berry.compare" : {
-//			"path" : "/js/berry/jquery.berry.compare.js"
+//			"path" : "/js/seed/jquery.seed.compare.js"
 	},
 	"berry.dropdown" : {
-		"path" : "/js/berry/jquery.berry.dropdown.js"
+		"path" : "/js/seed/jquery.seed.dropdown.js"
 	},
 	"berry.filter" : {
-		"path" : "/js/berry/jquery.berry.filter.js",
+		"path" : "/js/seed/jquery.seed.filter.js",
 		"depents": ['common.cookie']
 	},
 	"berry.gallery" : {
-		"path" : "/js/berry/jquery.berry.gallery.js"
+		"path" : "/js/seed/jquery.seed.gallery.js"
 	},
 	"berry.gform" : {
-		"path" : "/js/berry/jquery.berry.gform.js",
+		"path" : "/js/seed/jquery.seed.gform.js",
 		"depents" : ['berry.tooltip']
 	},
 	"berry.modal" : {
-		"path" : "/js/berry/jquery.berry.modal.js",
+		"path" : "/js/seed/jquery.seed.modal.js",
 		"depents" : ['ui.draggable']
 	},
 	"berry.page" : {
-		"path" : "/js/berry/jquery.berry.page.js",
+		"path" : "/js/seed/jquery.seed.page.js",
 		"depents": ['common.cookie']
 	},
 	"berry.tab" : {
-		"path" : "/js/berry/jquery.berry.tab.js"
+		"path" : "/js/seed/jquery.seed.tab.js"
 	},
 	"berry.tooltip" : {
-		"path" : "/js/berry/jquery.berry.tooltip.js"
+		"path" : "/js/seed/jquery.seed.tooltip.js"
 	},
 	"berry.select" : {
-		"path" : "/js/berry/jquery.berry.select.js",
+		"path" : "/js/seed/jquery.seed.select.js",
 		"depents": ['berry.dropdown']
 	},
 	"berry.ui" : {
-		"path" : "/js/berry/jquery.berry.ui.js",
+		"path" : "/js/seed/jquery.seed.ui.js",
 		"depents": ['berry.modal', 'berry.gform']
 	},
 	"berry.zoom" : {
-		"path" : "/js/berry/jquery.berry.zoom.js"
+		"path" : "/js/seed/jquery.seed.zoom.js"
 	}
 };

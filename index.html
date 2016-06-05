@@ -8,6 +8,29 @@
   </head>
   <body>
     <script>
+		define('module1', ['module2', 'module3'], function() {
+			console.log('TEST A', this);
+			return 'module1';
+		});			
+		
+		define('module2', ['module4'], {path: '/js/berry/berry.test.js'}, function() {
+			console.log('TEST B', this);
+			return 'module2';
+		});
+		
+		define('module3', ['module4'], {path: '/js/berry/berry.test.js'}, function() {
+			console.log('TEST C', this);
+			return 'module3';
+		});
+
+		define('module4', {path: '/js/berry/berry.test.js'}, function() {
+			console.log('TEST D', this);
+			return 'module4';
+		});
+		
+		
+
+		/*		
 		// определение модуля 'jquery.1.12.4' с указанным path в обьекте (изменено следование аргументов для примера работы)
 		define('jquery.1.12.4', {path: 'https://code.jquery.com/jquery-1.12.4.min.js'}, function() {
 			console.log('jQuery version', $.fn.jquery, this);
@@ -28,22 +51,8 @@
 		define('Prototype', {path: 'https://ajax.googleapis.com/ajax/libs/prototype/1.7.3.0/prototype.js'}, function() {
 			console.log('Prototype version', Prototype);
 			return Prototype;
-		});			
+		});				
 		
-		define('module1', ['jquery.1.12.4'], function() {
-			console.log('TEST A', arguments, this);
-			return 'g';
-		});			
-		
-		define('module2', {path: '/js/berry/berry.test.js'}, function(a, b) {
-			console.log('TEST TEST', this, a, b);
-			return 'c';
-		});		
-		
-
-		
-
-		/*		
 		// определение модуля 'menu'
 		define('menu2', [ true, 'common.cookie'], function() {
 			var a = 1;
