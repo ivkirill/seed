@@ -24,7 +24,7 @@
 
 	// дефолтный конфиг проекта
 	berry.config = {
-		'debug' : true,
+		'debug' : false,
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
@@ -379,7 +379,7 @@
 	// Возвращает модуль
 	berry.get = function(module, url) {
 		if( !module ) return Error('Модуль не передан');
-		console.log('GET', module);
+		if (this.config.debug) console.log('GET', module);
 	
 		return new Promise(function(resolve, reject){
             // URL модуля
@@ -393,7 +393,7 @@
                     module.response = berry._exec(response);
 
                     // передадим исполнение callback-функции в спец метод
-                    return resolve(berry._pendingback(module));
+                    return resolve(berry._callback(module));
                 }, function(error) {
                     console.error("Ошибка!", error);
                     // модуль не загружен
@@ -404,7 +404,7 @@
             // Если url нет
             else {
                 // передадим исполнение callback-функции в спец метод
-                return resolve(berry._pendingback(module));
+                return resolve(berry._callback(module));
             }
         });
 	}
@@ -442,8 +442,8 @@
 	// AMD. Прокидывание переменных из callback-функцию в зависимые модули
 	// Принимает модуль
 	// Возвращает модуль
-	berry._pendingback = function(module) {
-		if (this.config.debug) console.log('   _pendingback: обновляем состояние модуля', module.name, module);
+	berry._callback = function(module) {
+		if (this.config.debug) console.log('   _callback: обновляем состояние модуля', module.name, module);
 		
 		// получим сборку хранилищ родительских модулей
 		module.storage = this._storage(module);
