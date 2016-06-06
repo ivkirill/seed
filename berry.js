@@ -283,6 +283,8 @@
 					if (berry.config.debug) console.log(' Зависимости модуля', module.name, 'прошли проверку');
 					
 					// запустим обновление модулей рекурсивно проверяя зависимости
+					// НУЖНО ПЕРЕПИСАТЬ НА ПРОСТОЙ ЦИКЛ И СДЕЛАТЬ СИНХРОННЫМ
+					
 					Promise.all(
 						module.depents.map(function(depent) {
 							if (typeof depent === 'string') {
@@ -530,4 +532,4 @@
 	if (!window.require) window.require = berry.require;
 
 	return berry.init();
-})(window, document);
+})(window, document)
