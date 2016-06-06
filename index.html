@@ -8,7 +8,7 @@
   </head>
   <body>
     <script>
-	/*
+		/*
 		define('module1', ['module2', 'module3'], function() {
 			console.log('TEST A', this);
 			return 'module1';
@@ -23,12 +23,20 @@
 			console.log('TEST C', this);
 			return 'module3';
 		});
-		
-		*/
-
+		*/	
 		define('module4', {path: '/js/berry/berry.test.js'}, function() {
 			console.log('TEST D', this);
 			return 'module4';
+		});
+		
+		define('module5', ['module6', 'module4'], function() {
+			console.log('TEST E', this);
+			return 'module5';
+		});		
+		
+		define('module6', function() {
+			console.log('TEST F', this);
+			return 'module6';
 		});
 		
 		
