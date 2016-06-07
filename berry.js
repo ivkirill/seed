@@ -4,9 +4,9 @@
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-(function(window, document, unmodules) {
+(function(window, document, undefined) {
 	'use strict';
-	
+
 	// добавим заглушку консоли, если ее нет
 	if (typeof console == "unmodules") {
 		window.console = {
@@ -21,6 +21,15 @@
 		window.berry = {};
 		berry = window.berry;
 	}
+	
+	if (typeof berry.global == 'undefined' && window) {
+		if (!window.eval && window.execScript) {
+			// win.eval() magically appears when this is called in IE:
+			window.execScript('null');
+		}
+  
+		berry.global = window;
+	}	
 
 	// дефолтный конфиг проекта
 	berry.config = {
@@ -81,6 +90,8 @@
 	berry.defined = [];
 	// массив промисов ожидающих загрузки модулей
 	berry.pending = [];
+	// массив ответов модулей
+	berry.storage = [];
 	// начальное состояние загрузки
 	berry.STATE = 'loading';
 	
@@ -269,7 +280,8 @@
 	}
 	
 	// AMD. Вызов модуля
-	// Принимает модуль, определяет его зависимости
+	// Принимает модуль
+	// Определяет зависимости, вызывает цепочку или/и
 	// Возвращает обещание
 	berry._call = function(module) {
 		if (berry.config.debug) console.info('%c_call:', 'color: #840000; font-weight: bold', 'вызов модуля', module.name, 'с зависимостями', module.depents);
@@ -326,7 +338,7 @@
 		});
 	}
 
-	// AMD. Вызов модуля
+	// AMD. Вызов цепочки
 	// Принимает модуль, определяет его зависимости
 	// Возвращает обещание
 	berry._chain = function(module) {
@@ -440,22 +452,20 @@
 	// Принимает модуль
 	// Возвращает модуль
 	berry._callback = function(module) {
-		if (this.config.debug) console.log('   _callback: обновляем состояние модуля', module.name, module);
-	
-		console.log('response', this._storage(module) );
-	
 		// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
-		module.storage[module.name] = berry._exec(module).call(this._storage(module)); //module.callback.apply(this._storage(module));
-		
-		console.log('STORAGE', module.storage[module.name])
-		
-		//module.storage[module.name] = berry._exec(module.response, this._storage(module), module.callback);
-		
+		module.storage[module.name] = berry._restore(module);
 		// обновим модуль
 		berry._update(module, { data: { inited: true, require: false }, callback: function() {} });
-		
+	
 		if (this.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);;
 		return module;
+	}
+	
+	// AMD. Получить значение из хранилища
+	// Принимает модуль
+	// Возвращает обещание
+	berry._restore = function(module) {	
+		return ( berry.storage[module.name] ) ? berry.storage[module] : (berry.storage[module.name] = berry._exec((module.response || ''), module));
 	}
 
 	// AMD. Сохраняем значение callback-функции, нужно для прокидывания в зависмые модули
@@ -477,6 +487,8 @@
 				console.log('depent', depent, berry.modules[depent].storage);
 			});
 		}
+		
+		console.log('storage', storage);
 
 		return storage;
 	}
@@ -485,10 +497,42 @@
 	// Принимает исходный код
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
 	// Возвращает анонимную функцию
-	berry._exec = function(module) {
-		var func = (module.callback || '').toString();
-		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		return new Function('args','return function(args) {'+ (module.response || '') + '\n' + callback + '}')(berry._storage(module));
+	berry._exec = function(source, module) {
+		new Promise(function(resolve, reject) {
+			
+			console.log( typeof source, module );
+
+			var callback = (module.callback || '').toString();
+			var callback_body = callback.slice(callback.indexOf("{") + 1, callback.lastIndexOf("}"));
+			
+			function sandbox(fn) {
+				// hack for cross-platform global
+				berry.global = berry.global || window;
+				
+				var keys = {};
+				var result, k;
+
+				for (k in berry.global) {
+					keys[k] = k;
+				}
+
+				result = fn();
+
+				for (k in berry.global) {
+					if (!(k in keys)) {
+						delete berry.global[k];
+					}
+				}
+
+				console.log('SANDBOX', result );
+				
+				return result;
+			}		
+			
+			return sandbox(function() {
+				return Function('args','return (function(args) {'+ (source || '') + '\n' + callback_body + '})();')((berry._storage(module) || this));
+			});			
+		});
 	}
 	
 	// AMD. Вызов всех определенных модулей
@@ -521,7 +565,7 @@
 				if( berry.config.AMD.plugins_path ) {
 					berry._xhr(berry.config.AMD.plugins_path).then(function(xhr) {
 						// создаем функцию для исполнения внешнего в нашей области видимости
-						berry._exec(xhr);//.apply();
+						berry._exec(xhr, {callback: function() {}});//.apply();
 						console.log('PLUGINS', berry.plugins )
 
 						berry._config( berry.plugins, null, null ).then(function(callback) {
