@@ -445,7 +445,7 @@
 		console.log('response', this._storage(module) );
 	
 		// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
-		module.storage[module.name] = berry._exec(module); //module.callback.apply(this._storage(module));
+		module.storage[module.name] = berry._exec(module).call(this._storage(module)); //module.callback.apply(this._storage(module));
 		
 		console.log('STORAGE', module.storage[module.name])
 		
