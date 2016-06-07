@@ -387,7 +387,7 @@
                 berry._xhr(url).then(function(response) {
                     if (berry.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
 
-                    module.response = response;
+                    module.response = berry._exec(response);
 
                     // передадим исполнение callback-функции в спец метод
                     return resolve(berry._callback(module));
@@ -434,27 +434,28 @@
 			// Делаем запрос
 			xhr.send();
 		});
-	}
+	}		
 
 	// AMD. Прокидывание переменных из callback-функцию в зависимые модули
 	// Принимает модуль
 	// Возвращает модуль
 	berry._callback = function(module) {
 		if (this.config.debug) console.log('   _callback: обновляем состояние модуля', module.name, module);
-	
-		console.log('response', this._storage(module) );
-	
+		
+		// получим сборку хранилищ родительских модулей
+		module.storage = this._storage(module);
+		
+		// добавим объект хранилища к текущему модулю
+		module.storage[module.name] = module.returned;
+		
 		// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
-		module.storage[module.name] = berry._exec(module); //module.callback.apply(this._storage(module));
-		
-		console.log('STORAGE', module.storage[module.name])
-		
-		//module.storage[module.name] = berry._exec(module.response, this._storage(module), module.callback);
+		module.callback.call((module.response || function() {}).call(this), module.storage);
 		
 		// обновим модуль
 		berry._update(module, { data: { inited: true, require: false }, callback: function() {} });
 		
 		if (this.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);;
+		
 		return module;
 	}
 
@@ -464,31 +465,28 @@
 	berry._storage = function(module) {
 		if (!module) return {};
 
-		var storage = {};
+		var storage = module.storage || {};
 
 		if (module.depents) {
-			module.depents.forEach(function(depent) {
+			module.depents.forEach(function(name) {
 				// т.к. зависимость может быть не только по модулю, то делаем через try\catch
 				try {
-					berry.extend(storage, berry.modules[depent].storage);
+					berry.extend(storage, berry.modules[name].storage);
 				} catch (e) {
 					if (berry.config.debug) console.log(e)
 				}
-				console.log('depent', depent, berry.modules[depent].storage);
 			});
 		}
 
 		return storage;
 	}
 
-	// AMD. Оборачиваем внешний код
+	// AMD. Исполняем внешний скрипт
 	// Принимает исходный код
-	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
 	// Возвращает анонимную функцию
-	berry._exec = function(module) {
-		var func = (module.callback || '').toString();
-		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		return new Function('args','return function(args) {'+ (module.response || '') + '\n' + callback + '}')(berry._storage(module));
+	berry._exec = function(source) {
+//		return new Function('','(function(){' + source + '})()');
+		return new Function('',source);
 	}
 	
 	// AMD. Вызов всех определенных модулей
@@ -521,7 +519,7 @@
 				if( berry.config.AMD.plugins_path ) {
 					berry._xhr(berry.config.AMD.plugins_path).then(function(xhr) {
 						// создаем функцию для исполнения внешнего в нашей области видимости
-						berry._exec(xhr);//.apply();
+						berry._exec(xhr).apply();
 						console.log('PLUGINS', berry.plugins )
 
 						berry._config( berry.plugins, null, null ).then(function(callback) {

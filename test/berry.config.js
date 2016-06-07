@@ -15,25 +15,6 @@ if (!window.berry) {
 
 // список библиотек AMD ядра и зависимостей
 berry.plugins = {
-	'jquery.1.4.2' : {
-		'path' : '/js/jquery/jquery-1.4.2.js'
-	},
-	'jquery.1.7.1' : {
-		'path' : '/js/jquery/jquery-1.7.1.js'
-	},
-	'jquery.1.9.1' : {
-		'path' : '/js/jquery/jquery-1.9.1.js'
-	},
-	'jquery.2.0.1' : {
-		'path' : '/js/jquery/jquery-2.0.1.js'
-	},
-	'jquery.2.1.3' : {
-		'path' : '/js/jquery/jquery-2.1.3.min.js'
-	},
-	'jquery.2.1.4' : {
-		'path' : '/js/jquery/jquery-2.1.4.min.js'
-	},
-
 // Общие библиотеки
 	"common.cookie" : {
 		"path" : "/js/jquery/jquery.cookie.js"
