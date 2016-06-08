@@ -4,11 +4,11 @@
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-(function(window, document, unmodules) {
+(function(window, document, undefined) {
 	'use strict';
 	
 	// добавим заглушку консоли, если ее нет
-	if (typeof console == "unmodules") {
+	if (typeof console == "undefined") {
 		window.console = {
 			log: function() {},
 			error: function() {},
@@ -24,7 +24,7 @@
 
 	// дефолтный конфиг проекта
 	berry.config = {
-		'debug' : false,
+		'debug' : true,
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
@@ -81,6 +81,8 @@
 	berry.defined = [];
 	// массив промисов ожидающих загрузки модулей
 	berry.pending = [];
+	// массив хранилища ответов модулей
+	berry.storage = [];
 	// начальное состояние загрузки
 	berry.STATE = 'loading';
 	
@@ -99,7 +101,7 @@
 			return false;
 		}
 
-		if (typeof arguments[1] != 'function') callback = unmodules;
+		if (typeof arguments[1] != 'function') callback = undefined;
 
 		if (typeof depents == 'string') {
 			var name = depents;
@@ -252,6 +254,8 @@
 			module.data.require = true;
 		}
 		
+		if ( config.response ) module.response = config.response;
+		
 		// создаем хранилище переменных модуля
 		if( !module.storage ) module.storage = [];
 		if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
@@ -280,14 +284,15 @@
 			if (module.data.inited === false && module.data.require === true && module.depents.length > 0) {
 				if (berry.config.debug) console.log('Модуль ', module.name, 'необходим. Имеет зависимости');
 				
-				// проверим массив зависимостей, если в нем есть значения (0, null, false), то такой модуль не будем загружать
-				// массив зависимостей может содержать не только имена модулей, от который зависит текущий модуль,
-				// но и, булевые значения, число элементов DOM, test по регулярному выражения - любое проверочное уравнение, которое возвращает true\false.
+				/*
+				 проверим массив зависимостей, если в нем есть значения (0, null, false), то такой модуль не будем загружать
+				 массив зависимостей может содержать не только имена модулей, от который зависит текущий модуль,
+				 но и, булевые значения, число элементов DOM, test по регулярному выражения - любое проверочное уравнение, которое возвращает true\false.
 				
-				// если существует хотя бы одна зависимость, которая обращается в false, то выходим из цикла,
-				// функция some при этом вернет true (forEach же продолжил бы цикл до последнего элемента)
+				 если существует хотя бы одна зависимость, которая обращается в false, то выходим из цикла,
+				 функция some при этом вернет true (forEach же продолжил бы цикл до последнего элемента)
+				*/
 				var check = !module.depents.some(function(depent) {
-					
 					// если зависимость строка, считаем это именем и проверяем определен ли такой модуль
 					return !((typeof depent === 'string') ? berry.modules[depent] : depent); 
 				});
@@ -295,16 +300,16 @@
 				if (check === true) {
 					berry._chain(module).then(function() {
 						berry.get(module).then(function() {
-							return resolve(module);
+							berry._callback(module);
 						});
 					}, function(module) {
 						if (berry.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
-						return resolve(module);
+						resolve(module);
 					});
 				}
 				else {
 					if (berry.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
-					return resolve(module);
+					resolve(module);
 				}
 			}
 			
@@ -313,7 +318,7 @@
 				if (berry.config.debug) console.log('Модуль ', module.name, 'необходим. Зависимостей нет');
 				
 				berry.get(module).then(function(module) {
-					return resolve(module);
+					resolve(module);
 				});
 			}
 
@@ -321,7 +326,7 @@
 			else {
 				if (berry.config.debug) console.info('Модуль ', module.name, 'не требуется или уже загружен', module);
 				// отклоняем заргрузку модуля, и его зависимостей
-				return resolve(module);
+				resolve(module);
 			}
 		});
 	}
@@ -386,11 +391,12 @@
             if (url) {
                 berry._xhr(url).then(function(response) {
                     if (berry.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
-
-                    module.response = response;
+					
+					// обновим модуль
+					berry._update(module, { response: response });					
 
                     // передадим исполнение callback-функции в спец метод
-                    return resolve(berry._callback(module));
+                    berry._callback(module);
                 }, function(error) {
                     console.error("Ошибка!", error);
                     // модуль не загружен
@@ -401,7 +407,7 @@
             // Если url нет
             else {
                 // передадим исполнение callback-функции в спец метод
-                return resolve(berry._callback(module));
+                berry._callback(module);
             }
         });
 	}
@@ -422,8 +428,11 @@
 			var xhr = new XMLHttpRequest();
 			xhr.open('GET', url, true);
 			xhr.onload = function() {
-				if (xhr.status == 200) resolve(xhr.response) 
-				else reject(Error(xhr.statusText)); // ошибка, отдаем её статус
+				if (xhr.status == 200) {
+					resolve(xhr.response)
+				} else {
+					reject(Error(xhr.statusText)); // ошибка, отдаем её статус
+				}
 			}
 			
 			// отлавливаем ошибки сети
@@ -440,41 +449,34 @@
 	// Принимает модуль
 	// Возвращает модуль
 	berry._callback = function(module) {
-		if (this.config.debug) console.log('   _callback: обновляем состояние модуля', module.name, module);
-	
-		console.log('response', this._storage(module) );
-	
-		// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
-		module.storage[module.name] = berry._exec(module); //module.callback.apply(this._storage(module));
+//		return new Promise(function(resolve, reject){		
+			if (this.config.debug) console.log('   _callback', module.name);
 		
-		console.log('STORAGE', module.storage[module.name])
-		
-		//module.storage[module.name] = berry._exec(module.response, this._storage(module), module.callback);
-		
-		// обновим модуль
-		berry._update(module, { data: { inited: true, require: false }, callback: function() {} });
-		
-		if (this.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);;
-		return module;
+			// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
+			berry.storage[module.name] = berry._exec(module).call(); //module.callback.apply(this._storage(module));
+			
+			// обновим модуль
+			berry._update(module, { data: { inited: true, require: false }, callback: function() {} });
+			
+			if (this.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);;
+			
+			return module;
+//        });
 	}
 
 	// AMD. Сохраняем значение callback-функции, нужно для прокидывания в зависмые модули
 	// Принимает модуль
 	// Возвращает объект хранилища
 	berry._storage = function(module) {
-		if (!module) return {};
-
 		var storage = {};
-
-		if (module.depents) {
-			module.depents.forEach(function(depent) {
-				// т.к. зависимость может быть не только по модулю, то делаем через try\catch
-				try {
-					berry.extend(storage, berry.modules[depent].storage);
-				} catch (e) {
-					if (berry.config.debug) console.log(e)
-				}
-				console.log('depent', depent, berry.modules[depent].storage);
+		
+		if (!module) {
+			return storage;
+		} else if (module.depents) {
+			module.depents.filter(String).forEach(function(depent) {
+				storage[depent] = berry.storage[depent];
+				
+				console.log('depent', depent, berry.storage[depent]);
 			});
 		}
 

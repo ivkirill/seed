@@ -50,7 +50,6 @@
 			return a;
 		});			
 
-*/
   	
 		// определение модуля 'oldmenu' с поддержкой обратной совместимости
 		define('prototype', {'path': 'https://cdnjs.cloudflare.com/ajax/libs/prototype/1.7.3/prototype.js'}, function() {
@@ -61,23 +60,18 @@
 		define('item', ['prototype'], function() {
 			console.log('Prototype', arguments);
 		});
+*/
 
 
 		define('module', ['jquery'], function() {
-			var $ = arguments[0]['jquery'];
-			console.log('module', arguments, $, window);
-			return $.fn.jQuery;
-		});
+			console.log(arguments);
 
-		define('module', ['jquery'], function() {
-			var $ = arguments[0]['jquery'];
-
-			var imgs = $('img');
+			var imgs = 123;
 
 			return imgs;
 		});
 
-		define('images', ['module'], function() {
+		define('images', ['module', 'jquery'], function() {
 			console.log('images', arguments);
 		});
 
