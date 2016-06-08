@@ -62,8 +62,10 @@
 		});
 */
 
+
 		define('module', ['jquery'], function() {
-			console.log(arguments);
+			console.log('ARGS', arguments);
+			return 123;
 
 /*
 			var $ = arguments[0]['jquery'];
@@ -74,15 +76,15 @@
 */
 		});
 
-		define('images', ['module'], function() {
+		define('images', ['jquery', 'module'], function() {
 			console.log('images', arguments);
 		});
-
 
 		define('jquery', {'path':'/js/jquery/jquery-1.4.2.js'}, function() {
 			console.log(this, arguments, jQuery);
 			return $;
 		});
+
 
 
 
