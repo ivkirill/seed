@@ -303,7 +303,7 @@
 						}, function(reject) {
 							console.error('Неудалось загрузить модуль', module, reject);
 							reject(module);
-
+						});
 					}, function(module) {
 						if (berry.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
 						resolve(module);
@@ -383,7 +383,6 @@
 
 	// AMD. Получение библиотеки по url
 	// Принимает модуль и адрес загрузки
-<<<<<<< HEAD
 	// Возвращает модуль
 	berry._get = function(module, url) {
 		if( !module ) return Error('Модуль не передан');
