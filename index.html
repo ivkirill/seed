@@ -64,19 +64,27 @@
 
 
 		define('module', ['jquery'], function() {
+<<<<<<< HEAD
+			console.log(arguments);
+=======
 			console.log('ARGS', arguments);
 			return 123;
 
 /*
 			var $ = arguments[0]['jquery'];
+>>>>>>> plarson
 
-			var imgs = $('img');
+			var imgs = 123;
 
 			return imgs;
 */
 		});
 
+<<<<<<< HEAD
+		define('images', ['module', 'jquery'], function() {
+=======
 		define('images', ['jquery', 'module'], function() {
+>>>>>>> plarson
 			console.log('images', arguments);
 		});
 
