@@ -24,7 +24,7 @@
 
 	// дефолтный конфиг проекта
 	berry.config = {
-		'debug' : true,
+		'debug' : false,
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
@@ -81,8 +81,8 @@
 	berry.defined = [];
 	// массив промисов ожидающих загрузки модулей
 	berry.pending = [];
-	// массив хранилища ответов модулей
-	berry.storage = [];
+	// объект хранилища ответов модулей
+	berry.storage = {};
 	// начальное состояние загрузки
 	berry.STATE = 'loading';
 	
@@ -220,7 +220,9 @@
 				name: config.name,
 				depents: config.depents,
 				callback: config.callback,
-				data: config.data
+				data: config.data,
+				values: {},
+				source : null
 			});
 			
 			// добавляем имя модуля в массив определенных
@@ -254,14 +256,11 @@
 			module.data.require = true;
 		}
 		
-		if ( config.response ) module.response = config.response;
+		if ( config.source ) module.source = config.source;
+		if ( config.values ) module.values = config.values;
 		
-		// создаем хранилище переменных модуля
-		if( !module.storage ) module.storage = [];
 		if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
-
 		if (berry.config.debug) console.log('  Новый конфиг', module);
-		
 		return module;
 	}
 
@@ -269,7 +268,8 @@
 	// Принимает модуль
 	// Возвращает обещание	
 	berry._pending = function(module) {
-		return ( berry.pending[module.name] ) ? berry.pending[module] : (berry.pending[module.name] = berry._call(module));
+		if (berry.config.debug) console.log('_pending', module.name, module);
+		return ( berry.pending[module.name] ) ? berry.pending[module.name] : (berry.pending[module.name] = berry._call(module));
 	}
 	
 	// AMD. Вызов модуля
@@ -279,7 +279,6 @@
 		if (berry.config.debug) console.info('%c_call:', 'color: #840000; font-weight: bold', 'вызов модуля', module.name, 'с зависимостями', module.depents);
 
 		return new Promise(function(resolve, reject) {
-
 			// если модуль необходим и имеет зависимости
 			if (module.data.inited === false && module.data.require === true && module.depents.length > 0) {
 				if (berry.config.debug) console.log('Модуль ', module.name, 'необходим. Имеет зависимости');
@@ -299,8 +298,12 @@
 				
 				if (check === true) {
 					berry._chain(module).then(function() {
-						berry.get(module).then(function() {
-							berry._callback(module);
+						berry._get(module).then(function(module) {
+							resolve(module);
+							if (berry.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);
+						}, function(reject) {
+							console.error('Неудалось загрузить модуль', module, reject);
+							reject(module);
 						});
 					}, function(module) {
 						if (berry.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
@@ -317,8 +320,12 @@
 			else if (module.data.inited === false && module.data.require === true) {
 				if (berry.config.debug) console.log('Модуль ', module.name, 'необходим. Зависимостей нет');
 				
-				berry.get(module).then(function(module) {
+				berry._get(module).then(function(module) {
 					resolve(module);
+					if (berry.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);
+				}, function(reject) {
+					console.error('Неудалось загрузить модуль', module, reject);
+					reject(module);
 				});
 			}
 
@@ -337,24 +344,24 @@
 	berry._chain = function(module) {
 		if (berry.config.debug) console.log(' Зависимости модуля', module.name, 'прошли проверку');
 
-		// запустим обновление модулей рекурсивно проверяя зависимости
+		// создаем обещаения для всего списка зависимостей модуля
 		return Promise.all(
-			module.depents.map(function(depent) {
-				if (typeof depent === 'string' && berry.modules[depent]) {
-					if (berry.config.debug) console.log(' Зависимость для модуля', module.name, 'обновлена. Модуль', depent, 'необходим для загрузки');
+			module.depents.filter(String).map(function(depent) {
+				if (berry.modules[depent]) {
+					if (berry.config.debug) console.log(' Зависимость модуля', module.name + '. Модуль', depent, 'необходим для загрузки');
 					
-					// обновим модуль зависимости, передав новый конфиг
-					return berry._pending( berry._update( berry.modules[depent], { data : { require : true } }) );
+					// обновим модуль зависимости, передав новый конфиг если требуется
+					if( berry.modules[depent].data.require !== true ) berry._update( berry.modules[depent], { data : { require : true } })
+						
+					return berry._pending(berry.modules[depent]);
 				}
 				// если такой модуль не был определен вообще 
-				else if (typeof depent === 'string' && !berry.modules[depent]) {
+				else {
+					console.error('Проверьте зависимость от модуля', depent, '. Такой модуль не был определен в системе!');
 					return Promise.reject();					
 				}
-				else {
-					return Promise.resolve();
-				}
 			})
-		)
+		);
 	}
 	
 	// AMD. Определения конфига
@@ -379,9 +386,9 @@
 	// AMD. Получение библиотеки по url
 	// Принимает модуль и адрес загрузки
 	// Возвращает модуль
-	berry.get = function(module, url) {
+	berry._get = function(module, url) {
 		if( !module ) return Error('Модуль не передан');
-		if (this.config.debug) console.log('GET', module);
+		if (this.config.debug) console.log('GET', module.name, module);
 	
 		return new Promise(function(resolve, reject){
             // URL модуля
@@ -389,14 +396,14 @@
 
             // Если url модуля есть, то будем его подгружать
             if (url) {
-                berry._xhr(url).then(function(response) {
+                berry.fetch(url).then(function(source) {
                     if (berry.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
 					
 					// обновим модуль
-					berry._update(module, { response: response });					
+					berry._update(module, { source: source });
 
-                    // передадим исполнение callback-функции в спец метод
-                    berry._callback(module);
+                    // вызываем _restore метод
+					resolve(berry._callback(module));
                 }, function(error) {
                     console.error("Ошибка!", error);
                     // модуль не загружен
@@ -406,8 +413,8 @@
 
             // Если url нет
             else {
-                // передадим исполнение callback-функции в спец метод
-                berry._callback(module);
+				// вызываем _restore метод
+				resolve(berry._callback(module));
             }
         });
 	}
@@ -415,7 +422,7 @@
 	// AMD. Загрузка файла по url
 	// Принимает url
 	// Возвращает ответ xhr	
-	berry._xhr = function(url) {
+	berry.fetch = function(url) {
 		// возвращаем новый Promise
 		return new Promise(function(resolve, reject) {
 			// проверим что пришло на выход
@@ -449,49 +456,43 @@
 	// Принимает модуль
 	// Возвращает модуль
 	berry._callback = function(module) {
-//		return new Promise(function(resolve, reject){		
-			if (this.config.debug) console.log('   _callback', module.name);
+		if (berry.config.debug) console.log('   _callback', module.name, module);
 		
-			// выполним callback, передадим в него область видимости от внешнего скрипта, а также объект хранилища
-			berry.storage[module.name] = berry._exec(module).call(); //module.callback.apply(this._storage(module));
-			
-			// обновим модуль
-			berry._update(module, { data: { inited: true, require: false }, callback: function() {} });
-			
-			if (this.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);;
-			
-			return module;
-//        });
-	}
+		// сохраним хранилище для текущего модуля
+		var storage = berry._storage(module);
+		storage[module.name] = berry._exec(module, storage).call();
 
-	// AMD. Сохраняем значение callback-функции, нужно для прокидывания в зависмые модули
+		// обновим конфиг модуля
+		return berry._update(module, {  values : storage });
+	}
+	
+	// AMD. Возращаем из хранилища все данные по родительским модуялм
 	// Принимает модуль
-	// Возвращает объект хранилища
+	// Возвращает обещание
 	berry._storage = function(module) {
+		if (berry.config.debug) console.log(' _storage', module.name, module.depents);
 		var storage = {};
 		
-		if (!module) {
-			return storage;
-		} else if (module.depents) {
-			module.depents.filter(String).forEach(function(depent) {
-				storage[depent] = berry.storage[depent];
-				
-				console.log('depent', depent, berry.storage[depent]);
-			});
+		if(module) {
+			module.depents.filter(String).forEach(function(module) {
+				storage = berry.extend(storage, berry.modules[module].values);
+			})
 		}
-
+		
 		return storage;
-	}
+	}	
+
 
 	// AMD. Оборачиваем внешний код
 	// Принимает исходный код
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
 	// Возвращает анонимную функцию
-	berry._exec = function(module) {
+	berry._exec = function(module, args) {
 		var func = (module.callback || '').toString();
 		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		return new Function('args','return function(args) {'+ (module.response || '') + '\n' + callback + '}')(berry._storage(module));
+		return new Function('args','return function(args) {'+ (module.source || '') + '\n' + callback + '}')(args);
 	}
+
 	
 	// AMD. Вызов всех определенных модулей
 	/* Инициализируем все модули, которые были определены ранее */
@@ -505,6 +506,8 @@
 		).then(function(resolve) {
 			if (berry.config.debug) console.info('%c_INIT', 'color: #F00; font-weight: bold', 'Все модули проиницилизированы', resolve);
 			console.info('End:', performance.now());
+		}, function(reject) {
+			console.error('Ошибка загрузки модулей', reject);
 		});
 	}
 	
@@ -521,7 +524,7 @@
 			var coreplugins = new Promise(function(resolve, reject) {
 				// определяем модуль с основными библиотеками
 				if( berry.config.AMD.plugins_path ) {
-					berry._xhr(berry.config.AMD.plugins_path).then(function(xhr) {
+					berry.fetch(berry.config.AMD.plugins_path).then(function(xhr) {
 						// создаем функцию для исполнения внешнего в нашей области видимости
 						berry._exec(xhr);//.apply();
 						console.log('PLUGINS', berry.plugins )
