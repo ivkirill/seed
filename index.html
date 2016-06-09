@@ -64,17 +64,19 @@
 
 
 		define('module', ['jquery'], function() {
-			console.log('ARGS', arguments);
-			return 123;
+			var $ = arguments[0].jquery;
+			var module = $('body').css('background-color', '#eee');
+			return module;
 
 		});
 
 		define('images', ['jquery', 'module'], function() {
-			console.log('images', arguments);
+			var $ = arguments[0].jquery;
+			var imgs = $('img');
+			return imgs;
 		});
 
 		define('jquery', {'path':'/js/jquery/jquery-1.4.2.js'}, function() {
-			console.log(this, arguments, jQuery);
 			return $;
 		});
 

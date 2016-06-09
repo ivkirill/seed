@@ -24,7 +24,7 @@
 	
 	// дефолтный конфиг проекта
 	berry.config = {
-		'debug' : true,
+		'debug' : false,
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
@@ -456,10 +456,10 @@
 		
 		// сохраним хранилище для текущего модуля
 		var storage = berry._storage(module);
-		storage[module.name] = berry._exec(module, storage).call();
-
+		storage[module.name] = (berry._exec(module, storage))(storage);
+		
 		// обновим конфиг модуля
-		return berry._update(module, {  values : storage });
+		return berry._update(module, {values : storage});
 	}
 	
 	// AMD. Возращаем из хранилища все данные по родительским модуялм
@@ -486,7 +486,8 @@
 	berry._exec = function(module, storage) {
 		var func = (module.callback || '').toString();
 		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		return new Function('args','return function(args) {'+ (module.source || '') + '\n' + callback + '}')(storage);
+		//return new Function('','return function() { (function() {'+ (module.source || '') + '\n' + callback + '})() }')();
+		return new Function('args','return (function(args){'+ (module.source || '') + '\n' + callback + '})(args)');
 	}
 
 	
@@ -520,10 +521,9 @@
 			var coreplugins = new Promise(function(resolve, reject) {
 				// определяем модуль с основными библиотеками
 				if( berry.config.AMD.plugins_path ) {
-					berry.fetch(berry.config.AMD.plugins_path).then(function(xhr) {
+					berry.fetch(berry.config.AMD.plugins_path).then(function(source) {
 						// создаем функцию для исполнения внешнего в нашей области видимости
-						berry._exec(xhr).apply();
-						console.log('PLUGINS', berry.plugins )
+						(berry._exec({source: source}))();
 
 						berry._config( berry.plugins, null, null ).then(function(callback) {
 							// библиотеки определены
