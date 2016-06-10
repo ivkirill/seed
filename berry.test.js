@@ -1,9 +1,18 @@
 /* 
 * Berry Test
-* @version 2.0.0
+* @version 2.0.27
 * @author Kirill Ivanov
 */
 
 
-window.A = 123;
-window.TEST = 'TEST';
+define('external', function() {
+   	return 'external';
+});
+
+define('external2', function(args) {
+	console.log(args);
+   	return 'external';
+});
+
+
+require('jquery.2.1.4');

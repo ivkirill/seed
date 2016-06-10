@@ -16,22 +16,40 @@ if (!window.berry) {
 // список библиотек AMD ядра и зависимостей
 berry.plugins = {
 	'jquery.1.4.2' : {
-		'path' : '/js/jquery/jquery-1.4.2.js'
+		'path' : '/js/jquery/jquery-1.4.2.js',
+		"callback" : function() {
+			return jQuery;
+		}
 	},
 	'jquery.1.7.1' : {
-		'path' : '/js/jquery/jquery-1.7.1.js'
+		'path' : '/js/jquery/jquery-1.7.1.js',
+		"callback" : function() {
+			return jQuery;
+		}
 	},
 	'jquery.1.9.1' : {
-		'path' : '/js/jquery/jquery-1.9.1.js'
+		'path' : '/js/jquery/jquery-1.9.1.js',
+		"callback" : function() {
+			return jQuery;
+		}
 	},
 	'jquery.2.0.1' : {
-		'path' : '/js/jquery/jquery-2.0.1.js'
+		'path' : '/js/jquery/jquery-2.0.1.js',
+		"callback" : function() {
+			return jQuery;
+		}
 	},
 	'jquery.2.1.3' : {
-		'path' : '/js/jquery/jquery-2.1.3.min.js'
+		'path' : '/js/jquery/jquery-2.1.3.min.js',
+		"callback" : function() {
+			return jQuery;
+		}
 	},
 	'jquery.2.1.4' : {
-		'path' : '/js/jquery/jquery-2.1.4.min.js'
+		'path' : '/js/jquery/jquery-2.1.4.min.js',
+		"callback" : function() {
+			return jQuery;
+		}
 	},
 
 // Общие библиотеки
@@ -60,7 +78,10 @@ berry.plugins = {
 		"path" : "/js/jquery/jquery.synctranslit.min-utf8.js"
 	},
 	"common.base64" : {
-		"path" : "/js/base64/base64.js"
+		"path" : "/js/base64/base64.js",
+		"callback" : function() {
+			return Base64;
+		}
 	},
 	"common.json" : {
 		"path" : "/js/jquery/jquery.json.js"

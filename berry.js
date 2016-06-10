@@ -1,6 +1,6 @@
 /* 
  * Berry Core
- * @version 2.0.0
+ * @version 2.0.27
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
@@ -77,96 +77,36 @@
 	// AMD функционал
 	// модули, которые были определены
 	berry.modules = [];
-	// ключи модулей (имена)
+	// ключи модулей (имена), которые были определены
 	berry.defined = [];
+	// ключи модулей (имена), которые были запрошены
+	berry.required = [];
 	// массив промисов ожидающих загрузки модулей
-	berry.pending = [];
-	// начальное состояние загрузки
-	berry.STATE = 'loading';
+	berry.pending = {};
 	
 	// AMD. Запрос модуля
-	/*
+	// Принимает имя модуля, callback-функцию
 	berry.require = function(depents, callback) {
-		return false; // пока не используется %)
+		if (berry.config.debug) console.log('%cREQUIRE:', 'color: #3e3;', 'запрашиваем модуль', depents);
 		
-		var self = this;
-		var done;
+		// создаем объект конфигурации модуля
+		var config = {}	
+		
+		// если первый аргумент строка или массив то мы нашли модули, которые требуются
+		if (typeof arguments[0] == 'string' || berry.isArray(arguments[0]) ) config.depents = arguments[0];
+		else return Error('Не могу определить имя запрашиваего модуля модуля!', this);
 
-		if (typeof arguments[0] == 'string' || typeof arguments[0] == 'object') {
-			depents = arguments[0];
-		} else {
-			console.error('Не могу определить имя модуля!');
-			return false;
-		}
+		// определяем callback-функцию
+		config.callback = ( berry.isFunction(arguments[1]) ) ? arguments[1] : function() { };
 
-		if (typeof arguments[1] != 'function') callback = undefined;
-
-		if (typeof depents == 'string') {
-			var name = depents;
-			var module = self.modules[name];
-			if (!module) {
-				console.error('Модуль ' + name + ' не определен в системе');
-				return false;
-			} else {
-				//если модуль уже был проиницилизирован, то выполняем нужную функцию
-				if (module.inited) {
-					if (typeof arguments[1] === 'boolean' && arguments[1] === true) {
-						callback = module.callback;
-					}
-
-					if (callback) {
-						var storage = self._storage();
-						(callback)();
-					}
-				} else {
-					self.define(name, module.depents, callback, false);
-				}
-
-				return true;
-			}
-		} else if (Object.prototype.toString.call(depents) === '[object Array]') {
-			done = true;
-
-			$.each(depents, function(i, name) {
-				// если зависимость является булевой, то пропускаем ее
-				if (typeof name == 'boolen') {
-					return;
-				}
-
-				var response = self.require(name);
-				if (!response) {
-					done = false;
-				}
+		berry.define('seed'+Date.now(), config.depents, config.callback).then(function(module) {
+			berry._include(module).then(function(module) {
+				if( config.callback ) (config.callback)(module.values);
+				return module;
 			});
-
-			if (done) {
-				if (callback) {
-					var storage = self._storage();
-					(callback)();
-				}
-			}
-		} else if (typeof depents === 'object') {
-			done = true;
-			$.each(depents, function(name, data) {
-				// если зависимость является булевой, то пропускаем ее
-				if (typeof name == 'boolen') {
-					return;
-				}
-
-				var response = self.require(name, data.callback);
-				if (!response) {
-					done = false;
-				}
-			});
-			if (done) {
-				if (callback) {
-					var storage = self._storage();
-					(callback)();
-				}
-			}
-		}
+		});
 	}
-	*/
+	
 
 	// AMD. Определение модуля
 	// Принимает все аргументы, при необходимости заполняем дефолтными значениями. Далее передаем в функцию обновления
@@ -207,11 +147,18 @@
 			// если аргументы не нашли, то поставим их значение по умолчанию равным false
 			if (!config.depents) config.depents = [];
 			if (!config.callback) config.callback = function() {};
-			config.data = berry.extend({
-				inited : false,  // если data был пустой, то значит модуль не был инициализован и необходим
-				require : true,
-				path: (/\.(css|js)$/.test(config.name) ) ? config.name : false
-			}, config.data);
+			
+			if (!config.data) {
+				config.data = {
+					inited : false,
+					require : true,
+					plugin : false
+				}
+				if( /\.(css|js)$/.test(config.name)  ) config.data.path = config.name;
+			} else {
+				config.data.inited = ( config.data.inited ) ? config.data.inited : false;
+				config.data.require = ( config.data.plugin === true ) ? false : true;
+			}
 			
 			// находим модуль, если такого модуля нет - создаем новый пустой.
 			var module = (berry.modules[config.name]) ? (berry.modules[config.name]) : (berry.modules[config.name] = {
@@ -225,8 +172,9 @@
 			
 			// добавляем имя модуля в массив определенных
 			berry.defined.push(module.name);
+			module = berry._update(module, config);
 			
-			return berry._update(module, config);
+			return ( config.data.plugin !== true ) ? berry._pending(module) : module;
 		}
 	}
 	
@@ -247,13 +195,7 @@
 		if ( berry.isFunction(config.callback) ) module.callback = module.callback;
 		
 		//обновляем общие данные
-		if ( berry.isObject(config.data) ) {
-			module.data = berry.extend(module.data, config.data);
-			module.data.require = (config.data.require === null) ? false : true;
-		} else {
-			module.data.require = true;
-		}
-		
+		if ( berry.isObject(config.data) ) module.data = berry.extend(module.data, config.data);
 		if ( config.source ) module.source = config.source;
 		if ( config.values ) module.values = config.values;
 		
@@ -266,8 +208,9 @@
 	// Принимает модуль
 	// Возвращает обещание, старое или новое, в зависимости от того первый это вызов модуля или нет
 	berry._pending = function(module) {
-		if (berry.config.debug) console.log('_pending', module.name, module);
-		return ( berry.pending[module.name] ) ? berry.pending[module.name] : (berry.pending[module.name] = berry._call(module));
+		var ans = ( berry.pending[module.name] ) ? berry.pending[module.name] : (berry.pending[module.name] = berry._call(module));
+		if (berry.config.debug) console.log('_pending', module.name, module, ans);
+		return ans;
 	}
 	
 	// AMD. Вызов модуля
@@ -331,7 +274,7 @@
 			else {
 				if (berry.config.debug) console.info('Модуль ', module.name, 'не требуется или уже загружен', module);
 				// отклоняем заргрузку модуля, и его зависимостей
-				resolve(module);
+				resolve();
 			}
 		});
 	}
@@ -364,14 +307,15 @@
 	
 	// AMD. Определения конфига
 	berry._config = function(config, callback, require) {
-		var require = (require == null) ? null : true;
-		
 		return new Promise(function(resolve, reject) {
 			// поочередно определяем переданные в объекте модули
 			for (var name in config) {
 				if (config.hasOwnProperty(name)) {
 					var data = config[name];
-					berry.define(name, data.depents, data.callback, berry.extend(data, {'require': null }));
+					var callback = data.callback;
+					delete data.callback;
+					
+					berry.define(name, data.depents, callback, berry.extend(data, {plugin : true }));
 				}
 			};
 
@@ -386,12 +330,12 @@
 	// Возвращает модуль
 	berry._get = function(module, url) {
 		if( !module ) return Error('Модуль не передан');
-		if (this.config.debug) console.log('GET', module.name, module);
+		if (this.config.debug) console.log('%c_GET', 'color: #00f; font-weight: bold', module.name, module);
 	
-		return new Promise(function(resolve, reject){
+		return new Promise(function(resolve, reject) {
             // URL модуля
             var url = url || module.data.path || false;
-
+			
             // Если url модуля есть, то будем его подгружать
             if (url) {
                 berry.fetch(url).then(function(source) {
@@ -478,7 +422,6 @@
 		return storage;
 	}	
 
-
 	// AMD. Оборачиваем внешний код
 	// Принимает исходный код
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
@@ -486,10 +429,29 @@
 	berry._exec = function(module, storage) {
 		var func = (module.callback || '').toString();
 		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		//return new Function('','return function() { (function() {'+ (module.source || '') + '\n' + callback + '})() }')();
 		return new Function('args','return (function(args){'+ (module.source || '') + '\n' + callback + '})(args)');
 	}
 
+	// AMD. Создает script и добавляет его в шапку
+	// Принимает исходный код
+	// Создает тег script, загрженный код помещается в тег
+	// Возвращает объект DOM
+	berry._include = function(module) {
+		return new Promise(function(resolve, reject) {		
+			var n = document.getElementsByTagName("head")[0];
+			var s = document.createElement('script');
+				
+			s.type = 'text/javascript';
+			s.innerHTML = module.source;
+			if( berry.config.AMD.charset ) s.charset = berry.config.AMD.charset;
+			
+			n.appendChild(s);
+			
+			if (berry.config.debug) console.info('Модуль ' + name + ' загружен');
+			return resolve(berry._callback(module));
+		});
+	}
+	
 	
 	// AMD. Вызов всех определенных модулей
 	/* Инициализируем все модули, которые были определены ранее */
@@ -498,7 +460,7 @@
 		
 		return Promise.all(
 			berry.defined.map(function(module) {
-				return berry._pending( berry.modules[module] );
+				if( berry.modules[module].data.require === true ) return berry._pending( berry.modules[module] );
 			})
 		).then(function(resolve) {
 			if (berry.config.debug) console.info('%c_INIT', 'color: #F00; font-weight: bold', 'Все модули проиницилизированы', resolve);
@@ -514,38 +476,34 @@
 
 		// создаем пустой обьект для локализации
 		this.core.locale = {};
-		
-		this.ready(function() {
-			if (berry.config.debug) console.info('%cDOM ready', 'background-color: #409f00; font-weight: bold; padding: 2px 10px; color:#fff; display:block; width: 100%');
-			
-			var coreplugins = new Promise(function(resolve, reject) {
-				// определяем модуль с основными библиотеками
-				if( berry.config.AMD.plugins_path ) {
-					berry.fetch(berry.config.AMD.plugins_path).then(function(source) {
-						// создаем функцию для исполнения внешнего в нашей области видимости
-						(berry._exec({source: source}))();
 
-						berry._config( berry.plugins, null, null ).then(function(callback) {
-							// библиотеки определены
-							if(callback) callback.call();
-							resolve();
-						});
+		if (berry.config.debug) console.info('%cINIT', 'background-color: #409f00; font-weight: bold; padding: 2px 10px; color:#fff; display:block; width: 100%');
+		
+		var coreplugins = new Promise(function(resolve, reject) {
+			// определяем модуль с основными библиотеками
+			if( berry.config.AMD.plugins_path ) {
+				berry.fetch(berry.config.AMD.plugins_path).then(function(source) {
+					// создаем функцию для исполнения внешнего в нашей области видимости
+					(berry._exec({source: source}))();
+
+					berry._config(berry.plugins).then(function(callback) {
+						// библиотеки определены
+						resolve();
 					});
-				}
-				else {
-					// библиотек нет, грузим модули
-					resolve();
-				}
-			});
-			
-			coreplugins.then(function(resolve) {
-				berry.STATE = 'ready';
-				berry._init();
-			});
+				});
+			}
+			else {
+				// библиотек нет, грузим модули
+				resolve();
+			}
 		});
+		
+		coreplugins.then(function(resolve) {
+			berry._init();
+		});		
 	}
 
-	// обратная совместимость с seed 1.0
+	// обратная совместимость с berry 1.0
 	/*
 	if (!window.$) {
 		window.$ = {};
