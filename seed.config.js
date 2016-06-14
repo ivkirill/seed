@@ -1,5 +1,5 @@
 /* 
-* Berry Config
+* seed Config
 * @version 2.0.0
 * @author Kirill Ivanov
 */
@@ -7,14 +7,14 @@
 
 'use strict';
 
-// проверим существование объекта berry
-if (!window.berry) {
-	window.berry = {};
-	berry = window.berry;
+// проверим существование объекта seed
+if (!window.seed) {
+	window.seed = {};
+	seed = window.seed;
 }
 
 // список библиотек AMD ядра и зависимостей
-berry.plugins = {
+seed.plugins = {
 	'jquery.1.4.2' : {
 		'path' : '/js/jquery/jquery-1.4.2.js',
 		"callback" : function() {
@@ -136,58 +136,61 @@ berry.plugins = {
 		"path" : "/js/highstock/highcharts.4.1.9.js"
 	},
 
-// библиотеки berry
-	"berry.buy" : {
-		"path" : "/js/seed/jquery.seed.buy.js"
+// библиотеки seed
+	"seed.core" : {
+		"path" : "/js/seed/libs/jquery.seed.core.js"
 	},
-	"berry.basket" : {
-		"path" : "/js/seed/jquery.seed.basket.js",
-		"depents": ['berry.gform', 'common.json']
+	"seed.buy" : {
+		"path" : "/js/seed/libs/jquery.seed.buy.js"
 	},
-	"berry.carousel" : {
-		"path" : "/js/seed/jquery.seed.carousel.js",
+	"seed.basket" : {
+		"path" : "/js/seed/libs/jquery.seed.basket.js",
+		"depents": ['seed.gform', 'common.json']
+	},
+	"seed.carousel" : {
+		"path" : "/js/seed/libs/jquery.seed.carousel.js",
 		"depents": ['common.easing']
 	},
-	"berry.compare" : {
-//			"path" : "/js/seed/jquery.seed.compare.js"
+	"seed.compare" : {
+//			"path" : "/js/seed/libs/jquery.seed.compare.js"
 	},
-	"berry.dropdown" : {
-		"path" : "/js/seed/jquery.seed.dropdown.js"
+	"seed.dropdown" : {
+		"path" : "/js/seed/libs/jquery.seed.dropdown.js"
 	},
-	"berry.filter" : {
-		"path" : "/js/seed/jquery.seed.filter.js",
+	"seed.filter" : {
+		"path" : "/js/seed/libs/jquery.seed.filter.js",
 		"depents": ['common.cookie']
 	},
-	"berry.gallery" : {
-		"path" : "/js/seed/jquery.seed.gallery.js"
+	"seed.gallery" : {
+		"path" : "/js/seed/libs/jquery.seed.gallery.js"
 	},
-	"berry.gform" : {
-		"path" : "/js/seed/jquery.seed.gform.js",
-		"depents" : ['berry.tooltip']
+	"seed.gform" : {
+		"path" : "/js/seed/libs/jquery.seed.gform.js",
+		"depents" : ['seed.tooltip']
 	},
-	"berry.modal" : {
-		"path" : "/js/seed/jquery.seed.modal.js",
+	"seed.modal" : {
+		"path" : "/js/seed/libs/jquery.seed.modal.js",
 		"depents" : ['ui.draggable']
 	},
-	"berry.page" : {
-		"path" : "/js/seed/jquery.seed.page.js",
+	"seed.page" : {
+		"path" : "/js/seed/libs/jquery.seed.page.js",
 		"depents": ['common.cookie']
 	},
-	"berry.tab" : {
-		"path" : "/js/seed/jquery.seed.tab.js"
+	"seed.tab" : {
+		"path" : "/js/seed/libs/jquery.seed.tab.js"
 	},
-	"berry.tooltip" : {
-		"path" : "/js/seed/jquery.seed.tooltip.js"
+	"seed.tooltip" : {
+		"path" : "/js/seed/libs/jquery.seed.tooltip.js"
 	},
-	"berry.select" : {
-		"path" : "/js/seed/jquery.seed.select.js",
-		"depents": ['berry.dropdown']
+	"seed.select" : {
+		"path" : "/js/seed/libs/jquery.seed.select.js",
+		"depents": ['seed.dropdown']
 	},
-	"berry.ui" : {
-		"path" : "/js/seed/jquery.seed.ui.js",
-		"depents": ['berry.modal', 'berry.gform']
+	"seed.ui" : {
+		"path" : "/js/seed/libs/jquery.seed.ui.js",
+		"depents": ['seed.modal', 'seed.gform']
 	},
-	"berry.zoom" : {
-		"path" : "/js/seed/jquery.seed.zoom.js"
+	"seed.zoom" : {
+		"path" : "/js/seed/libs/jquery.seed.zoom.js"
 	}
 };

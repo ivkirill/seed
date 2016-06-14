@@ -2,20 +2,22 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
-    <title>Berry Index</title>
+    <title>Seed Index</title>
     
-    <script type="text/javascript" charset="UTF-8" src="berry.js"></script>
+    <script type="text/javascript" charset="UTF-8" src="seed.js"></script>
   </head>
   <body>
     <script>
-		console.info('Start:', performance.now());
+		seed.globals({
+			debug : false
+		});
 
 		define('module1', ['module2', 'module3'], function() {
 			console.log('TEST A', this);
 			return 'module1';
 		});			
 		
-		define('module2', {path: '/js/berry/berry.test.js'}, function() {
+		define('module2', {path: '/js/seed/seed.test.js'}, function() {
 			console.log('TEST B', this);
 			return 'module2';
 		});
