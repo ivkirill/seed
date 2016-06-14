@@ -1,0 +1,71 @@
+//
+// Zoom
+// --------------------------------------------------
+
+
+// Floats
+// -------------------------
+
+.zoom-wrapper {
+  position: relative;
+
+  .zoom-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+
+  .zoom-pointer {
+    position: absolute;
+    top:0;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index: 1;
+    border-style: solid;
+    border-color: transparent;
+    cursor:crosshair;
+    display:none;
+    .box-sizing(content-box);
+
+    &:after {
+      content:' ';
+      position:absolute;
+      width:100%;
+      height:100%;
+      border:2px solid @brand-primary;
+      background-color: rgba(255,255,255,0.2);
+    }
+
+    &.zoom-tint {
+      border-color: fade(@brand-primary, 20%);
+      &:after {
+        background-color: transparent;
+      }
+    }
+
+  }
+
+  .zoom-win {
+    position: absolute;
+    overflow: hidden;
+    border: 3px solid @brand-primary;
+    z-index:1000;
+    background-color:#fff;
+    pointer-events: none;
+
+    .seed-overlay {
+      position:absolute;
+      background-color:transparent;
+
+      .loader {
+        width:10em;
+        height:10em;
+      }
+
+    }
+  }
+  .zoom-image {
+    position: absolute;
+  }
+}
