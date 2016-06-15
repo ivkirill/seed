@@ -3,59 +3,57 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
     <title>Seed Test Index</title>
-    
-    <script type="text/javascript" src="/js/jquery/jquery-1.9.1.min.js"></script>
-    <script type="text/javascript" charset="UTF-8" src="jquery.seed.js"></script>
+    <script type="text/javascript" charset="UTF-8" src="seed.js"></script>
   </head>
   <body>
     <script>
 		console.info('Start:', performance.now());
 
-		$.define('module1', ['module2', 'module3'], function() {
+		define('module1', ['module2', 'module3'], function() {
 			console.log('TEST A', this);
 			return 'module1';
 		});			
 		
-		$.define('module2', ['module4'], {path: '/js/berry/berry.test.js'}, function() {
+		define('module2', ['module4'], {path: '/js/seed/seed.test.js'}, function() {
 			console.log('TEST B', this);
 			return 'module2';
 		});
 		
-		$.define('module3', ['module4'], {path: '/js/berry/berry.test.js'}, function() {
+		define('module3', ['module4'], {path: '/js/seed/seed.test.js'}, function() {
 			console.log('TEST C', this);
 			return 'module3';
 		});
 
-		$.define('module4', {path: '/js/berry/berry.test.js'}, function() {
+		define('module4', {path: '/js/seed/seed.test.js'}, function() {
 			console.log('TEST D', this);
 			return 'module4';
 		});
 		
-		$.define('module5', ['module6', 'module4'], function() {
+		define('module5', ['module6', 'module4'], function() {
 			console.log('TEST E', this);
 			return 'module5';
 		});		
 		
-		$.define('module6', function() {
+		define('module6', function() {
 			console.log('TEST F', this);
 			return 'module6';
 		});
 
 		// определение модуля 'menu'
-		$.define('menu', ['jquery.1.12.4', 'common.base64'], function(jQuery) {
+		define('menu', ['jquery.1.12.4', 'common.base64'], function(jQuery) {
 			var a = 1;
 			return a;
 		});			
   	
 		// определение модуля 'oldmenu' с поддержкой обратной совместимости
-		$.define('oldmenu', function() {
+		define('oldmenu', function() {
 			console.log("module 'oldmenu' loaded");
 			var a = 2;
 			return a;
 		});
 
 		// определение модуля 'item' с зависимостью от модуля 'menu'
-		$.define('item', ['menu'], function() {
+		define('item', ['menu'], function() {
 			console.log("module 'item' loaded, depence from 'menu'");
 		});
 

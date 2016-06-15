@@ -2,88 +2,32 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
-    <title>Berry Index</title>
-    
-    <script type="text/javascript" charset="UTF-8" src="berry.js"></script>
+    <title>Seed Index</title>
+    <script type="text/javascript" charset="UTF-8" src="seed.js"></script>
   </head>
   <body>
     <script>
-		console.info('Start:', performance.now());
-/*
+	seed.globals({
+//		'debug' : true
+
+		locale : {
+			'seedTootlip' : {
+				'error' : {
+					'123' : '321'
+				}
+			}
+		}
+	})
+
+	require('jquery.2.1.4');
 
 
-		define('module1', ['module2', 'module3'], function() {
-			console.log('TEST A', this);
-			return 'module1';
-		});			
-		
-		define('module2', ['module4'], {path: '/js/berry/berry.test.js'}, function() {
-			console.log('TEST B', this);
-			return 'module2';
-		});
-		
-		define('module3', ['module4'], {path: '/js/berry/berry.test.js'}, function() {
-			console.log('TEST C', this);
-			return 'module3';
-		});
-
-		define('module4', {path: '/js/berry/berry.test.js'}, function() {
-			console.log('TEST D', this);
-			return this;
-		});
-		
-		define('module5', ['module6', 'module4'], function() {
-			console.log('TEST E', this);
-			return 'module5';
-		});		
-		
-		define('module6', function() {
-			console.log('TEST F', this);
-			return this;
-		});
-
-	
-		// определение модуля 'menu'
-		define('menu', ['jquery.1.4.2', 'module6'], function(args) {
-			console.log('MENU', args.module6, window, $);
-			var a = 1;
-			return a;
-		});			
-
-  	
-		// определение модуля 'oldmenu' с поддержкой обратной совместимости
-		define('prototype', {'path': 'https://cdnjs.cloudflare.com/ajax/libs/prototype/1.7.3/prototype.js'}, function() {
-			return Prototype;
-		});
-
-		// определение модуля 'item' с зависимостью от модуля 'menu'
-		define('item', ['prototype'], function() {
-			console.log('Prototype', arguments);
-		});
-*/
-
-
-		define('module', ['jquery'], function() {
-			console.log('ARGS', arguments);
-			return 123;
-
-		});
-
-		define('images', ['jquery', 'module'], function() {
-			console.log('images', arguments);
-		});
-
-		define('jquery', {'path':'/js/jquery/jquery-1.4.2.js'}, function() {
-			console.log(this, arguments, jQuery);
-			return $;
-		});
-
-
-
-
+	define('test', 'seed.tooltip', function(args) {
+		$('img').seedTooltip();
+	});
     </script>
-	<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100">
-	<img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100">
-	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100">
+	<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5">
+	<img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3">
+	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">
   </body>
 </html>

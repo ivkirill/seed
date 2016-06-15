@@ -1,0 +1,122 @@
+//
+// Carousel
+// --------------------------------------------------
+
+.carousel { position:relative; height:300px; overflow-y:hidden; }
+
+.carousel .carousel-area { position: relative; overflow: hidden; width: 100%; height: 100%; }
+.carousel .carousel-box { position: relative; width: auto; height: 100%; }
+.carousel .carousel-box > * { background-position-x:center; height:100%; }
+.carousel .carousel-group { position:absolute; width:100%; height:100%; top:0; left:0; display:none; } 
+.carousel .carousel-group > * { height:100%; }
+
+.carousel .carousel-group .caption { position: absolute; bottom: 40px; right: 10px; text-align: right; line-height: 25px; color: #fff; z-index: 10; }
+
+
+.carousel .cloned { position:absolute; top:0; left:0; }
+.carousel .cloned .caption { display:none; }
+
+
+/* При анимации fade */
+.carousel.carousel-animation-fade .carousel-group { position:absolute; width:100%; height:100%; top:0; left:0; }
+
+/* При анимации slide */
+.carousel.carousel-animation-slide .carousel-box { width:1000%; }
+.carousel.carousel-animation-slide .carousel-group { position: relative; display: block; float: left; padding: 0; width:auto; top:auto; left:auto; }
+
+/* При анимации horizontal */
+.carousel.carousel-animation-horizontal .cloned { width:100%; background-position:bottom center; position:absolute; top:0; left:0; overflow:hidden; z-index:1; }
+.carousel.carousel-animation-horizontal .cloned a {display:block;}
+.carousel.carousel-animation-horizontal .cloned img {position:absolute; top:0; left:0; opacity:1; display:block; }
+
+/* При анимации blocks */
+.carousel.carousel-animation-blocks .cloned { width:100%; background-position:bottom center; position:absolute; top:0; left:0; overflow:hidden; z-index:1; }
+.carousel.carousel-animation-blocks .cloned a {display:block;}
+.carousel.carousel-animation-blocks .cloned img {position:absolute; top:0; left:0; opacity:1; display:block; }
+
+/* При анимации glass */
+.carousel.carousel-animation-glass .cloned { width:100%; background-position:bottom center; position:absolute; top:0; left:0; overflow:hidden; z-index:1; }
+.carousel.carousel-animation-glass .cloned a {display:block;}
+.carousel.carousel-animation-glass .cloned img {position:absolute; top:0; left:0; opacity:1; display:block; }
+
+
+/* Прогресс бар */
+.carousel .carousel-bar { position:absolute; bottom:0; left:0; width:0; height:5px; background-color:@component-active-bg; }
+.carousel .carousel-bar.run {
+  -webkit-animation-name: carousel-bar;
+  -webkit-animation-timing-function: linear;
+  -webkit-animation-iteration-count: 1;
+  -webkit-animation-fill-mode: forwards;
+
+  animation-name: carousel-bar;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+} 
+
+.carousel.hover-stop:hover .carousel-bar.run {
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+
+
+/* Навигация слайдера */
+.carousel .carousel-navbar {
+  color:#fff;
+  position:absolute;
+  text-align:center;
+  bottom:15px;
+  right:0;
+  left:0;
+  z-index:2;
+  .user-select(none);
+}
+.carousel .carousel-navbar .carousel-navbutton { width:25px; height:25px; border-radius:50%; color:@component-active-bg; border-color:@component-active-color; background-color:@component-active-color; 
+  display: inline-block;
+  margin-bottom: 0; // For input.btn
+  font-weight: @btn-font-weight;
+  text-align: center;
+  vertical-align: middle;
+  touch-action: manipulation;
+  cursor: pointer;
+  background-image: none; 
+  border: 1px solid transparent;
+  white-space: nowrap;
+  .user-select(none);
+}
+
+.carousel .carousel-navbar .carousel-navbutton span { font-size:16pt; line-height: 20px; font-style:normal; z-index:3; }
+.carousel .carousel-navbar .carousel-navbutton:hover { border-color:@brand-primary; }
+.carousel .carousel-navbar .carousel-navbutton:active { color:@component-active-color; background-color:@component-active-bg; }
+
+.carousel .carousel-navbar .carousel-navbutton.carousel-next span { margin-left:4px; }
+
+.carousel .carousel-navbar .carousel-status { display:none; }
+
+.carousel .carousel-navbar .carousel-pages i { width:25px; height:25px; border-radius:50%; margin: 0 5px; color:@component-active-bg; border-color:@component-active-color; background-color:@component-active-color; 
+  display: inline-block;
+  margin-bottom: 0; // For input.btn
+  font-weight: @btn-font-weight;
+  text-align: center;
+  vertical-align: middle;
+  touch-action: manipulation;
+  cursor: pointer;
+  background-image: none;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  .user-select(none);
+}
+
+.carousel .carousel-navbar .carousel-pages i .num { font-size:10pt; line-height:24px; font-style:normal; text-align: center; z-index:3; }
+.carousel .carousel-navbar .carousel-pages i:hover { border-color:@component-active-bg; }
+.carousel .carousel-navbar .carousel-pages i.active { color:@component-active-color; background-color:@component-active-bg; }
+
+
+@-webkit-keyframes carousel-bar {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+@keyframes carousel-bar {
+  0% { width: 0; }
+  100% { width: 100%; }
+}

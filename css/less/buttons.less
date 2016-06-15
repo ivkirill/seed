@@ -1,0 +1,562 @@
+//
+// Buttons
+// --------------------------------------------------
+
+
+// Base styles
+// --------------------------------------------------
+
+.btn {
+  display: inline-block;
+  margin-bottom: 0; // For input.btn
+  font-weight: @btn-font-weight;
+  text-align: center;
+  vertical-align: middle;
+  touch-action: manipulation;
+  cursor: pointer;
+  background-image: none; // Reset unusual Firefox-on-Android default style; see https://github.com/necolas/normalize.css/issues/214
+  border: 1px solid transparent;
+  white-space: nowrap;
+  .button-size(@padding-base-vertical; @padding-base-horizontal; @font-size-base; @line-height-base; @border-radius-base);
+  .user-select(none);
+
+  &,
+  &:active,
+  &.active {
+    &:focus,
+    &.focus {
+      .tab-focus();
+    }
+  }
+
+  &:hover,
+  &:focus,
+  &.focus {
+    color: @btn-default-color;
+    text-decoration: none;
+  }
+
+  &:active,
+  &.active {
+    outline: 0;
+    background-image: none;
+    .box-shadow(inset 0 3px 5px rgba(0,0,0,.125));
+  }
+
+  &.disabled,
+  &[disabled],
+  fieldset[disabled] & {
+    cursor: @cursor-disabled;
+    pointer-events: none; // Future-proof disabling of clicks
+    .opacity(.65);
+    .box-shadow(none);
+  }
+
+  &.btn-text {
+    cursor: initial;
+    touch-action: none;
+    pointer-events: none; // Future-proof disabling of clicks
+    .user-select(text);
+  }
+}
+
+
+// Alternate buttons 
+// With additional descr for Seed Toogle Buttons
+// --------------------------------------------------
+
+.btn-default {
+  .button-variant(@btn-default-color; @btn-default-bg; @btn-default-border);
+}
+.btn-primary {
+  .button-variant(@btn-primary-color; @btn-primary-bg; @btn-primary-border);
+}
+// Success appears as green
+.btn-success {
+  .button-variant(@btn-success-color; @btn-success-bg; @btn-success-border);
+}
+// Info appears as blue-green
+.btn-info {
+  .button-variant(@btn-info-color; @btn-info-bg; @btn-info-border);
+}
+// Warning appears as orange
+.btn-warning {
+  .button-variant(@btn-warning-color; @btn-warning-bg; @btn-warning-border);
+}
+// Danger and error appear as red
+.btn-danger {
+  .button-variant(@btn-danger-color; @btn-danger-bg; @btn-danger-border);
+}
+
+
+
+
+// Link buttons
+// -------------------------
+
+// Make a button look and behave like a link
+.btn-link {
+  color: @link-color;
+  font-weight: normal;
+  border-radius: 0;
+
+  &,
+  &:active,
+  &.active,
+  &[disabled],
+  fieldset[disabled] & {
+    background-color: transparent;
+    .box-shadow(none);
+  }
+  &,
+  &:hover,
+  &:focus,
+  &:active {
+    border-color: transparent;
+  }
+  &:hover,
+  &:focus {
+    color: @link-hover-color;
+    text-decoration: @link-hover-decoration;
+    background-color: transparent;
+  }
+  &[disabled],
+  fieldset[disabled] & {
+    &:hover,
+    &:focus {
+      color: @btn-link-disabled-color;
+      text-decoration: none;
+    }
+  }
+}
+
+
+// Button Sizes
+// --------------------------------------------------
+
+.btn-lg {
+  // line-height: ensure even-numbered height of button next to large input
+  .button-size(@padding-large-vertical; @padding-large-horizontal; @font-size-large; @line-height-large; @border-radius-large);
+}
+.btn-sm {
+  // line-height: ensure proper height of button next to small input
+  .button-size(@padding-small-vertical; @padding-small-horizontal; @font-size-small; @line-height-small; @border-radius-small);
+}
+.btn-xs {
+  .button-size(@padding-xs-vertical; @padding-xs-horizontal; @font-size-small; @line-height-small; @border-radius-small);
+}
+
+
+// Block button
+// --------------------------------------------------
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+// Vertically space out multiple block buttons
+.btn-block + .btn-block {
+  margin-top: 5px;
+}
+
+// Specificity overrides
+input[type="submit"],
+input[type="reset"],
+input[type="button"] {
+  &.btn-block {
+    width: 100%;
+  }
+}
+
+.btn-checkbox [type="checkbox"] {
+    position: absolute;
+    clip: rect(0, 0, 0, 0);
+    pointer-events: none;
+}
+
+//
+// Button groups
+// --------------------------------------------------
+
+// Make the div behave like a button
+.btn-group,
+.btn-group-vertical {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle; // match .btn alignment given font-size hack above
+  > .btn {
+    position: relative;
+    float: left;
+    // Bring the "active" button to the front
+    &:hover,
+    &:focus,
+    &:active,
+    &.active {
+      z-index: 2;
+    }
+  }
+}
+
+// Prevent double borders when buttons are next to each other
+.btn-group {
+  .btn + .btn,
+  .btn + .btn,
+  .btn + .btn-group,
+  .btn-group + .btn,
+  .btn-group + .btn-group {
+    margin-left: -1px;
+  }
+}
+
+// Optional: Group multiple button groups together for a toolbar
+.btn-toolbar {
+  margin-left: -5px; // Offset the first child's margin
+  &:extend(.clearfix all);
+
+  .btn-group,
+  .input-group {
+    float: left;
+  }
+  > .btn,
+  > .btn-group,
+  > .input-group {
+    margin-left: 5px;
+  }
+}
+
+.btn-group > .btn:not(:first-of-type):not(:last-of-type):not(.dropdown-toggle) {
+  border-radius: 0;
+}
+
+// Set corners individual because sometimes a single button can be in a .btn-group and we need :first-of-type and :last-of-type to both match
+.btn-group > .btn:first-of-type {
+  margin-left: 0;
+  &:not(:last-of-type):not(.dropdown-toggle) {
+    .border-right-radius(0);
+  }
+}
+
+// Need .dropdown-toggle since :last-of-type doesn't apply given a .dropdown-menu immediately after it
+.btn-group > .btn:last-of-type:not(:first-of-type),
+.btn-group > .btn-group:not(:first-of-type) > .btn,
+.btn-group > .btn-group:not(:first-of-type) > .btn-group > .btn,
+.btn-group > .dropdown-toggle:not(:first-of-type) {
+  .border-left-radius(0);
+}
+
+// Custom edits for including btn-groups within btn-groups (useful for including dropdown buttons within a btn-group)
+.btn-group > .btn-group {
+  float: left;
+}
+.btn-group > .btn-group:not(:first-of-type):not(:last-of-type) > .btn {
+  border-radius: 0;
+}
+.btn-group > .btn-group:first-of-type:not(:last-of-type) {
+  > .btn:last-of-type,
+  > .dropdown-toggle {
+    .border-right-radius(0);
+  }
+}
+.btn-group > .btn-group:last-of-type:not(:first-of-type) > .btn:first-of-type {
+  .border-left-radius(0);
+}
+
+// On active and open, don't show outline
+.btn-group .dropdown-toggle:active,
+.btn-group.open .dropdown-toggle {
+  outline: 0;
+}
+
+
+// Sizing
+//
+// Remix the default button sizing classes into new ones for easier manipulation.
+
+.btn-group-xs > .btn { &:extend(.btn-xs); }
+.btn-group-sm > .btn { &:extend(.btn-sm); }
+.btn-group-lg > .btn { &:extend(.btn-lg); }
+
+
+// Split button dropdowns
+// ----------------------
+
+// Give the line between buttons some depth
+.btn-group > .btn + .dropdown-toggle {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.btn-group > .btn-lg + .dropdown-toggle {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+// The clickable button for toggling the menu
+// Remove the gradient and set the same inset shadow as the :active state
+.btn-group.open .dropdown-toggle {
+  .box-shadow(inset 0 3px 5px rgba(0,0,0,.125));
+
+  // Show no shadow for `.btn-link` since it has no other button styles.
+  &.btn-link {
+    .box-shadow(none);
+  }
+}
+
+
+// Reposition the caret
+.btn .caret {
+  margin-left: 0;
+}
+// Carets in other button sizes
+.btn-lg .caret {
+  border-width: @caret-width-large @caret-width-large 0;
+  border-bottom-width: 0;
+}
+// Upside down carets for .dropup
+.dropup .btn-lg .caret {
+  border-width: 0 @caret-width-large @caret-width-large;
+}
+
+
+// Vertical button groups
+// ----------------------
+
+.btn-group-vertical {
+  > .btn,
+  > .btn-group,
+  > .btn-group > .btn {
+    display: block;
+    float: none;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  // Clear floats so dropdown menus can be properly placed
+  > .btn-group {
+    &:extend(.clearfix all);
+    > .btn {
+      float: none;
+    }
+  }
+
+  > .btn + .btn,
+  > .btn + .btn-group,
+  > .btn-group + .btn,
+  > .btn-group + .btn-group {
+    margin-top: -1px;
+    margin-left: 0;
+  }
+}
+
+.btn-group-vertical > .btn {
+  &:not(:first-of-type):not(:last-of-type) {
+    border-radius: 0;
+  }
+  &:first-of-type:not(:last-of-type) {
+    border-top-right-radius: @border-radius-base;
+    .border-bottom-radius(0);
+  }
+  &:last-of-type:not(:first-of-type) {
+    border-bottom-left-radius: @border-radius-base;
+    .border-top-radius(0);
+  }
+}
+.btn-group-vertical > .btn-group:not(:first-of-type):not(:last-of-type) > .btn {
+  border-radius: 0;
+}
+.btn-group-vertical > .btn-group:first-of-type:not(:last-of-type) {
+  > .btn:last-of-type,
+  > .dropdown-toggle {
+    .border-bottom-radius(0);
+  }
+}
+.btn-group-vertical > .btn-group:last-of-type:not(:first-of-type) > .btn:first-of-type {
+  .border-top-radius(0);
+}
+
+
+// Justified button groups
+// ----------------------
+
+.btn-group-justified {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  > .btn,
+  > .btn-group {
+    float: none;
+    display: table-cell;
+    width: 1%;
+  }
+  > .btn-group .btn {
+    width: 100%;
+  }
+
+  > .btn-group .dropdown-menu {
+    left: auto;
+  }
+}
+
+
+// Checkbox and radio options
+//
+// In order to support the browser's form validation feedback, powered by the
+// `required` attribute, we have to "hide" the inputs via `clip`. We cannot use
+// `display: none;` or `visibility: hidden;` as that also hides the popover.
+// Simply visually hiding the inputs via `opacity` would leave them clickable in
+// certain cases which is prevented by using `clip` and `pointer-events`.
+// This way, we ensure a DOM element is visible to position the popover from.
+//
+// See https://github.com/twbs/bootstrap/pull/12794 and
+// https://github.com/twbs/bootstrap/pull/14559 for more information.
+
+// Custom select style for Seed Buttons
+
+[data-seed="buttons"] {
+  &,
+  > .btn,
+  > .btn-group,
+  > .input-group-btn,
+  > .btn-group > .btn,
+  > .input-group-btn > .btn {
+    & > input[type="radio"],
+    & > input[type="checkbox"] {
+      position: absolute;
+      clip: rect(0,0,0,0);
+      pointer-events: none;
+    }
+  }
+}
+
+.button-seed(@color; @background; @border; @class) {
+  [data-seed="buttons"] {
+    &,
+    > .btn,
+    > .btn-group,
+    > .input-group-btn,
+    > .btn-group > .btn,
+    > .input-group-btn > .btn {
+      & > input[type="radio"]:checked + .btn-@{class},
+      & > input[type="checkbox"]:checked + .btn-@{class} {
+        color: @color;
+        background-color: darken(@background, 10%);
+        border-color: darken(@border, 12%);
+        .box-shadow(inset 0 3px 5px rgba(0,0,0,.125));
+        z-index:2;
+      }
+    }
+  }
+}
+
+
+.button-seed(@btn-default-color; @btn-default-bg; @btn-default-border; default);
+.button-seed(@btn-primary-color; @btn-primary-bg; @btn-primary-border; primary);
+.button-seed(@btn-success-color; @btn-success-bg; @btn-success-border; success);
+.button-seed(@btn-info-color; @btn-info-bg; @btn-info-border; info);
+.button-seed(@btn-warning-color; @btn-warning-bg; @btn-warning-border; warning);
+.button-seed(@btn-danger-color; @btn-danger-bg; @btn-danger-border; danger);
+
+
+// Custom select style for Seed Select
+
+select[data-seed="select"] {
+  clip: rect(0,0,0,0) !important;
+  pointer-events: none !important;
+  position: absolute;
+  top: -9999px;
+}
+
+.select {
+  position:relative;
+  display: inline-block;
+  vertical-align: middle; // match .btn alignment given font-size hack above
+
+  .select-title {
+    min-width:100px;
+    display:inline;
+    text-align:left;
+    margin-right:10px;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .select-status {
+    visibility:hidden;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    right: 9px;
+    top:0;
+    height:100%;
+    z-index: 3;
+  }
+
+  > select {
+    height:1px;
+    margin: -1px;
+    border: 0;
+    position: absolute !important;
+    top:0;
+    left:0;
+    clip: rect(0,0,0,0) !important;
+    pointer-events: none !important;
+  }
+}
+
+// Toolbar for Seed Filter
+[role="toolbar"] {
+  .caption {
+    cursor:pointer;
+
+    .caret {
+      display:none;
+    }
+
+
+    &.action {
+      .caret {
+        display:inline-block;
+        .rotate(180deg);
+        .transition-property("all");
+        .transition-duration(.35s);
+        .transition-timing-function(ease);
+      }
+    }
+
+    &.action.closed {
+      .caret {
+        display:inline-block;
+        .rotate(0deg);
+      }
+    }
+  }
+
+  .items {
+    overflow:hidden
+  }
+}
+
+@media (max-width: @grid-float-breakpoint-max) {
+  [role="toolbar"] + [role="toolbar"] {
+    margin-top: @grid-gutter-width / 2;	
+  }
+}
+
+.filter {
+  .filter-title {
+    font-size:120%;
+  }
+  .button-minimize {
+    .fa {
+      .transition-property("all");
+      .transition-duration(.35s);
+      .transition-timing-function(ease);
+    }
+
+    &.closed .fa {
+      .rotate(180deg);
+    }
+  }
+}

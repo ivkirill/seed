@@ -1,0 +1,222 @@
+// Framework grid generation
+//
+// Used only by Bootstrap to generate the correct number of grid classes given
+// any value of `@grid-columns`.
+
+.make-grid-columns() {
+  // Common styles for all sizes of grid columns, widths 1-12
+  .col(@index) { // initial
+    @item: ~".col-xs-@{index}, .col-sm-@{index}, .col-md-@{index}, .col-lg-@{index}";
+    .col((@index + 1), @item);
+  }
+  .col(@index, @list) when (@index =< @grid-columns) { // general; "=<" isn't a typo
+    @item: ~".col-xs-@{index}, .col-sm-@{index}, .col-md-@{index}, .col-lg-@{index}";
+    .col((@index + 1), ~"@{list}, @{item}");
+  }
+  .col(@index, @list) when (@index > @grid-columns) { // terminal
+    @{list} {
+      position: relative;
+      // Prevent columns from collapsing when empty
+      min-height: 1px;
+      // Inner gutter via padding
+
+      box-sizing: border-box;
+      .flex(0 0 auto);
+
+      padding-left:  (@grid-gutter-width / 2);
+      padding-right: (@grid-gutter-width / 2);
+    }
+  }
+  .col(1); // kickstart it
+}
+
+.float-grid-columns(@class) {
+  .col(@index) { // initial
+    @item: ~".col-@{class}-@{index}";
+    .col((@index + 1), @item);
+  }
+  .col(@index, @list) when (@index =< @grid-columns) { // general
+    @item: ~".col-@{class}-@{index}";
+    .col((@index + 1), ~"@{list}, @{item}");
+  }
+  .col(@index, @list) when (@index > @grid-columns) { // terminal
+    @{list} {
+//      float: left;
+    }
+  }
+  .col(1); // kickstart it
+}
+
+.calc-grid-column(@index, @class, @type) when (@type = width) and (@index > 0) {
+  .col-@{class}-@{index} {
+//    width: percentage((@index / @grid-columns));
+
+    .flex-grow(1);
+    .flex-basis(percentage((@index / @grid-columns)));
+    max-width: percentage((@index / @grid-columns));
+  }
+}
+.calc-grid-column(@index, @class, @type) when (@type = push) and (@index > 0) {
+  .col-@{class}-push-@{index} {
+    left: percentage((@index / @grid-columns));
+  }
+}
+.calc-grid-column(@index, @class, @type) when (@type = push) and (@index = 0) {
+  .col-@{class}-push-0 {
+    left: auto;
+  }
+}
+.calc-grid-column(@index, @class, @type) when (@type = pull) and (@index > 0) {
+  .col-@{class}-pull-@{index} {
+    right: percentage((@index / @grid-columns));
+  }
+}
+.calc-grid-column(@index, @class, @type) when (@type = pull) and (@index = 0) {
+  .col-@{class}-pull-0 {
+    right: auto;
+  }
+}
+.calc-grid-column(@index, @class, @type) when (@type = offset) {
+  .col-@{class}-offset-@{index} {
+    margin-left: percentage((@index / @grid-columns));
+  }
+}
+
+.make-row-class(@class) {
+  .start-@{class} {
+    -webkit-box-pack: start;
+   .justify-content(flex-start);
+    text-align: left;
+  }
+
+  .center-@{class} {
+   .justify-content(center);
+    text-align: center;
+  }
+
+  .end-@{class} {
+    -webkit-box-pack: end;
+    -webkit-align-content: flex-end;
+    align-content: flex-end;
+   .justify-content(flex-end);
+    text-align: right;
+  }
+
+  .top-@{class} {
+    .align-items(flex-start);
+  }
+
+  .middle-@{class} {
+    .align-items(center);
+  }
+
+  .bottom-@{class} {
+    .align-items(flex-end);
+  }
+
+  .around-@{class} {
+    -ms-flex-pack: distribute;
+   .justify-content(space-around);
+  }
+
+  .between-@{class} {
+   .justify-content(space-between);
+  }
+
+  .first-@{class} {
+    order: -1;
+  }
+
+  .last-@{class} {
+    order: 1;
+  }
+  
+  .nowrap-@{class} {
+    .flex-wrap(nowrap);
+  }
+}
+
+// Basic looping in LESS
+.loop-grid-columns(@index, @class, @type) when (@index >= 0) {
+  .calc-grid-column(@index, @class, @type);
+  // next iteration
+  .loop-grid-columns((@index - 1), @class, @type);
+}
+
+// Basic looping in LESS
+.loop-grid-rows(@index, @class) when (@index >= 0) {
+  .calc-grid-rows(@index, @class);
+  // next iteration
+  .loop-grid-rows((@index - 1), @class);
+}
+
+// Create grid for specific class
+.make-grid(@class) {
+  .float-grid-columns(@class);
+  .loop-grid-columns(@grid-columns, @class, width);
+  .loop-grid-columns(@grid-columns, @class, pull);
+  .loop-grid-columns(@grid-columns, @class, push);
+  .loop-grid-columns(@grid-columns, @class, offset);
+
+  .make-row-class(@class);
+}
+
+// For flex
+
+.justify-content(@justify) {
+  -webkit-justify-content: @justify;
+      -ms-justify-content: @justify; 
+          justify-content: @justify;
+}
+
+.flex-flow(@wrap) {
+  -webkit-flex-flow: @wrap; 
+     -moz-flex-flow: @wrap; 
+      -ms-flex-flow: @wrap; 
+          flex-flow: @wrap;
+}
+
+.flex-wrap(@wrap) {
+  -webkit-flex-wrap: @wrap; 
+     -moz-flex-wrap: @wrap; 
+      -ms-flex-wrap: @wrap; 
+          flex-wrap: @wrap;
+}
+
+.flex-basis(@basis) {
+  -webkit-flex-basis: @basis; 
+     -moz-flex-basis: @basis; 
+      -ms-flex-basis: @basis; 
+          flex-basis: @basis;
+}
+
+.flex-grow(@grow) {
+  -webkit-flex-grow: @grow; 
+     -moz-flex-grow: @grow; 
+      -ms-flex-grow: @grow; 
+          flex-grow: @grow;
+}
+
+
+
+.flex-direction(@direction) {
+  -webkit-box-direction: normal; 
+  -webkit-flex-direction: @direction;
+      -ms-flex-direction: @direction;
+          flex-direction: @direction;
+}
+
+.flex(@flex) {
+  -webkit-box-flex: @flex;
+  -webkit-flex: @flex; 
+     -moz-flex: @flex; 
+      -ms-flex: @flex; 
+          flex: @flex; 
+}
+
+.align-items(@align) {
+    -webkit-box-align:@align;
+  -webkit-align-items:@align;
+       -ms-flex-align:@align;
+          align-items:@align;
+}
