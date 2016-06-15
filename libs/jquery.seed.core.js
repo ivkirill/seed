@@ -1,16 +1,21 @@
 ﻿/* 
- * Berry Lib Core
- * @version 2.0.27
+ * Seed Lib Core
+ * @version 2.0.28
  * @author Kirill Ivanov
  */
 
- (function(berry, window, document, undefined) {
+ (function(seed, $, window, document, undefined) {
 	'use strict';
 	
-	if( !berry ) {
+	if( !seed ) {
 		Error('Не найден объект Seed!');		
 		return false;
 	}
+	
+	// создаем объект seed, если он не существует
+	if (!$.seed) {
+		$.seed = seed;
+	}		
 
 	// ядро 
 	function core(name) {
@@ -25,6 +30,11 @@
 
 		this.init();
 		this.clear();
+		
+		// создаем пустой обьект для локализации
+		this.locale = {};
+		
+		return this;
 	}
 
 	// прототипируем ядро
@@ -40,7 +50,7 @@
 			'selector': {
 				'auto' : null
 			},
-			'class': {
+			'cssclass': {
 
 			},
 			'event' : {
@@ -69,7 +79,7 @@
 		},
 
 		// логирование клиентских ошибок в JS
-		_log: function(msg, url, line) {
+		log: function(msg, url, line) {
 			msg = 'Seed: '+ msg;
 			new Image().src = "/cgi-bin/log.cgi?message=" + decodeURIComponent(msg) + "&url="+ decodeURIComponent(url) + "&line=" + decodeURIComponent(line);
 		},		
@@ -128,10 +138,9 @@
 					this.config.metadata = this.metadata;
 
 					// добавляем в конфиг глобально определенную локализацию
-					if( $.seed.core.locale[self._name] ) {
-						this.config.locale = $.extend(true, this.config.locale, $.seed.core.locale[self._name]);
+					if( seed.config.locale[self._name] ) {
+						this.config.locale = $.extend(true, this.config.locale, seed.config.locale[self._name]);
 					}
-
 
 					this.config.fullscreen = this.$el.attr('data-fullscreen') || this.config.fullscreen;
 
@@ -146,7 +155,7 @@
 					this.build();
 
 					// если элемент был последний в списке, вызовем callback-функцию инициализации библиотеки, если она определена
-					if( this._$list.length == this._index && berry.isFunction(this.config.func.ready) ) {
+					if( this._$list.length == this._index && seed.isFunction(this.config.func.ready) ) {
 						(self.config.func.ready)(self);
 					}
 
@@ -325,7 +334,7 @@
 
 
 // перезапустим библиотеку еще раз, заставим обновлить список this._$list
-		_reinit: function() {
+		reinit: function() {
 
 // $.seed.progress - булевое значение для определения запущена ли переинициализация, необходимо чтобы исключить зацикливание
 			if( $.seed.progress ) { return false; }
@@ -528,6 +537,8 @@
 			return false;
 		}
 	}
-
-
-})(berry, window, document);
+	
+	$.fn.seedCore = seed.core = core;
+	
+	return seed;
+})(seed, jQuery, window, document);

@@ -5,6 +5,7 @@
 * Kirill Ivanov
 * create: 2015.05.27
 * update: 2015.06.15
+* TODO: учесть горизонтальный скроллинг для отображения подсказки
 */
 
 ;(function ($, window, document, undefined) {
@@ -284,5 +285,7 @@
 		}
 	});
 
+	
 	var module = new $.fn.seedCore(name, $.seed[name]);
+//	var module = seed.core(name, $.seed[name]);
 })(jQuery, window, document);

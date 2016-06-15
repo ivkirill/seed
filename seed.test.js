@@ -14,5 +14,4 @@ define('external2', function(args) {
    	return 'external';
 });
 
-
 require('jquery.2.1.4');

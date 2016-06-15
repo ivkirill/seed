@@ -4,8 +4,7 @@
 * @author Kirill Ivanov
 */
 
-
-'use strict';
+"use strict";
 
 // проверим существование объекта seed
 if (!window.seed) {
@@ -14,39 +13,39 @@ if (!window.seed) {
 }
 
 // список библиотек AMD ядра и зависимостей
-seed.plugins = {
-	'jquery.1.4.2' : {
-		'path' : '/js/jquery/jquery-1.4.2.js',
+seed.libs = {
+	"jquery.1.4.2" : {
+		"path" : "/js/jquery/jquery-1.4.2.js",
 		"callback" : function() {
 			return jQuery;
 		}
 	},
-	'jquery.1.7.1' : {
-		'path' : '/js/jquery/jquery-1.7.1.js',
+	"jquery.1.7.1" : {
+		"path" : "/js/jquery/jquery-1.7.1.js",
 		"callback" : function() {
 			return jQuery;
 		}
 	},
-	'jquery.1.9.1' : {
-		'path' : '/js/jquery/jquery-1.9.1.js',
+	"jquery.1.9.1" : {
+		"path" : "/js/jquery/jquery-1.9.1.js",
 		"callback" : function() {
 			return jQuery;
 		}
 	},
-	'jquery.2.0.1' : {
-		'path' : '/js/jquery/jquery-2.0.1.js',
+	"jquery.2.0.1" : {
+		"path" : "/js/jquery/jquery-2.0.1.js",
 		"callback" : function() {
 			return jQuery;
 		}
 	},
-	'jquery.2.1.3' : {
-		'path' : '/js/jquery/jquery-2.1.3.min.js',
+	"jquery.2.1.3" : {
+		"path" : "/js/jquery/jquery-2.1.3.min.js",
 		"callback" : function() {
 			return jQuery;
 		}
 	},
-	'jquery.2.1.4' : {
-		'path' : '/js/jquery/jquery-2.1.4.min.js',
+	"jquery.2.1.4" : {
+		"path" : "/js/jquery/jquery-2.1.4.min.js",
 		"callback" : function() {
 			return jQuery;
 		}
@@ -138,59 +137,66 @@ seed.plugins = {
 
 // библиотеки seed
 	"seed.core" : {
-		"path" : "/js/seed/libs/jquery.seed.core.js"
+		"path" : "/js/seed/libs/jquery.seed.core.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"seed.buy" : {
-		"path" : "/js/seed/libs/jquery.seed.buy.js"
+		"path" : "/js/seed/libs/jquery.seed.buy.js",
+		"depents": ["seed.core"]
 	},
 	"seed.basket" : {
 		"path" : "/js/seed/libs/jquery.seed.basket.js",
-		"depents": ['seed.gform', 'common.json']
+		"depents": ["seed.core", "seed.gform", "common.json"]
 	},
 	"seed.carousel" : {
 		"path" : "/js/seed/libs/jquery.seed.carousel.js",
-		"depents": ['common.easing']
+		"depents": ["seed.core", "common.easing"]
 	},
 	"seed.compare" : {
 //			"path" : "/js/seed/libs/jquery.seed.compare.js"
 	},
 	"seed.dropdown" : {
-		"path" : "/js/seed/libs/jquery.seed.dropdown.js"
+		"path" : "/js/seed/libs/jquery.seed.dropdown.js",
+		"depents": ["seed.core"]
 	},
 	"seed.filter" : {
 		"path" : "/js/seed/libs/jquery.seed.filter.js",
-		"depents": ['common.cookie']
+		"depents": ["seed.core", "common.cookie"]
 	},
 	"seed.gallery" : {
-		"path" : "/js/seed/libs/jquery.seed.gallery.js"
+		"path" : "/js/seed/libs/jquery.seed.gallery.js",
+		"depents": ["seed.core"]
 	},
 	"seed.gform" : {
 		"path" : "/js/seed/libs/jquery.seed.gform.js",
-		"depents" : ['seed.tooltip']
+		"depents" : ["seed.core", "seed.tooltip"]
 	},
 	"seed.modal" : {
 		"path" : "/js/seed/libs/jquery.seed.modal.js",
-		"depents" : ['ui.draggable']
+		"depents" : ["seed.core", "ui.draggable"]
 	},
 	"seed.page" : {
 		"path" : "/js/seed/libs/jquery.seed.page.js",
-		"depents": ['common.cookie']
+		"depents": ["seed.core", "common.cookie"]
 	},
 	"seed.tab" : {
-		"path" : "/js/seed/libs/jquery.seed.tab.js"
+		"path" : "/js/seed/libs/jquery.seed.tab.js",
+		"depents": ["seed.core"]
 	},
 	"seed.tooltip" : {
-		"path" : "/js/seed/libs/jquery.seed.tooltip.js"
+		"path" : "/js/seed/libs/jquery.seed.tooltip.js",
+		"depents": ["seed.core"]
 	},
 	"seed.select" : {
 		"path" : "/js/seed/libs/jquery.seed.select.js",
-		"depents": ['seed.dropdown']
+		"depents": ["seed.core", "seed.dropdown"]
 	},
 	"seed.ui" : {
 		"path" : "/js/seed/libs/jquery.seed.ui.js",
-		"depents": ['seed.modal', 'seed.gform']
+		"depents": ["seed.core", "seed.modal", "seed.gform"]
 	},
 	"seed.zoom" : {
-		"path" : "/js/seed/libs/jquery.seed.zoom.js"
+		"path" : "/js/seed/libs/jquery.seed.zoom.js",
+		"depents": ["seed.core"]
 	}
 };

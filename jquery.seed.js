@@ -1084,7 +1084,10 @@
 	}
 
 	$.seed.core = $.fn.seedCore = core;
-
+	
+	var seed = core;
+	window.seed = seed;
+	
 // создаем пустой обьект для локализации
 	$.seed.core.locale = {};
 

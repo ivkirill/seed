@@ -26,6 +26,7 @@
 	seed.config = {
 		'debug' : false,
 		'performance' : false,
+		'jquery' : 'jquery.2.1.4',
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
@@ -93,6 +94,8 @@
 	// массив промисов ожидающих загрузки модулей
 	seed.pending = {};
 	
+	seed.STATE = 'loading';	
+	
 	// AMD. Запрос модуля
 	// Принимает имя модуля, callback-функцию
 	seed.require = function(depents, callback) {
@@ -100,20 +103,17 @@
 		
 		// создаем объект конфигурации модуля
 		var config = {}	
+		config.depents = [];
 		
 		// если первый аргумент строка или массив то мы нашли модули, которые требуются
-		if (typeof arguments[0] == 'string' || seed.isArray(arguments[0]) ) config.depents = arguments[0];
-		else return Error('Не могу определить имя запрашиваего модуля модуля!', this);
+		if (seed.isArray(arguments[0]) ) config.depents = arguments[0];
+		else if ( typeof arguments[0] == 'string' ) config.depents.push(arguments[0]);
+		else return Error('Не могу определить имя запрашиваего модуля!', this);
 
 		// определяем callback-функцию
 		config.callback = ( seed.isFunction(arguments[1]) ) ? arguments[1] : function() { };
 
-		seed.define('seed'+Date.now(), config.depents, config.callback).then(function(module) {
-			seed._include(module).then(function(module) {
-				if( config.callback ) (config.callback)(module.values);
-				return module;
-			});
-		});
+		return seed.define('seed'+Date.now(), config.depents, config.callback, { global : true });			
 	}
 	
 
@@ -183,7 +183,7 @@
 			seed.defined.push(module.name);
 			module = seed._update(module, config);
 			
-			return ( config.data.plugin !== true ) ? seed._pending(module) : module;
+			return (seed.STATE == 'ready') ? (( config.data.plugin !== true ) ? seed._pending(module) : module) : module;
 		}
 	}
 	
@@ -217,9 +217,9 @@
 	// Принимает модуль
 	// Возвращает обещание, старое или новое, в зависимости от того первый это вызов модуля или нет
 	seed._pending = function(module) {
-		var ans = ( seed.pending[module.name] ) ? seed.pending[module.name] : (seed.pending[module.name] = seed._call(module));
-		if (seed.config.debug) console.log('_pending', module.name, module, ans);
-		return ans;
+		var promise = ( seed.pending[module.name] ) ? seed.pending[module.name] : (seed.pending[module.name] = seed._call(module));
+		if (seed.config.debug) console.log('_pending', module.name, module, promise);
+		return promise;
 	}
 	
 	// AMD. Вызов модуля
@@ -251,7 +251,7 @@
 					seed._chain(module).then(function() {
 						seed._get(module).then(function(module) {
 							resolve(module);
-							if (seed.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);
+							if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 							if( seed.config.performance ) console.info('Loaded:', performance.now());
 						}, function(reject) {
 							console.error('Неудалось загрузить модуль', module, reject);
@@ -263,7 +263,7 @@
 					});
 				}
 				else {
-					if (seed.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
+					if (seed.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку', check);
 					resolve(module);
 				}
 			}
@@ -273,7 +273,7 @@
 				if (seed.config.debug) console.log('Модуль ', module.name, 'необходим. Зависимостей нет');
 				seed._get(module).then(function(module) {
 					resolve(module);
-					if (seed.config.debug) console.info('%cМодуль полностью загружен и исполенен', 'color: #F00; font-weight: bold', module.name);
+					if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 					if( seed.config.performance ) console.info('Loaded:', performance.now());
 				}, function(reject) {
 					console.error('Неудалось загрузить модуль', module, reject);
@@ -318,21 +318,35 @@
 	
 	// AMD. Определение списка библиотек
 	seed._libs = function(config, callback, require) {
+		if (this.config.debug) console.log('%c_libs', 'color: #00f; font-weight: bold', 'определяем конфиг seed');
+		
 		return new Promise(function(resolve, reject) {
 			// поочередно определяем переданные в объекте модули
 			for (var name in config) {
+				
 				if (config.hasOwnProperty(name)) {
 					var data = config[name];
 					var callback = data.callback;
 					delete data.callback;
 					
-					seed.define(name, data.depents, callback, seed.extend(data, {plugin : true }));
+					// если модуль уже определен в системе, обновим его новым данными
+					if( seed.modules[name] ) {
+						seed._update(seed.modules[name], {
+							depents : data.depents,
+							callback : callback,
+							data : seed.extend(data, {plugin : true})
+						});
+					}
+					
+					// если модуль не определен, то определим
+					else {
+						seed.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
+					}
 				}
 			};
 
 			// после определения всех модулей, запускаем callback-функцию, если она есть
-			if (callback) resolve(callback);
-			else resolve();
+			resolve(callback);
 		});				
 	};
 
@@ -349,18 +363,18 @@
 			
             // Если url модуля есть, то будем его подгружать
             if (url) {
-                seed.fetch(url).then(function(source) {
-                    if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
+				seed.fetch(url).then(function(source) {
+					if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
 					// обновим модуль
 					seed._update(module, { source: source });
 
-                    // вызываем _restore метод
+					// вызываем _restore метод
 					resolve(seed._callback(module));
-                }, function(error) {
-                    console.error("Ошибка!", error);
-                    // модуль не загружен
-                    reject(error, module);
-                });
+				}, function(error) {
+					console.error("Ошибка!", error);
+					// модуль не загружен
+					reject(error, module);
+				});
             }
 
             // Если url нет
@@ -438,6 +452,8 @@
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
 	// Возвращает анонимную функцию
 	seed._exec = function(module, storage) {
+		if (seed.config.debug) console.log(' _exec', module.name, module.depents);
+		
 		var func = (module.callback || '').toString();
 		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
 		return new Function('args','return (function(args){'+ (module.source || '') + '\n' + callback + '})(args)');
@@ -448,6 +464,9 @@
 	// Создает тег script, загрженный код помещается в тег
 	// Возвращает объект DOM
 	seed._include = function(module) {
+		if (seed.config.debug) console.log(' _include', module.name, module.depents);
+		console.log(' _include', module.name, module.depents);
+		
 		return new Promise(function(resolve, reject) {		
 			var n = document.getElementsByTagName("head")[0];
 			var s = document.createElement('script');
@@ -485,9 +504,6 @@
 	seed.init = function() {
 		this.core = {};
 
-		// создаем пустой обьект для локализации
-		this.core.locale = {};
-
 		if (seed.config.debug) console.info('%cINIT', 'background-color: #409f00; font-weight: bold; padding: 2px 10px; color:#fff; display:block; width: 100%');
 		
 		var corelibs = new Promise(function(resolve, reject) {
@@ -510,8 +526,11 @@
 		});
 		
 		corelibs.then(function(resolve) {
+			seed.STATE = 'ready';
 			seed._init();
-		});		
+		});
+		
+		return this;
 	}
 
 	// обратная совместимость с seed 1.0
