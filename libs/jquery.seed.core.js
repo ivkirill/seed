@@ -8,7 +8,7 @@
 	'use strict';
 	
 	if( !seed ) {
-		Error('Не найден объект Seed!');		
+		Error('Не найден объект Seed!');
 		return false;
 	}
 	
