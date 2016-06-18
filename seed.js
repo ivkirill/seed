@@ -31,7 +31,9 @@
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
 			'libs_path': '/js/seed/seed.config.js' // URL для конфига плагинов по умолчанию
-		}
+		},
+		'locale': {}, // локализация библиотек ядра
+		'defaults' : {}
 	};
 
 	if( seed.config.performance ) console.info('Start:', performance.now());
@@ -78,27 +80,134 @@
 		if (document.readyState != 'loading') func();
 		else document.addEventListener('DOMContentLoaded', func);
 	}
+	
+	// Загрузка файла по url
+	// Принимает url
+	// Возвращает ответ xhr	
+	seed.fetch = function(url) {
+		// возвращаем новый Promise
+		return new Promise(function(resolve, reject) {
+			// проверим что пришло на выход
+			if( typeof url != 'string' ) {
+				reject(Error("Wrong URL type: ", url));
+				return false;
+			}
+			
+			// создаем get запрос к серверу
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', url, true);
+			xhr.onload = function() {
+				if (xhr.status == 200) {
+					resolve(xhr.response)
+				} else {
+					reject(Error(xhr.statusText)); // ошибка, отдаем её статус
+				}
+			}
+			
+			// отлавливаем ошибки сети
+			xhr.onerror = function() {
+				reject(Error("Network Error"));
+			};			
+			
+			// Делаем запрос
+			xhr.send();
+		});
+	}	
 
+	// Расширение фунционала метода
+	seed.hook = function(name, func, obj) {
+		if( !obj ) { obj = this; }
+
+		var title = ( func.event ) ? name+'_'+func.event : name;
+		// console.log('hook',$.fn[base._name], obj, name, func, title);
+
+		// сохраняем метод 
+		$.fn[base._name][title] = obj[name] || function() { return this; };
+
+		//console.log( $.fn[base._name][title], base._name, title );
+
+		// заменяем метод на новый
+		obj[name] = function() {
+			if( $.isFunction(func.before) ) {
+				(func.before)(this);
+			}
+			
+			var returned = $.fn[base._name][title].apply(this, arguments);
+			
+			if( $.isFunction(func.after) ) {
+				(func.after)(returned);
+			}
+			
+			return returned;
+		};
+
+		if( func.exec ) obj[name]();
+	}
+
+	// Снятие фунционала метода
+	seed.unhook = function(name, event, obj){
+		var base = this;
+		var title = ( event ) ? name+'_'+event : name;
+		// восстанавливаем старый метод
+		obj[name] = $.fn[base._name][title];
+		// удаляем старый метод
+		delete $.fn[base._name][title];
+	}	
+	
 	// переопредляем конфиг внешними переменными
 	seed.globals = function(obj) {
 		return seed.config = seed.extend(seed.config, obj);
 	}
 	
-	// AMD функционал
-	// модули, которые были определены
-	seed.modules = [];
-	// ключи модулей (имена), которые были определены
-	seed.defined = [];
-	// ключи модулей (имена), которые были запрошены
-	seed.required = [];
-	// массив промисов ожидающих загрузки модулей
-	seed.pending = {};
-	
 	seed.STATE = 'loading';	
 	
+	// инициалиация ядра Seed
+	seed.init = function() {
+		seed.core = {};
+
+		if (seed.config.debug) console.info('%cINIT', 'background-color: #409f00; font-weight: bold; padding: 2px 10px; color:#fff; display:block; width: 100%');
+		
+		var corelibs = new Promise(function(resolve, reject) {
+			// определяем модуль с основными библиотеками
+			if( seed.config.AMD.libs_path ) {
+				seed.AMD._include(seed.config.AMD.libs_path).then(function(source) {
+					// создаем функцию для исполнения внешнего в нашей области видимости
+					(seed.AMD._exec({source: source}))();
+
+					seed.AMD._libs(seed.libs).then(function(callback) {
+						// библиотеки определены
+						resolve();
+					});
+				});
+			}
+			else {
+				// библиотек нет, грузим модули
+				resolve();
+			}
+		});
+		
+		corelibs.then(function(resolve) {
+			seed.STATE = 'ready';
+			seed.AMD._init();
+		});
+		
+		return seed;
+	}	
+	
+	// AMD функционал
+	seed.AMD = {};
+	// модули, которые были определены
+	seed.AMD.modules = [];
+	// ключи модулей (имена), которые были определены
+	seed.AMD.defined = [];
+	// ключи модулей (имена), которые были запрошены
+	seed.AMD.required = [];
+	// массив промисов ожидающих загрузки модулей
+	seed.AMD.pending = {};
+	 	
 	// AMD. Запрос модуля
 	// Принимает имя модуля, callback-функцию
-	seed.require = function(depents, callback) {
+	seed.AMD.require = function(depents, callback) {
 		if (seed.config.debug) console.log('%cREQUIRE:', 'color: #3e3;', 'запрашиваем модуль', depents);
 		
 		// создаем объект конфигурации модуля
@@ -108,24 +217,23 @@
 		// если первый аргумент строка или массив то мы нашли модули, которые требуются
 		if (seed.isArray(arguments[0]) ) config.depents = arguments[0];
 		else if ( typeof arguments[0] == 'string' ) config.depents.push(arguments[0]);
-		else return Error('Не могу определить имя запрашиваего модуля!', this);
+		else return Error('Не могу определить имя запрашиваего модуля!', seed);
 
 		// определяем callback-функцию
 		config.callback = ( seed.isFunction(arguments[1]) ) ? arguments[1] : function() { };
 
-		return seed.define('seed'+Date.now(), config.depents, config.callback, { global : true });			
+		return seed.AMD.define('seed'+Date.now(), config.depents, config.callback, { global : true });			
 	}
 	
-
 	// AMD. Определение модуля
 	// Принимает все аргументы, при необходимости заполняем дефолтными значениями. Далее передаем в функцию обновления
 	// Возвращает ссылку на модуль
-	seed.define = function(name, depents, callback, data) {
+	seed.AMD.define = function(name, depents, callback, data) {
 		if (seed.config.debug) console.log('%cDEFINE:', 'color: #090;', 'определяем модуль', name);
 		
 		//Если первый полученный аргумент Объект и второй функция или не передан, то значит мы получили конфиг и обработаем его через специальную функцию.
 		if (seed.isObject(arguments[0])) {
-			return seed._libs(arguments[0], arguments[1]);
+			return seed.AMD._libs(arguments[0], arguments[1]);
 		}
 		//Если первый аргумент не является строкой, то сообщаем об ошибке и возвращаем false
 		else if (typeof arguments[0] !== 'string') {
@@ -170,7 +278,7 @@
 			}
 			
 			// находим модуль, если такого модуля нет - создаем новый пустой.
-			var module = (seed.modules[config.name]) ? (seed.modules[config.name]) : (seed.modules[config.name] = {
+			var module = (seed.AMD.modules[config.name]) ? (seed.AMD.modules[config.name]) : (seed.AMD.modules[config.name] = {
 				name: config.name,
 				depents: config.depents,
 				callback: config.callback,
@@ -180,17 +288,17 @@
 			});
 			
 			// добавляем имя модуля в массив определенных
-			seed.defined.push(module.name);
-			module = seed._update(module, config);
+			seed.AMD.defined.push(module.name);
+			module = seed.AMD._update(module, config);
 			
-			return (seed.STATE == 'ready') ? (( config.data.plugin !== true ) ? seed._pending(module) : module) : module;
+			return (seed.STATE == 'ready') ? (( config.data.plugin !== true ) ? seed.AMD._pending(module) : module) : module;
 		}
 	}
 	
 	// AMD. Обновление конфига модуля
 	// Принимает модуль и новый конфиг
 	// Возвращает модуль
-	seed._update = function(module, config) {
+	seed.AMD._update = function(module, config) {
 		if( !module ) return Error('Модуль не передан');
 		if (seed.config.debug) console.log('%c_UPDATE:', 'color:#FDB950', 'обновляем конфиг для модуля', module.name);
 
@@ -216,8 +324,8 @@
 	// AMD. Ожидание модуля
 	// Принимает модуль
 	// Возвращает обещание, старое или новое, в зависимости от того первый это вызов модуля или нет
-	seed._pending = function(module) {
-		var promise = ( seed.pending[module.name] ) ? seed.pending[module.name] : (seed.pending[module.name] = seed._call(module));
+	seed.AMD._pending = function(module) {
+		var promise = ( seed.AMD.pending[module.name] ) ? seed.AMD.pending[module.name] : (seed.AMD.pending[module.name] = seed.AMD._call(module));
 		if (seed.config.debug) console.log('_pending', module.name, module, promise);
 		return promise;
 	}
@@ -226,7 +334,7 @@
 	// Принимает модуль
 	// Определяет зависимости, вызывает цепочку или/и
 	// Возвращает обещание
-	seed._call = function(module) {
+	seed.AMD._call = function(module) {
 		if (seed.config.debug) console.info('%c_call:', 'color: #840000; font-weight: bold', 'вызов модуля', module.name, 'с зависимостями', module.depents);
 
 		return new Promise(function(resolve, reject) {
@@ -244,12 +352,12 @@
 				*/
 				var check = !module.depents.some(function(depent) {
 					// если зависимость строка, считаем это именем и проверяем определен ли такой модуль
-					return !((typeof depent === 'string') ? seed.modules[depent] : depent); 
+					return !((typeof depent === 'string') ? seed.AMD.modules[depent] : depent); 
 				});
 				
 				if (check === true) {
-					seed._chain(module).then(function() {
-						seed._get(module).then(function(module) {
+					seed.AMD._chain(module).then(function() {
+						seed.AMD._get(module).then(function(module) {
 							resolve(module);
 							if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 							if( seed.config.performance ) console.info('Loaded:', performance.now());
@@ -271,7 +379,7 @@
 			// если модуль необходим и не имеет зависимостей
 			else if (module.data.inited === false && module.data.require === true) {
 				if (seed.config.debug) console.log('Модуль ', module.name, 'необходим. Зависимостей нет');
-				seed._get(module).then(function(module) {
+				seed.AMD._get(module).then(function(module) {
 					resolve(module);
 					if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 					if( seed.config.performance ) console.info('Loaded:', performance.now());
@@ -293,19 +401,19 @@
 	// AMD. Вызов цепочки
 	// Принимает модуль, определяет его зависимости
 	// Возвращает обещание
-	seed._chain = function(module) {
+	seed.AMD._chain = function(module) {
 		if (seed.config.debug) console.log(' Зависимости модуля', module.name, 'прошли проверку');
 
 		// создаем обещаения для всего списка зависимостей модуля
 		return Promise.all(
 			module.depents.filter(String).map(function(depent) {
-				if (seed.modules[depent]) {
+				if (seed.AMD.modules[depent]) {
 					if (seed.config.debug) console.log(' Зависимость модуля', module.name + '. Модуль', depent, 'необходим для загрузки');
 				
 					// обновим модуль зависимости, передав новый конфиг если требуется
-					if( seed.modules[depent].data.require !== true ) seed._update( seed.modules[depent], { data : { require : true } })
+					if( seed.AMD.modules[depent].data.require !== true ) seed.AMD._update( seed.AMD.modules[depent], { data : { require : true } })
 						
-					return seed._pending(seed.modules[depent]);
+					return seed.AMD._pending(seed.AMD.modules[depent]);
 				}
 				// если такой модуль не был определен вообще 
 				else {
@@ -317,8 +425,8 @@
 	}
 	
 	// AMD. Определение списка библиотек
-	seed._libs = function(config, callback, require) {
-		if (this.config.debug) console.log('%c_libs', 'color: #00f; font-weight: bold', 'определяем конфиг seed');
+	seed.AMD._libs = function(config, callback, require) {
+		if (seed.config.debug) console.log('%c_libs', 'color: #00f; font-weight: bold', 'определяем конфиг seed');
 		
 		return new Promise(function(resolve, reject) {
 			// поочередно определяем переданные в объекте модули
@@ -330,8 +438,8 @@
 					delete data.callback;
 					
 					// если модуль уже определен в системе, обновим его новым данными
-					if( seed.modules[name] ) {
-						seed._update(seed.modules[name], {
+					if( seed.AMD.modules[name] ) {
+						seed.AMD._update(seed.AMD.modules[name], {
 							depents : data.depents,
 							callback : callback,
 							data : seed.extend(data, {plugin : true})
@@ -340,7 +448,7 @@
 					
 					// если модуль не определен, то определим
 					else {
-						seed.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
+						seed.AMD.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
 					}
 				}
 			};
@@ -353,9 +461,9 @@
 	// AMD. Получение библиотеки по url
 	// Принимает модуль и адрес загрузки
 	// Возвращает модуль
-	seed._get = function(module, url) {
+	seed.AMD._get = function(module, url) {
 		if( !module ) return Error('Модуль не передан');
-		if (this.config.debug) console.log('%c_GET', 'color: #00f; font-weight: bold', module.name, module);
+		if (seed.config.debug) console.log('%c_GET', 'color: #00f; font-weight: bold', module.name, module);
 	
 		return new Promise(function(resolve, reject) {
             // URL модуля
@@ -363,13 +471,13 @@
 			
             // Если url модуля есть, то будем его подгружать
             if (url) {
-				seed.fetch(url).then(function(source) {
+				seed.AMD._include(url).then(function(source) {
 					if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
 					// обновим модуль
-					seed._update(module, { source: source });
+					seed.AMD._update(module, { source: source });
 
 					// вызываем _restore метод
-					resolve(seed._callback(module));
+					resolve(seed.AMD._callback(module));
 				}, function(error) {
 					console.error("Ошибка!", error);
 					// модуль не загружен
@@ -379,68 +487,36 @@
 
             // Если url нет
             else {
-				resolve(seed._callback(module));
+				resolve(seed.AMD._callback(module));
             }
         });
 	}
 	
-	// AMD. Загрузка файла по url
-	// Принимает url
-	// Возвращает ответ xhr	
-	seed.fetch = function(url) {
-		// возвращаем новый Promise
-		return new Promise(function(resolve, reject) {
-			// проверим что пришло на выход
-			if( typeof url != 'string' ) {
-				reject(Error("Wrong URL type: ", url));
-				return false;
-			}
-			
-			// создаем get запрос к серверу
-			var xhr = new XMLHttpRequest();
-			xhr.open('GET', url, true);
-			xhr.onload = function() {
-				if (xhr.status == 200) {
-					resolve(xhr.response)
-				} else {
-					reject(Error(xhr.statusText)); // ошибка, отдаем её статус
-				}
-			}
-			
-			// отлавливаем ошибки сети
-			xhr.onerror = function() {
-				reject(Error("Network Error"));
-			};			
-			
-			// Делаем запрос
-			xhr.send();
-		});
-	}
-
 	// AMD. Прокидывание переменных из callback-функцию в зависимые модули
 	// Принимает модуль
 	// Возвращает модуль
-	seed._callback = function(module) {
+	seed.AMD._callback = function(module) {
 		if (seed.config.debug) console.log('   _callback', module.name, module);
 		
 		// сохраним хранилище для текущего модуля
-		var storage = seed._storage(module);
-		storage[module.name] = (seed._exec(module, storage))(storage);
+		var storage = seed.AMD._storage(module);
+		//storage[module.name] = (seed.AMD._exec(module))(storage);
+		storage[module.name] = module.callback.apply(storage);
 		
 		// обновим конфиг модуля
-		return seed._update(module, {values : storage});
+		return seed.AMD._update(module, {values : storage});
 	}
 	
 	// AMD. Возращаем из хранилища все данные по родительским модуялм
 	// Принимает модуль
 	// Возвращает обещание
-	seed._storage = function(module) {
+	seed.AMD._storage = function(module) {
 		if (seed.config.debug) console.log(' _storage', module.name, module.depents);
 		var storage = {};
 		
 		if(module) {
 			module.depents.filter(String).forEach(function(module) {
-				storage = seed.extend(storage, seed.modules[module].values);
+				storage = seed.extend(storage, seed.AMD.modules[module].values);
 			})
 		}
 		
@@ -451,46 +527,49 @@
 	// Принимает исходный код
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
 	// Возвращает анонимную функцию
-	seed._exec = function(module, storage) {
+	seed.AMD._exec = function(module) {
 		if (seed.config.debug) console.log(' _exec', module.name, module.depents);
-		
+
 		var func = (module.callback || '').toString();
 		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		return new Function('args','return (function(args){'+ (module.source || '') + '\n' + callback + '})(args)');
+		return new Function('args','return (function(args) { seed.ready(function() {'+ (module.source || '') + '\n' + callback + '}) })(args)');
 	}
 
 	// AMD. Создает script и добавляет его в шапку
 	// Принимает исходный код
 	// Создает тег script, загрженный код помещается в тег
 	// Возвращает объект DOM
-	seed._include = function(module) {
-		if (seed.config.debug) console.log(' _include', module.name, module.depents);
-		console.log(' _include', module.name, module.depents);
+	seed.AMD._include = function(url, module) {
+		if (seed.config.debug) console.log(' _include', url);
 		
 		return new Promise(function(resolve, reject) {		
 			var n = document.getElementsByTagName("head")[0];
 			var s = document.createElement('script');
-				
+			
 			s.type = 'text/javascript';
-			s.innerHTML = module.source;
+			//s.innerHTML = module.source;
+			s.src = url;
+			
 			if( seed.config.AMD.charset ) s.charset = seed.config.AMD.charset;
 			
 			n.appendChild(s);
 			
-			if (seed.config.debug) console.info('Модуль ' + name + ' загружен');
-			return resolve(seed._callback(module));
+			s.onload = function() {
+				if (seed.config.debug) console.info('Модуль ' + url + ' загружен');
+				resolve();
+			}
 		});
 	}
 	
 	
 	// AMD. Вызов всех определенных модулей
 	/* Инициализируем все модули, которые были определены ранее */
-	seed._init = function() {
+	seed.AMD._init = function() {
 		if (seed.config.debug) console.info('%c_INIT', 'color: #F00; font-weight: bold', 'Запуск общей инициалзиации определенных модулей');
 		
 		return Promise.all(
-			seed.defined.map(function(module) {
-				if( seed.modules[module].data.require === true ) return seed._pending( seed.modules[module] );
+			seed.AMD.defined.map(function(module) {
+				if( seed.AMD.modules[module].data.require === true ) return seed.AMD._pending( seed.AMD.modules[module] );
 			})
 		).then(function(resolve) {
 			if (seed.config.debug) console.info('%c_INIT', 'color: #F00; font-weight: bold', 'Все модули проиницилизированы', resolve);
@@ -500,52 +579,19 @@
 		});
 	}
 	
-	// инициалиация ядра
-	seed.init = function() {
-		this.core = {};
-
-		if (seed.config.debug) console.info('%cINIT', 'background-color: #409f00; font-weight: bold; padding: 2px 10px; color:#fff; display:block; width: 100%');
-		
-		var corelibs = new Promise(function(resolve, reject) {
-			// определяем модуль с основными библиотеками
-			if( seed.config.AMD.libs_path ) {
-				seed.fetch(seed.config.AMD.libs_path).then(function(source) {
-					// создаем функцию для исполнения внешнего в нашей области видимости
-					(seed._exec({source: source}))();
-
-					seed._libs(seed.libs).then(function(callback) {
-						// библиотеки определены
-						resolve();
-					});
-				});
-			}
-			else {
-				// библиотек нет, грузим модули
-				resolve();
-			}
-		});
-		
-		corelibs.then(function(resolve) {
-			seed.STATE = 'ready';
-			seed._init();
-		});
-		
-		return this;
-	}
-
 	// обратная совместимость с seed 1.0
 	/*
 	if (!window.$) {
 		window.$ = {};
 
-		$.define = seed.define;
-		$.require = seed.require;
+		$.define = seed.AMD.define;
+		$.require = seed.AMD.require;
 	}
 	*/
 
 	// ярлыки
-	if (!window.define) window.define = seed.define;
-	if (!window.require) window.require = seed.require;
+	if (!window.define) window.define = seed.AMD.define;
+	if (!window.require) window.require = seed.AMD.require;
 
 	return seed.init();
 })(window, document);

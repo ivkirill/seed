@@ -53,28 +53,36 @@ seed.libs = {
 
 // Общие библиотеки
 	"common.cookie" : {
-		"path" : "/js/jquery/jquery.cookie.js"
+		"path" : "/js/jquery/jquery.cookie.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.easing" : {
-		"path" : "/js/jquery/jquery.easing.1.3.js"
+		"path" : "/js/jquery/jquery.easing.1.3.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.mousewheel" : {
-		"path" : "/js/jquery/jquery.mousewheel.js"
+		"path" : "/js/jquery/jquery.mousewheel.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.map" : {
-		"path" : "/js/jquery/jquery.map.js"
+		"path" : "/js/jquery/jquery.map.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.meta" : {
-		"path" : "/js/jquery/jquery.metadata.js"
+		"path" : "/js/jquery/jquery.metadata.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.tablesorter" : {
-		"path" : "/js/jquery/jquery.tablesorter.2.10.js"
+		"path" : "/js/jquery/jquery.tablesorter.2.10.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.tablednd-2.10" : {
-		"path" : "/js/jquery/jquery.tablednd.js"
+		"path" : "/js/jquery/jquery.tablednd.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.synctranslit" : {
-		"path" : "/js/jquery/jquery.synctranslit.min-utf8.js"
+		"path" : "/js/jquery/jquery.synctranslit.min-utf8.js",
+		"depents": [ seed.config.jquery ]
 	},
 	"common.base64" : {
 		"path" : "/js/base64/base64.js",
@@ -83,7 +91,8 @@ seed.libs = {
 		}
 	},
 	"common.json" : {
-		"path" : "/js/jquery/jquery.json.js"
+		"path" : "/js/jquery/jquery.json.js",
+		"depents": [ seed.config.jquery ]
 	},
 
 // библиотеки jQuery UI

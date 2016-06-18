@@ -11,23 +11,40 @@
 //		'debug' : true
 
 		locale : {
-			'seedTootlip' : {
-				'error' : {
-					'123' : '321'
+			'seedCarousel' : {
+				'interface' : {
+					'next' : 'NEXT'
 				}
 			}
+		},
+		
+		defaults : {
+			lazy : true
 		}
-	})
-
-	require('jquery.2.1.4');
-
-
-	define('test', 'seed.tooltip', function(args) {
-		$('img').seedTooltip();
+	});
+	
+	define('carousel', ['seed.carousel'], function(args) {
+		$('[data-function="data"]').seedCarousel();
+		
+		$('.btn-change').click(function() {
+			$('<div>', {'data-function':'data'}).html('<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5"><img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3" data-seed="tooltip">	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">').prependTo( $('body') );
+		});
 	});
     </script>
+	
 	<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5">
-	<img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3">
+	<img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3" data-seed="tooltip">
 	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">
+	
+	<br>
+
+	<div data-function="data">
+		<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5">
+		<img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3" data-seed="tooltip">
+		<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">
+	</div>
+
+	
+	<button class="btn-change">Добавить элемент</div>
   </body>
 </html>
