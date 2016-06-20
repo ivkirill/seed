@@ -50,6 +50,12 @@ seed.libs = {
 			return jQuery;
 		}
 	},
+	"jquery.3.0.0" : {
+		"path" : "https://code.jquery.com/jquery-3.0.0.js", //"/js/jquery/jquery-3.0.0.min.js",
+		"callback" : function() {
+			return jQuery;
+		}
+	},
 
 // Общие библиотеки
 	"common.cookie" : {
