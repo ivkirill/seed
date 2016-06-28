@@ -45,23 +45,17 @@
 				'current' : window.location.href
 			},
 			'func' : {
-				'ready' : null,
 				'show' : function() { return true; },
 				'hide' : function() { return true; }
 			},
 			'module' : {
 				'main' : null,
 				'func': false
-			},
-			'locale' : {
-				'error' : {
-					'data-name': 'не задано имя',
-					'title': 'не задан title'
-				}
 			}
 		},
 
 		build: function(e) {
+
 			var self = this;
 
 			if( this.$el.find(this.config.selector.handler).length ) {
@@ -112,7 +106,7 @@
 						$('[area-labelledby="'+ $(this).attr('data-dropdown-area') +'"]').removeClass('on').hide();
 					});
 
-					this.$drop.removeClass('off').addClass('on effect effect-drop').css('display','block');
+					this.$drop.removeClass('off').addClass('on effect effect-drop').show();
 					this.$dropdown.removeClass('off').addClass('dropped active on effect');
 
 // callback при отображении контента

@@ -4,6 +4,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
     <title>Seed Index</title>
     <script type="text/javascript" charset="UTF-8" src="seed.js"></script>
+	
+	<link href="/css/seed/2.0/seed.less.css" rel="stylesheet" type="text/css"> 
   </head>
   <body>
     <script>
@@ -16,18 +18,16 @@
 					'next' : 'NEXT'
 				}
 			}
-		},
-		
-		defaults : {
-			lazy : true
 		}
 	});
+	
+	require('seed.tooltip');
 	
 	define('carousel', ['seed.carousel'], function(args) {
 		$('[data-function="data"]').seedCarousel();
 		
 		$('.btn-change').click(function() {
-			$('<div>', {'data-function':'data'}).html('<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5"><img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3" data-seed="tooltip">	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">').prependTo( $('body') );
+			$('<div>', {'data-function':'data'}).html('<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5"><img src="https://plarson.ru/i/logo/css3_70x100.png" width="70" height="100" title="CSS3" data-seed="tooltip">	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">').appendTo( $('body') );
 		});
 	});
     </script>
@@ -37,6 +37,8 @@
 	<img src="https://plarson.ru/i/logo/js5_70x100.png" width="70" height="100" title="JS5">
 	
 	<br>
+	<button class="btn btn-default btn-change">Добавить элемент</button>
+	<br>
 
 	<div data-function="data">
 		<img src="https://plarson.ru/i/logo/html5_70x100.png" width="70" height="100" title="HTML5">
@@ -45,6 +47,5 @@
 	</div>
 
 	
-	<button class="btn-change">Добавить элемент</div>
   </body>
 </html>

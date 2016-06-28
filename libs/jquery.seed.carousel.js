@@ -251,6 +251,7 @@
 
 				if(count == 0) {
 					$block = $('<div>',{'class':'carousel-group carousel-group-'+group, 'data-group':group}).appendTo( self.$box, {'dymanic':false});
+
 					var addwidth = 
 						parseInt( $block.css('padding-left') ) + 
 						parseInt( $block.css('padding-right') ) + 
@@ -258,10 +259,12 @@
 						parseInt( $block.css('margin-right') ) + 
 						parseInt( $block.css('border-left-width') ) + 
 						parseInt( $block.css('border-right-width') );
+
 					var width = addwidth + this.width;
 					self._setWidth(width);
 					group++;
 				}
+
 				$el.appendTo($block, {'dymanic':false});
 				count++;
 				if(count == self.config.group) { count = 0; }
@@ -388,7 +391,7 @@
 									this._getContent(i);	
 								}
 							}
-							else if ( this.active < this.total_pages && self.config.cycle != true ) {
+							else if ( this.active < this.total_pages && this.config.cycle != true ) {
 								this.active = this.$nav.find('i').length;
 								this._step(i);
 							}
@@ -416,6 +419,10 @@
 
 		_step: function(i) {
 			var self = this;
+
+			if(i == 'next') { self.$next.addClass('loading'); }
+			if(i == 'prev') { self.$prev.addClass('loading'); }
+
 
 			if(this.config.progress && this.config.progressbar == 'line') {
 				this.$bar.removeClass('run');
@@ -486,24 +493,24 @@
 				},
 				statusCode : {
 					404 : function() {
-						console.error('plCarousel: Нет такой страницы!');
+						console.error('Carousel: Нет такой страницы!');
 						self.unblock();
 					},
 					503 : function() {
-						console.error('plCarousel: Страница недоступна!');
+						console.error('Carousel: Страница недоступна!');
 						self.unblock();
 					}
 				},
 				success: function(data, textStatus, jqXHR) {
 					if( jqXHR.status == 200 ) {
-						var html = $(data).find(self.config.selector.items);
-						if(html.length) { self._grouping(html)._buttons()._step(step); }
+						var $html = $(data).find(self.config.selector.current || self._$list.selector).find(self.config.selector.items);
+						if($html.length) { self._grouping($html)._buttons()._step(step); }
 						else { self._step(step); }
 						self.unblock();
 					}
 				},
 				error: function() {
-					console.error('plCarousel: Произошла неизвестная ошибка!');
+					console.error('Carousel: Произошла неизвестная ошибка!');
 					self.unblock();
 				}
 			});
@@ -511,8 +518,8 @@
 
 		unblock: function() {
 			this.blocked = false;
-			this.$next.removeClass('loading');
-			this.$prev.removeClass('loading');
+//			this.$next.removeClass('loading');
+//			this.$prev.removeClass('loading');
 		},
 
 		_animate: function() {
@@ -540,6 +547,9 @@
 				( self.config.func.open )(self);
 				if( self.config.debug ) { console.info(self._name+': func.open inited!'); }
 			}
+
+			this.$next.removeClass('loading');
+			this.$prev.removeClass('loading');
 
 			self._start();
 			self.progress = false;

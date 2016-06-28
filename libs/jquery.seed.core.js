@@ -1,6 +1,6 @@
 ﻿/* 
  * Seed Lib Core
- * @version 2.0.28
+ * @version 2.0.29
  * @author Kirill Ivanov
  */
 
@@ -8,38 +8,47 @@
 ;(function ($, seed, window, document, undefined) {
 	'use strict';
 
+	// поддержка 'selector' для jQuery 3+
+	var oldInit = jQuery.fn.init;
+	jQuery.fn.init = function(selector) {
+		var ret = oldInit.apply( this, arguments );
+		ret.selector = ( selector && selector.selector !== undefined ) ? selector.selector : ((typeof selector === "string") ? selector : '');
+		return ret;
+	};
+	jQuery.fn.init.prototype = jQuery.fn;
+
+	
 	// ядро seed lib
 	function core(name, library) {
-		this._name = name;
-		this._label = name.replace('seed','seed.').toLowerCase();
-		this._method = library || $.seed[name];
-
+		
+		// дефолтные настройки библиотек
 		this._defaults = {
 			'debug': false,
-			'dynamic' : false,
-			'lazy' : true,
+			'lazy' : false,
 			'evented' : false,
 			'fullscreen' : false,
-			'lazy' : true,
+			'lazy' : false,
+			'cssclass': {},
 			'selector': {
-				'auto' : null
+				'auto' : null,
+				'evented' : null
 			},
-			'class': {},
 			'event' : {
 				'__on' : null,
-				'__off' : null
+				'__off' : null,
+				'on' : null,
+				'off' : null
 			},
 			'url' : {
 				'current': null,
 				'ajax':null
 			},
 			'func' : {
-				'ready' : null,
-				'callback_item' : null
+				'ready' : null
 			},
 			'module' : {
 				'main' : null,
-				'function' : null
+				'func' : null
 			},
 			'locale' : {
 				'error' : {
@@ -50,22 +59,24 @@
 			'touch' : 'ontouchstart' in document.documentElement
 		};
 		
-		this._stack = 0;
+		this._name = name;
+		this._label = name.replace('seed','seed.').toLowerCase();
+		this._method = library || $.seed[name];
 		this._seedCount = 0;
-		
 		this._init();
 	}
 
 	// прототип ядра seed lib
 	core.fn = core.prototype = {
 		_name: 'seedCore',
+		
 		// логирование клиентских ошибок в JS
 		_log: function(msg, url, line) {
-			msg = 'SEED: '+ msg;
+			msg = 'seed: '+ msg;
 			new Image().src = "/cgi-bin/log.cgi?message=" + decodeURIComponent(msg) + "&url="+ decodeURIComponent(url) + "&line=" + decodeURIComponent(line);
 		},
+
 		// перезапустим библиотеку еще раз, заставим обновлить список this._$list
-		
 		_reinit: function() {
 			console.log('_reinit', arguments);
 			return false;
@@ -121,66 +132,51 @@
 			}
 
 			// добавляем метод к методам jQuery 
-			if (typeof jQuery != 'undefined') {
-				jQuery.fn.requestFullScreen = function() {
-					return this.each(function() {
-						if (fullScreenApi.supportsFullScreen) fullScreenApi.requestFullScreen(this);
-					});
-				};
-				jQuery.fn.cancelFullScreen = function() {
-					return this.each(function() {
-						if (fullScreenApi.supportsFullScreen) fullScreenApi.cancelFullScreen(this);
-					});
-				};
-			}
+			$.fn.requestFullScreen = function() {
+				return this.each(function() {
+					if (fullScreenApi.supportsFullScreen) fullScreenApi.requestFullScreen(this);
+				});
+			};
+			$.fn.cancelFullScreen = function() {
+				return this.each(function() {
+					if (fullScreenApi.supportsFullScreen) fullScreenApi.cancelFullScreen(this);
+				});
+			};
  
 			// экспортируем метод в глобальное пространство
 			window.fullScreenApi = fullScreenApi;
 			return fullScreenApi;
 		},
-		
-		_lazy: function(target, func) {
-			
-			return new Promise(function(resolve, reject) {
-				try {
-					observer.disconnect();
+
+		// парсинг data- атрибутов в объект
+		_dataset: function(el) {
+			var config = {};
+			[].forEach.call(el.attributes, function(attr) {
+				if (/^data-config-/.test(attr.name)) {
+					var key = attr.name.replace('data-config-','');
+					var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
+					if( value === 'false' ) value = false;
+					if( value === 'true' ) value = true;
+					
+					if (/-/.test(key)) {
+						var keys = key.split('-')
+						if( !config[keys[0]] ) config[keys[0]] = {};
+						config[keys[0]][keys[1]] = value;
+					}
+					else {
+						config[key] = value;
+					}
 				}
-				catch(e) {}
-		
-				// создаем экземпляр наблюдателя
-				var observer = new MutationObserver(function(mutations) { 
-					mutations.forEach(function(mutation) {
-						if (mutation.type === 'childList') {
-							var nodes = $(mutation.addedNodes).filter(target.selector);
-							if(nodes.length) {
-								nodes.selector = target.selector;
-								observer.disconnect();
-								resolve(nodes);
-							}
-						}
-					});
-				});
-				
-				// настраиваем наблюдатель, указываем что на интересует только добавление дочерних элементов
-				var config = {
-					childList: true,
-					subtree: true,
-					attributes: false,
-					characterData: false
-				}
-				 
-				// передаем элемент и настройки в наблюдатель
-				observer.observe(document.body, config);
-				
 			});
-		},		
+			
+			return config;
+		},
 		
 		_init: function() {
 			var core = this;
-//			this.defaults = {};
 			
 			// конструктор плагина
-			function Seed(element, data /*list, dynamic, options, e */) {
+			function Seed(element, data) {
 				if( !element ) return false;
 				
 				var self = this;
@@ -224,9 +220,8 @@
 					
 					// создаем обсервер для ленивого запуска библиотеки при необходимости
 					if( this.config.lazy && this._$list.length == this._index ) {
-						this._lazy = core.__proto__._lazy;
-						this.lazy = this._lazy(this._$list).then(function(nodes) {
-							nodes[core._name]();
+						this._$list.seedLazy(function(nodes) {
+							$(nodes)[core._name]();
 						});
 					}
 
@@ -236,11 +231,12 @@
 				// создает объект конфига
 				_config: function(options) {
 					/*
-						сначала мы получаем объект конфига, который определен в ядре - core._defaults
-						далее мы читаем конфиг конкретной библиотеки - this.defaults
-						после читаем определенные глобальные опции для всех библиотек - seed.config.defaults
-						после читаем определенные глобальные локализации для всех библиотек - seed.config.locale
-						и в конце читаем локальные опции вызова библиотеки
+						1. читаем объект конфига, который определен в ядре - core._defaults
+						2. читаем конфиг конкретной библиотеки - this.defaults
+						3. читаем определенные глобальные опции для всех библиотек - seed.config.defaults
+						4. читаем определенные глобальные локализации для всех библиотек - seed.config.locale
+						5. читаем локальные опции вызова библиотеки
+						6. читаем data-config конкретного элемента
 					*/
 					
 					/*
@@ -263,6 +259,11 @@
 					
 					// добавляем локальные опции вызова
 					this.config = $.extend({}, this.config, options);
+					
+					// добавляем data-config элемента
+					this.config = $.extend({}, this.config, this._core._dataset( this.el ));
+					
+					this.config.selector.current = this._$list.selector;
 
 					// проверяем поддержку сторонних API
 					this.config.fullscreen = this.$el.attr('data-fullscreen') || this.config.fullscreen;
@@ -333,12 +334,13 @@
 				// получим дефолтные параметры и расширим их переданными при запуски библиотеки
 				var defaults = Seed.fn.defaults;
 				var evented = (typeof setting == 'object') ? ( (setting.evented === false || setting.evented === true) ? setting.evented : Seed.fn.defaults.evented) : Seed.fn.defaults.evented;
-				var uniq = ('.'+core._seedCount++);
+				var uniq = '.'+ core._seedCount*1 + 1;
 
 				if( seed.isObject(setting) ) defaults = $.extend({}, defaults, setting);
 				
 				// инициализация плагина
 				var init = function(e, dynamic) {
+					
 					// если инициализация вызвана через событие, то проверим, чтобы делегирующий и целевой элемент не совпадали
 					if( e.currentTarget ) {
 						if( e.currentTarget === e.delegateTarget ) {
@@ -404,23 +406,27 @@
 			
 			seed[core._name] = Plugin;
 
-// noConflict для библиотеки
+			// noConflict для библиотеки
 			$.fn[core._name].noConflict = function() {
 				$.fn[core._name] = noConflict;
 				return this;
 			}
 
-// автозапуск библиотеки для элементов определенных по умолчанию
+			// автозапуск библиотеки для элементов определенных по умолчанию
 			seed.ready(function() {
-// автозапуск элементов обработки по DOM ready
-				if(Seed.fn.defaults.selector.auto) { $(Seed.fn.defaults.selector.auto)[core._name]({'evented':false}); }
+				// автозапуск элементов обработки по DOM ready
+				if(Seed.fn.defaults.selector.auto) $(Seed.fn.defaults.selector.auto)[core._name]({'evented':false});
 
-// автозапуск элементов обработки по евентами определнных в библиотеки по умолчанию
-				if(Seed.fn.defaults.selector.evented) { $(Seed.fn.defaults.selector.evented)[core._name]({'evented':true}); }
+				// автозапуск элементов обработки по евентами определнных в библиотеки по умолчанию
+				if(Seed.fn.defaults.selector.evented) $(Seed.fn.defaults.selector.evented)[core._name]({'evented':true});
 			});
 		}
 	}
 
 	seed.core = $.fn.seedCore = core;
+	$.fn.seedLazy = function() {
+		seed.lazy(this.selector, arguments[0], arguments[1]); // экспортируем метод в jQuery		
+	}
+	
 	return $;
 })(jQuery, seed, window, document);

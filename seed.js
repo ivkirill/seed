@@ -30,7 +30,7 @@
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
-			'libs_path': '/js/seed/seed.config.js' // URL для конфига плагинов по умолчанию
+			'libs_path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
 		},
 		'locale': {}, // локализация библиотек ядра
 		'defaults' : {}
@@ -112,31 +112,78 @@
 			// Делаем запрос
 			xhr.send();
 		});
-	}	
+	}
+	
+	// функционал ленивой инициализации
+	seed.lazy = function(selector, func, once) {
+		var self = this;
+		var once = once || false;
+		
+		// определяе selector для DOM
+		if( typeof selector == 'string' ) selector = selector;
+		else if ( seed.isObject(selector) && typeof selector.selector ) selector = selector.selector;
+
+		console.log('this', this);
+		console.log('selector', selector);
+		console.log('func', func);
+		console.log('once', once);
+		
+		// если не было передано selector или функции то отключаем функционал
+		if( !seed.isFunction(func) || !selector ) return false;
+		
+		// настраиваем наблюдатель, указываем что на интересует только добавление дочерних элементов
+		var config = { childList: true, subtree: true, attributes: false, characterData: false, selector: selector }
+		
+		// создаем экземпляр наблюдателя
+		var observer = new MutationObserver(function(mutations) { 
+			mutations.forEach(function(mutation) {
+				if (mutation.type === 'childList') {
+					//var nodes = $(mutation.addedNodes).filter(selector);
+					
+					var nodes = seed.filter.call(mutation.addedNodes, function(node) {
+						return !!node.parentNode.querySelectorAll(selector).length;
+					});
+					
+					console.log('MUTATE', nodes);
+					
+					if(nodes.length) {
+						// отключаем наблюдатель
+						observer.disconnect();
+						// вызываем переданную функцию на исполнение
+						func.call(seed, nodes);
+						
+						if( !once ) observer.observe(document.body, config);
+						// возвращает обещание
+						//resolve(nodes);
+					}
+				}
+			});
+		});
+	 
+		// передаем элемент и настройки в наблюдатель
+		observer.observe(document.body, config);
+		return observer;
+	};
+	
+	// Фильтр для Array Nodes
+	seed.filter = Array.prototype.filter;
 
 	// Расширение фунционала метода
 	seed.hook = function(name, func, obj) {
-		if( !obj ) { obj = this; }
+		if( !obj ) obj = this;
 
-		var title = ( func.event ) ? name+'_'+func.event : name;
-		// console.log('hook',$.fn[base._name], obj, name, func, title);
+		var title = ( func.event ) ? name + '_' + func.event : name;
 
 		// сохраняем метод 
 		$.fn[base._name][title] = obj[name] || function() { return this; };
 
-		//console.log( $.fn[base._name][title], base._name, title );
-
 		// заменяем метод на новый
 		obj[name] = function() {
-			if( $.isFunction(func.before) ) {
-				(func.before)(this);
-			}
+			if( seed.isFunction(func.before) ) (func.before)(this);
 			
 			var returned = $.fn[base._name][title].apply(this, arguments);
 			
-			if( $.isFunction(func.after) ) {
-				(func.after)(returned);
-			}
+			if( seed.isFunction(func.after) ) (func.after)(returned);
 			
 			return returned;
 		};
@@ -406,19 +453,27 @@
 
 		// создаем обещаения для всего списка зависимостей модуля
 		return Promise.all(
-			module.depents.filter(String).map(function(depent) {
-				if (seed.AMD.modules[depent]) {
-					if (seed.config.debug) console.log(' Зависимость модуля', module.name + '. Модуль', depent, 'необходим для загрузки');
-				
-					// обновим модуль зависимости, передав новый конфиг если требуется
-					if( seed.AMD.modules[depent].data.require !== true ) seed.AMD._update( seed.AMD.modules[depent], { data : { require : true } })
+			module.depents.map(function(depent) {
+				if( typeof depent === 'string' ) {
+					if (seed.AMD.modules[depent]) {
+						if (seed.config.debug) console.log(' Зависимость модуля', module.name + '. Модуль', depent, 'необходим для загрузки');
+
+						// обновим модуль зависимости, передав новый конфиг если требуется
+						if( seed.AMD.modules[depent].data.require !== true ) seed.AMD._update( seed.AMD.modules[depent], { data : { require : true } })
 						
-					return seed.AMD._pending(seed.AMD.modules[depent]);
+						return seed.AMD._pending(seed.AMD.modules[depent]);
+					}
+					// если такой модуль не был определен вообще 
+					else {
+						console.error('Проверьте зависимость от модуля', depent, '. Такой модуль не был определен в системе!');
+						return Promise.reject();
+					}
 				}
-				// если такой модуль не был определен вообще 
+				else if(depent) {
+					return Promise.resolve();
+				}
 				else {
-					console.error('Проверьте зависимость от модуля', depent, '. Такой модуль не был определен в системе!');
-					return Promise.reject();					
+					return Promise.reject();
 				}
 			})
 		);
@@ -515,7 +570,9 @@
 		var storage = {};
 		
 		if(module) {
-			module.depents.filter(String).forEach(function(module) {
+			module.depents.filter(function(value) {
+				return (typeof value === 'string');
+			}).forEach(function(module) {
 				storage = seed.extend(storage, seed.AMD.modules[module].values);
 			})
 		}
