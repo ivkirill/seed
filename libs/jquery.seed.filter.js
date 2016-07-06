@@ -145,7 +145,7 @@
 		bind: function() {
 			var self = this;
 
-			this.$el.on('click touchend', 'input[type="checkbox"]:not(.independent)', function() {
+			this.$el.on('click touchend', 'input[type="checkbox"]:not(.independent, [readonly])', function() {
 				var $input = $(this);
 				( !$input.attr('checked') ) ? $input.attr('checked', 'checked') : $input.removeAttr('checked');
 				self.update();
@@ -153,7 +153,7 @@
 			});
 
 // обрабатываем элементы type="radio"
-			this.$el.on('click touchend', 'input[type="radio"]:not(.independent)', function() {
+			this.$el.on('click touchend', 'input[type="radio"]:not(.independent, [readonly])', function() {
 				self.update();
 //				return false;
 			});
@@ -213,15 +213,17 @@
 				var areas = self.$el.find('[aria-expanded]');
 
 				if( areas.attr('aria-expanded') == 'true' ) {
-					areas.slideUp(300);
+					areas.slideUp(300, function() {
+	                                	$(this).addClass('hide');
+					});
 					areas.attr('aria-expanded','false');
-					$(this).addClass('closed');
+					$(this).addClass('closed').removeClass('active');
 					
 				}
 				else {
-					areas.slideDown(300);
+					areas.removeClass('hide').slideDown(300);
 					areas.attr('aria-expanded','true');
-					$(this).removeClass('closed');
+					$(this).removeClass('closed').addClass('active');
 				}
 			});
 
@@ -325,6 +327,18 @@
 			}
 		},
 
+		overlay: function(key) {
+			if( key === true || key === 'undefined' ) {
+				this.$overlay = ( !$('#overlay-filter').length ) ? $('<div>',{'id':'overlay-filter', 'class':'seed-overlay'}).html('<div class="loader"></div><div class="loader-text">'+this.config.locale.interface.processing+'</div>').appendTo( $('body'), {'dymanic':false}) : $('#overlay-filter:first').show(); 
+			}
+			else if( key === false ) {
+				try {
+					this.$overlay.remove();
+				}
+				catch(e) {}
+			}
+		},
+
 		submit: function() {
 		        var self = this;
 			if (this.blocked) { return false; }
@@ -337,10 +351,12 @@
 
 			if( this.config.func.preserialize ) { (this.config.func.preserialize)(self); }
 
+			this.readonly = this.$el.find(':input[readonly]').attr('disabled', 'disabled');
+
 			this.query = this.$el.serialize().replace(/[a-z0-9\._]+=&/g,'').replace(/[a-z0-9\._]+=$/,'').replace(/&$/,'').replace(/(\&re.+?=)/g,'&$1').replace(/\&\s/g,'&').replace(/\s\&/g,'&');
 //создаем оверлэй                                                                                                                          
-			this.$overlay = ( !$('#overlay-filter').length ) ? $('<div>',{'id':'overlay-filter', 'class':'seed-overlay'}).html('<div class="loader"></div><div class="loader-text">'+this.config.locale.interface.processing+'</div>').appendTo( $('body'), {'dymanic':false}) : $('#overlay-filter:first').show(); 
-
+			this.overlay(true);
+			
 			this.pagequery = (/\?/.test(window.location.search) && /\/first/.test(window.location.search) ) ? ( window.location.search.replace(/.*first([a-zA-Z]+).*/,'first$1'+'=0')) : (this.config.url.current.replace(/\?.*/,'') + '?first'+this.config.module.func+'=0');
 			this.submitUrl = this.pagequery+'&'+this.query;
 
@@ -387,8 +403,6 @@
 							var $block = self.$answer.find(self.config.selector.list);
 							self.total = self.$answer.find(self.config.selector.list).data('total') || self.$answer.find(self.config.selector.auto).data('total') || self.total;
 
-console.log( self, $block  )
-
 							if(self.seedPage) { $(self.config.selector.list).filter(':first').seedPage('destroy'); }
 
 							$(self.config.selector.list).replaceWith($block);
@@ -430,8 +444,10 @@ console.log( self, $block  )
 
 // разброликровка функционала
 		unblock: function() {
+			this.readonly.removeAttr('disabled');
+
 			this.blocked = false;
-			this.$overlay.remove();
+			this.overlay(false);
 		},
 
 // обрабатываем пустой ответ фильтра

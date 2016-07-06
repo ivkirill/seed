@@ -287,6 +287,11 @@
 			console.error('Не задано имя для модуля!');
 			return false;
 		}
+		//Если первый аргумент является зарезервированным
+		else if (typeof arguments[0] === 'string' && arguments[0] == 'filter') {
+			console.error('Слово '+ arguments[0] +' зарезервировано, используйте другое имя для модуля!');
+			return false;
+		}
 		else {
 			// создаем объект конфигурации модуля
 			var config = {};
@@ -305,7 +310,7 @@
 				else if ( seed.isFunction(argument) ) config.callback = argument;
 
 				// если аргумент является обьектом, то значит это обьект дополнительных данных модуля
-				else if ( seed.isObject(argument) /* typeof value === 'object' пропустит null */ ) config.data = argument;
+				else if ( seed.isObject(argument) ) config.data = argument;
 			}
 
 			// если аргументы не нашли, то поставим их значение по умолчанию равным false
@@ -333,7 +338,7 @@
 				values: {},
 				source : null
 			});
-			
+
 			// добавляем имя модуля в массив определенных
 			seed.AMD.defined.push(module.name);
 			module = seed.AMD._update(module, config);
@@ -354,6 +359,7 @@
 			
 		// если переданы зависимости, до добавим их к текущим
 		if ( seed.isArray(config.depents) ) module.depents = seed.unique( module.depents.concat(config.depents) );
+
 		
 		// если передана callback-функция, то обновим её
 		if ( seed.isFunction(config.callback) ) module.callback = module.callback;
@@ -526,19 +532,19 @@
 			
             // Если url модуля есть, то будем его подгружать
             if (url) {
-				seed.AMD._include(url).then(function(source) {
-					if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
-					// обновим модуль
-					seed.AMD._update(module, { source: source });
+			seed.AMD._include(url).then(function(source) {
+				if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
+				// обновим модуль
+				seed.AMD._update(module, { source: source });
 
-					// вызываем _restore метод
-					resolve(seed.AMD._callback(module));
-				}, function(error) {
-					console.error("Ошибка!", error);
-					// модуль не загружен
-					reject(error, module);
-				});
-            }
+				// вызываем _restore метод
+				resolve(seed.AMD._callback(module));
+			}, function(error) {
+				console.error("Ошибка!", error);
+				// модуль не загружен
+				reject(error, module);
+			});
+	    }
 
             // Если url нет
             else {
@@ -555,8 +561,9 @@
 		
 		// сохраним хранилище для текущего модуля
 		var storage = seed.AMD._storage(module);
-		//storage[module.name] = (seed.AMD._exec(module))(storage);
-		storage[module.name] = module.callback.apply(storage);
+		var storage_array = Object.keys(storage).map(function (key) {return storage[key]});
+
+		storage[module.name] = module.callback.apply(storage, storage_array);
 		
 		// обновим конфиг модуля
 		return seed.AMD._update(module, {values : storage});

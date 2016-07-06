@@ -84,7 +84,6 @@
 
 		build: function() {
 			var self = this;
-
 			this.config.module.main = this.config.module.main || this.$el.attr('data-module') || this._error(this.config.module.main, 'module.main');
 			this.config.module.func = this.config.module.func || this.$el.attr('data-function') || this.$el.attr('data-func') || this._error(this.config.module.func, 'module.func');
 
@@ -94,7 +93,7 @@
 			this.config.preload = this.$el.attr('data-preload') || this.config.preload;
 			this.config.delta = this.$el.attr('data-delta') || this.config.delta;
 			this.config.url.current = this.$el.attr('data-url') || this.config.url.current;
-			this.config.total = this.$el.attr('data-total') || this.config.total || this._error(this.config.total, 'total'); // количество элементов всего
+			this.config.total = this.config.total || this.$el.attr('data-total') || this.config.total || this._error(this.config.total, 'total'); // количество элементов всего
 
 			if( this.config.debug ) { console.log( this ); }
 
@@ -137,6 +136,8 @@
 
 // создаем необходимые переменные
 		create: function() {
+			if( this.config.cancel === true ) return false;
+
 			$(this.config.selector.pages).hide();
 
 			this.page_total = Math.ceil(this.config.total / this.config.quant);

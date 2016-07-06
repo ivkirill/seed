@@ -107,31 +107,40 @@ seed.libs = {
 
 // библиотеки jQuery UI
 	"ui.dialog" : {
-		"path" : "/js/jquery/ui/jquery.ui.dialog.js"
+		"path" : "/js/jquery/ui/jquery.ui.dialog.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker.js"
+		"path" : "/js/jquery/ui/jquery.ui.datepicker.1.11.4.js.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker-ru" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker-ru-utf.js"
+		"path" : "/js/jquery/ui/jquery.ui.datepicker-ru-utf.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker-extension" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker-extension.js"
+		"path" : "/js/jquery/ui/jquery.ui.datepicker-extension.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.timepicker" : {
-		"path" : "/js/jquery/ui/jquery.ui.timepicker.js"
+		"path" : "/js/jquery/ui/jquery.ui.timepicker.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.timepicker-ru" : {
-		"path" : "/js/jquery/ui/jquery.ui.timepicker-ru.js"
+		"path" : "/js/jquery/ui/jquery.ui.timepicker-ru.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.mouse" : {
-		"path" : "/js/jquery/ui/jquery.ui.mouse.js"
+		"path" : "/js/jquery/ui/jquery.ui.mouse.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.draggable" : {
-		"path" : "/js/jquery/ui/jquery.ui.draggable.1.11.4.min.js"
+		"path" : "/js/jquery/ui/jquery.ui.draggable.1.11.4.min.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.slider" : {
-		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js.js"
+		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js.js",
+		"depents": [seed.config.jquery]
 	},
 
 // библиотеки html5
@@ -152,6 +161,14 @@ seed.libs = {
 // библиотеки High Charts
 	"high.charts" : {
 		"path" : "/js/highstock/highcharts.4.1.9.js"
+	},
+
+// Яндекс карты
+	"yandex.maps" : {
+		"path" : "https://api-maps.yandex.ru/2.1/?lang=ru_RU",
+		"callback" : function() {
+			return ymaps;
+		}
 	},
 
 // библиотеки seed

@@ -308,6 +308,10 @@
 					console.error(this._name+' error: '+this.config.locale.error[value], value);
 				},
 
+				reinit: function() {
+					return this;
+				},
+
 				// функционал создания декоратора для метода
 				hook: function() {
 					seed.hook.apply(this, arguments);

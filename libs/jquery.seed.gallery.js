@@ -399,7 +399,7 @@
 				if(callback) { (callback)() }
 			}
 			else if( img.type == 'img' ) {
-				$('<img>').attr('src', self.gallery[self.group][self.current].src).load(function() {
+				$('<img>').attr('src', self.gallery[self.group][self.current].src).on('load', function() {
 					self.gallery[self.group][self.current].width = parseInt(this.naturalWidth);
 					self.gallery[self.group][self.current].height = parseInt(this.naturalHeight);
 					self._setSizes();

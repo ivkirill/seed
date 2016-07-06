@@ -163,7 +163,7 @@
 			this.params = {
 				'price1' : this.config.data.price1 || this.$el.attr('data-price'),
 				'price2' : this.config.data.price2 || this.$el.attr('data-price2'),
-				'amount1' : this.config.data.amount1 || this.$el.parent().parent().find('input[name="amount"]:first').val() || this.$el.attr('data-amount') || 1,
+				'amount1' : this.config.data.amount1 || this.$el.parent().parent().find('input[name="amount"]:first, input[name="number"]:first').val() || this.$el.attr('data-amount') || 1,
 				'amount2' : this.config.data.amount2 || this.$el.attr('data-amount2'),
 				'synopsis' : this.config.data.synopsis || this.$el.attr('data-synopsis'),
 				'image' : this.config.data.image || this.$el.attr('data-image'),
