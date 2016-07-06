@@ -1,5 +1,5 @@
 /* 
-* seed Config
+* seed Config Libs
 * @version 2.0.0
 * @author Kirill Ivanov
 */
@@ -50,31 +50,49 @@ seed.libs = {
 			return jQuery;
 		}
 	},
+	"jquery.3.0.0" : {
+		"path" : "/js/jquery/jquery-3.0.0.min.js",
+		"callback" : function() {
+			return jQuery;
+		}
+	},
 
 // Общие библиотеки
 	"common.cookie" : {
-		"path" : "/js/jquery/jquery.cookie.js"
+		"path" : "/js/jquery/jquery.cookie.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.easing" : {
-		"path" : "/js/jquery/jquery.easing.1.3.js"
+		"path" : "/js/jquery/jquery.easing.1.3.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.mousewheel" : {
-		"path" : "/js/jquery/jquery.mousewheel.js"
+		"path" : "/js/jquery/jquery.mousewheel.js",
+		"depents": [seed.config.jquery]
+	},
+	"common.scrollbar" : {
+		"path" : "/js/jquery/jquery.mCustomScrollbar.min.js",
+		"depents": [seed.config.jquery, 'common.mousewheel']
 	},
 	"common.map" : {
-		"path" : "/js/jquery/jquery.map.js"
+		"path" : "/js/jquery/jquery.map.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.meta" : {
-		"path" : "/js/jquery/jquery.metadata.js"
+		"path" : "/js/jquery/jquery.metadata.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.tablesorter" : {
-		"path" : "/js/jquery/jquery.tablesorter.2.10.js"
+		"path" : "/js/jquery/jquery.tablesorter.2.10.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.tablednd-2.10" : {
-		"path" : "/js/jquery/jquery.tablednd.js"
+		"path" : "/js/jquery/jquery.tablednd.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.synctranslit" : {
-		"path" : "/js/jquery/jquery.synctranslit.min-utf8.js"
+		"path" : "/js/jquery/jquery.synctranslit.min-utf8.js",
+		"depents": [seed.config.jquery]
 	},
 	"common.base64" : {
 		"path" : "/js/base64/base64.js",
@@ -83,36 +101,46 @@ seed.libs = {
 		}
 	},
 	"common.json" : {
-		"path" : "/js/jquery/jquery.json.js"
+		"path" : "/js/jquery/jquery.json.js",
+		"depents": [seed.config.jquery]
 	},
 
 // библиотеки jQuery UI
 	"ui.dialog" : {
-		"path" : "/js/jquery/ui/jquery.ui.dialog.js"
+		"path" : "/js/jquery/ui/jquery.ui.dialog.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker.js"
+		"path" : "/js/jquery/ui/jquery.ui.datepicker.1.11.4.js.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker-ru" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker-ru-utf.js"
+		"path" : "/js/jquery/ui/jquery.ui.datepicker-ru-utf.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker-extension" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker-extension.js"
+		"path" : "/js/jquery/ui/jquery.ui.datepicker-extension.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.timepicker" : {
-		"path" : "/js/jquery/ui/jquery.ui.timepicker.js"
+		"path" : "/js/jquery/ui/jquery.ui.timepicker.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.timepicker-ru" : {
-		"path" : "/js/jquery/ui/jquery.ui.timepicker-ru.js"
+		"path" : "/js/jquery/ui/jquery.ui.timepicker-ru.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.mouse" : {
-		"path" : "/js/jquery/ui/jquery.ui.mouse.js"
+		"path" : "/js/jquery/ui/jquery.ui.mouse.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.draggable" : {
-		"path" : "/js/jquery/ui/jquery.ui.draggable.1.11.4.min.js"
+		"path" : "/js/jquery/ui/jquery.ui.draggable.1.11.4.min.js",
+		"depents": [seed.config.jquery]
 	},
 	"ui.slider" : {
-		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js.js"
+		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js.js",
+		"depents": [seed.config.jquery]
 	},
 
 // библиотеки html5
@@ -135,10 +163,18 @@ seed.libs = {
 		"path" : "/js/highstock/highcharts.4.1.9.js"
 	},
 
+// Яндекс карты
+	"yandex.maps" : {
+		"path" : "https://api-maps.yandex.ru/2.1/?lang=ru_RU",
+		"callback" : function() {
+			return ymaps;
+		}
+	},
+
 // библиотеки seed
 	"seed.core" : {
 		"path" : "/js/seed/libs/jquery.seed.core.js",
-		"depents": [ seed.config.jquery ]
+		"depents": [seed.config.jquery]
 	},
 	"seed.buy" : {
 		"path" : "/js/seed/libs/jquery.seed.buy.js",

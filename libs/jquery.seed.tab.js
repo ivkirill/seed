@@ -56,7 +56,6 @@
 
 			this.config.hash = window.location.hash.replace('#','');
 
-
 			this.hash = this._getAttr('data-name');
 			this.title  = this._getAttr('data-caption') || this._getAttr('title') || '';
 			this.group = this.config.group || this._getAttr('group') || 'default';
@@ -94,7 +93,7 @@
 					this.$holder_tabs = $(this.config.cssclass.holder_tabs+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$holder_tabs = $('<div>',{'class': this.config.cssclass.holder_tabs, 'data-group':this.group, 'role':'tablist'}).insertBefore(this.$el, {'dynamic':false});
+					this.$holder_tabs = $('<div>', {'class': this.config.cssclass.holder_tabs, 'data-group':this.group, 'role':'tablist'}).insertBefore(this.$el, {'dynamic':false});
 				}
 			}
 
@@ -142,15 +141,15 @@
 		bind: function() {
 			var self = this;
 
-//console.log( self.config.func)
-
 			this.$caption.on('click touchend', function(e) {
-				if( self.$caption.hasClass('active') ) { return false; }
+				if( self.$caption.hasClass('active') ) {
+					return true;
+				}
 
 				$('[data-seed="tooltip-helper"]').remove();
 
-				$('.content-tab[data-group="'+self.group+'"]').removeClass('active').addClass('hidden').attr('aria-expanded', false);
-				self.$el.addClass('active').removeClass('hidden').attr('aria-expanded',true);
+				$('.content-tab[data-group="'+self.group+'"]').removeClass('active').addClass('hidden hide').attr('aria-expanded', false);
+				self.$el.addClass('active').removeClass('hidden hide').attr('aria-expanded',true);
 				if( $.isFunction(self.config.func.open) ) {
 					( self.config.func.open )(self);
 				}
@@ -165,15 +164,15 @@
 			});
 
 			if( !this.$el.hasClass('active') ) {
-				this.$el.css('display','hide').addClass('hidden');
+				this.$el.css('display','hide').addClass('hidden hide');
 			}
 
 			if( this.$el.hasClass('active') ) {
-				$('.content-tab[data-name="'+this.hash+'"]').css('display','block').removeClass('hidden');
+				$('.content-tab[data-name="'+this.hash+'"]').css('display','block').removeClass('hidden hide');
 				this.$caption.addClass('active');
 			}
 			else if( !this.config.hash || !this.$menu.find('.title[data-name="'+ this.config.hash +'"]').length  ) {
-				$('.content-tab[data-name="'+this.$menu.find('.title:first').attr('data-name')+'"]').css('display','block').removeClass('hidden');
+				$('.content-tab[data-name="'+this.$menu.find('.title:first').attr('data-name')+'"]').css('display','block').removeClass('hidden hide');
 				this.$menu.find('.title:first').addClass('active');
 			}
 			if( this.config.hash == this.hash && !this.$el.hasClass('active') ) {

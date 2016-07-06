@@ -178,12 +178,12 @@
 
 // ядро 
 
-	function core(name) {
+	function core(name, module) {
 		var base = this;
 
 		this._name = name;
 		this._data_seed = name.replace('seed','seed.').toLowerCase();
-		this._method = $.seed[name];
+		this._method = module || $.seed[name];
 
 		this._stack = 0;
 		this._seedCount = 0;
