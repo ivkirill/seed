@@ -95,14 +95,15 @@
 				this.active = this.$dropdown.hasClass('dropped active');
 
 				if( !this.active ) {
-					this._$list.filter('[data-dropdown-group="'+self.config.group+'"]').removeClass('dropped active');
+					//this._$list.filter('[data-dropdown-group="'+self.config.group+'"]').removeClass('dropped active');
+					$('[data-dropdown-group="'+self.config.group+'"]').removeClass('dropped active');
 				
-					this._$list.filter('[data-dropdown-group="'+self.config.group+'"]').each(function() {
+					$('[data-dropdown-group="'+self.config.group+'"]').each(function() {
 						var $drop = ( $(this).find(self.config.selector.drop).length ) ? $(this).find(self.config.selector.drop) : $(this).next(':first');
 						$drop.hide();
 					});
 
-					this._$list.filter('[data-dropdown-group="'+self.config.group+'"]').not(this.$el).each(function() {
+					$('[data-dropdown-group="'+self.config.group+'"]').not(this.$el).each(function() {
 						$('[area-labelledby="'+ $(this).attr('data-dropdown-area') +'"]').removeClass('on').hide();
 					});
 

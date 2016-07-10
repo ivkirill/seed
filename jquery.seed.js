@@ -1,5 +1,5 @@
 /* 
-* Seed Core
+* Ceed Core
 * @version 1.1.7
 * @author Kirill Ivanov
 * create: 2015.06.12
@@ -1069,14 +1069,7 @@
 			});
 			return check;
 		},
-/*
-		_unique: function(array) {
-			var o = {}, i, l = array.length, r = [];
-			for(i=0; i<l;i+=1) o[this[i]] = this[i];
-			for(i in o) r.push(o[i]);
-			return r;
-		},
-*/
+
 		settings: function(options) {
 			$.extend({}, this.config, options);
 			return this;

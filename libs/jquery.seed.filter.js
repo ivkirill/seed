@@ -191,11 +191,16 @@
 
 
 			if(this.config.module.func == 'product') {
-				this.$el.on('keyup', 'input[name="product_chr_string"]', function(e) {
+				this.$el.on('keyup.seed.filter', 'input[name="product_chr_string"]', function(e) {
 					if(e.keyCode == 13) self.update();
 				});
+
 				this.$el.on('input', 'input[name="product_chr_string"]', function(e) {
 					$(this).val( $(this).val().trim() );
+				});
+
+				this.$el.on('enter.seed.select', 'input[name="product_chr_string"]', function(e) {
+					self.update();
 				});
 			}
 
@@ -401,7 +406,8 @@
 							self.$answer = $('<div>').html(data);
 
 							var $block = self.$answer.find(self.config.selector.list);
-							self.total = self.$answer.find(self.config.selector.list).data('total') || self.$answer.find(self.config.selector.auto).data('total') || self.total;
+							self.total = self.$answer.find(self.config.selector.list).attr('data-total') || self.$answer.find(self.config.selector.auto).attr('data-total') || self.total;
+
 
 							if(self.seedPage) { $(self.config.selector.list).filter(':first').seedPage('destroy'); }
 
@@ -410,7 +416,7 @@
 							if(self.seedPage) { $(self.config.selector.list).seedPage( $.extend({}, self.seedPage, {url:{current:window.location.href}}) ) }
 
 	        	
-							if( self.config.dependence ) { self.dependence(); }
+							if( self.config.dependence == 'true' || self.config.dependence === true) { self.dependence(); }
 
 							if( self.config.func.success ) {
 								(self.config.func.success)(self);
@@ -459,8 +465,11 @@
 
 // функционал зависимости блоков фильтра
 		dependence: function() {
-			var $filter = this.$answer.find( this._$list.selector );
-			this.$el.html( $filter.html() );
+			var $dependences = this.$answer.find( this.config.selector.dependence );
+
+			this.$el.parent().find(this.config.selector.dependence).each(function(i) {
+				$(this).html( $($dependences[i]).html() );
+			});
 
 // хак для динамической обработки библиотекой select
 /*
