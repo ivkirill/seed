@@ -1,9 +1,27 @@
 /* 
  * seed AMD Core
- * @version 2.0.27
+ * @version 2.0.33
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
+
+		// Polyfill for "matches"
+		// For browsers that do not support Element.matches() or Element.matchesSelector(), but carry support for document.querySelectorAll()
+		if (!Element.prototype.matches) {
+			Element.prototype.matches = 
+			Element.prototype.matchesSelector || 
+			Element.prototype.mozMatchesSelector ||
+			Element.prototype.msMatchesSelector || 
+			Element.prototype.oMatchesSelector || 
+			Element.prototype.webkitMatchesSelector ||
+			function(s) {
+				var matches = (this.document || this.ownerDocument).querySelectorAll(s), i = matches.length;
+				while (--i >= 0 && matches.item(i) !== this) {}
+				return i > -1;            
+			};
+		}
+
+
 (function(window, document, undefined) {
 	'use strict';
 
@@ -26,7 +44,11 @@
 	seed.config = {
 		'debug' : false,
 		'performance' : false,
+		'lazy' : true,
 		'jquery' : 'jquery.2.1.4',
+		'selector' : {
+			'lazy' : {}
+		},
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
@@ -114,55 +136,36 @@
 		});
 	}
 	
-	// функционал ленивой инициализации
-	seed.lazy = function(selector, func, once) {
-		var self = this;
-		var once = once || false;
-		
+	seed.lazy = function(func) {
 		// определяе selector для DOM
-		if( typeof selector == 'string' ) selector = selector;
-		else if ( seed.isObject(selector) && typeof selector.selector ) selector = selector.selector;
+		var selector = ( typeof this.selector == 'string' ) ? this.selector : ( ( seed.isObject(this.selector) && typeof this.selector.selector ) ? this.selector.selector : false );
 
-		console.log('this', this);
-		console.log('selector', selector);
-		console.log('func', func);
-		console.log('once', once);
-		
 		// если не было передано selector или функции то отключаем функционал
 		if( !seed.isFunction(func) || !selector ) return false;
-		
-		// настраиваем наблюдатель, указываем что на интересует только добавление дочерних элементов
-		var config = { childList: true, subtree: true, attributes: false, characterData: false, selector: selector }
-		
-		// создаем экземпляр наблюдателя
-		var observer = new MutationObserver(function(mutations) { 
+		seed.config.selector.lazy[selector] = func;
+	}
+	
+	// создание наблюдателя
+	seed.observe = function() {
+		// если браузер не поддерживает функцию обзервера, то это грустно...
+		if (!window.MutationObserver) return;
+
+		var observer = new MutationObserver(function(mutations) {
 			mutations.forEach(function(mutation) {
-				if (mutation.type === 'childList') {
-					//var nodes = $(mutation.addedNodes).filter(selector);
-					
-					var nodes = seed.filter.call(mutation.addedNodes, function(node) {
-						return !!node.parentNode.querySelectorAll(selector).length;
+				var nodes = mutation.addedNodes;
+				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType === 3)) return; 
+
+				for(var selector in seed.config.selector.lazy) { 
+					var newNodes = Array.prototype.filter.call(nodes, function(node) {
+						return node.nodeType !== 3 && node.matches(selector);
 					});
-					
-					console.log('MUTATE', nodes);
-					
-					if(nodes.length) {
-						// отключаем наблюдатель
-						observer.disconnect();
-						// вызываем переданную функцию на исполнение
-						func.call(seed, nodes);
-						
-						if( !once ) observer.observe(document.body, config);
-						// возвращает обещание
-						//resolve(nodes);
-					}
+
+					if(newNodes.length) seed.config.selector.lazy[selector].call(newNodes);
 				}
-			});
-		});
-	 
-		// передаем элемент и настройки в наблюдатель
-		observer.observe(document.body, config);
-		return observer;
+    			});
+    		});
+
+    		observer.observe(document, {subtree: true, childList: true});
 	};
 	
 	// Фильтр для Array Nodes
@@ -237,6 +240,9 @@
 			seed.STATE = 'ready';
 			seed.AMD._init();
 		});
+
+		// запускаем наблюдатель
+		if (seed.config.lazy) seed.observe();
 		
 		return seed;
 	}	
@@ -643,16 +649,6 @@
 		});
 	}
 	
-	// обратная совместимость с seed 1.0
-	/*
-	if (!window.$) {
-		window.$ = {};
-
-		$.define = seed.AMD.define;
-		$.require = seed.AMD.require;
-	}
-	*/
-
 	// ярлыки
 	if (!window.define) window.define = seed.AMD.define;
 	if (!window.require) window.require = seed.AMD.require;

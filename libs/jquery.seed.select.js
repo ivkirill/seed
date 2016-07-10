@@ -106,7 +106,7 @@
 // выпадающее поле селекта
 			this.$drop = $('<div>', { 'class': 'dropdown-menu' + this.config.cssclass.dropdown }).appendTo( this.$holder, {'dynamic':false});
 // меню списка вариантов
-			this.$menu = $('<ul>', { 'class': 'select-options'}).css('max-height',this.config.height).appendTo( this.$drop, {'dynamic':false});
+			this.$menu = $('<ul>', {'class': 'select-options'}).css('max-height',this.config.height).appendTo( this.$drop, {'dynamic':false});
 // подвал поля
 			this.$summary = $('<div>', { 'class': 'select-summary dropdown-footer'}).appendTo( this.$drop, {'dynamic':false});
 // шапка поля
@@ -171,7 +171,7 @@
 				});
 			}
 			else {
-				this.$holder.on('click touchend', function() {
+				this.$holder.on('click touchend', function(e) {
 					var toggler = ( !self.$drop.is(':visible') && self.$menu.is(':empty') ) ? false : true;
 					(toggler) ? self.show() : self.hide();
 					return false;
@@ -179,7 +179,7 @@
 			}
 
 			this.$input.on({
-				'keyup' : function(e) {
+				'keyup.seed.select' : function(e) {
 					clearTimeout(self.timer);
 
 					self.string = $(this).val();
@@ -201,11 +201,11 @@
 							}
 							else {
 								self.$input.val( $active.attr('data-value').replace(/<(|\/)b>/gi,'') );
-								self.$input.change();
+								self.$input.trigger('enter.seed.select');
 							}
 							self.hide();
 
-							return false;
+							//return false;
 						}
 						else if( !$active.length) {
 							$active = self.$menu.find('.hover:first');
@@ -248,7 +248,7 @@
 								self.type = (self.config.func.type)(self);
 							}
 							else {
-//если нет, то по умолчанию тип 'text'
+//если нет, то тип по умолчанию
 								self.type = self.$input.attr('data-type') || self.config.type;
 							}
 
@@ -257,9 +257,10 @@
 //Отправляем ajax запрос на получение списка доступных значений
 							var qs = {};
 							qs['show'] = self.config.module.main;
+							qs['items'] = self.config.module.main;
 							qs[self.$input.attr('name')] = self.string;
 							qs['mime'] = 'txt';
-							qs['item'] = self.type;
+							qs['type'] = self.type;
 
 							$.ajax({
 								url: self.config.url.ajax,
@@ -298,21 +299,16 @@
 				}
 			})
 
-//Биндим скрытие подсказки			
-			this.$menu.find('>*').on({
-				'mouseenter' : function() {
-					self.$menu.find('>*').removeClass('hover');
-					$(this).addClass('hover');
-				},
-				'mouseleave' : function() {
-					$(this).removeClass('hover');
-				},
-				'click' : function() {
-					self.$input.val( $(this).attr('data-value').replace(/<(|\/)b>/gi,'') );
-					self.hide();
-				}                         
-			});
+			this.$menu.on('click touchend', '> *', function() {
+				self.$menu.find('*').removeClass('active');
 
+				$(this).addClass('active')
+				self.$input.val( $(this).attr('data-value').replace(/<(|\/)b>/gi,'') ).change();
+				self.$input.trigger('enter.seed.select');
+				self.hide();
+
+				return false;
+			});
 		},
 
 // переключение иконки статуса
@@ -449,12 +445,13 @@
 			this.words = [];
 			this.articles = [];
 			this.$suggestion = $('<div>');
-			                                   
+
 // если мы ищем уникальные слова, то перебираем все значения найденные в БД, удаляем лишные слова и пробелы
 			this.$help.find('> [data-type="text"]').each(function(i, el) {
-				if( this.type == 'text' || ( this.type == 'mixed' && $(el).attr('data-type') == 'text' ) ) {
+				if( self.type == 'text' || ( self.type == 'mixed' && $(el).attr('data-type') == 'text' ) ) {
+					var text = $(el).attr('data-value') || $(el).text();
               		                try {
-						$.each($(el).text().split(' '), function(i,word){
+						$.each(text.split(' '), function(i,word){
 							if( self.re.test(word) ) {
 				                                self.words.push(word.toLowerCase().replace(',',''));
 								$(el).remove();
@@ -502,6 +499,7 @@
 //Функция отображения списка подсказок
 		show: function() {
 			this.$drop.removeClass('off').addClass('on effect effect-drop').css('display','block');
+
 			if( this.element == 'select' ) {
 				this.$caret.removeClass('off').addClass('on effect effect-rotate effect-rotate-180');
 			}
@@ -513,9 +511,11 @@
 //Функция скрытия списка подсказок
 		hide: function() {
 			this.$drop.removeClass('on').css('display','none');
+
 			if( this.element == 'select' ) {
 				this.$caret.removeClass('on');
 			}
+			return false;
 		}
 	});
 	var module = new $.fn.seedCore(name, $.seed[name]);

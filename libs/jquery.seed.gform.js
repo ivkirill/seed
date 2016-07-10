@@ -33,6 +33,10 @@
 
 			'validate' : 'on',
 			'auth' : false,
+
+			'reload' : false,
+			'reload_time' : 2000,
+
 			'merge' : true,
 			'fields' : null,
 
@@ -248,7 +252,7 @@
 
 			args.$group = $('<div>',{'class':'form-group ' + ((args.name) ? 'form-group-'+args.name.toLowerCase() : '') }).appendTo( this.$form, {'dynamic':false});
 
-			if(args.hide) { args.$group.addClass('gform-hidden hidden'); }
+			if(args.hide) { args.$group.addClass('gform-hidden hidden hide'); }
 
 			this._createHolder(args);
 		},
@@ -697,7 +701,7 @@
 					else {
 						$(this).html('');
 						$('.tip, .tooltip').remove();
-						$('<div class="h2 status loading"><i class="fa fa-cog fa-spin"></i> <span>'+ self._ajaxHeader('loading') +'</span></div>').appendTo( $(this), {'dynamic':false});
+						$('<div class="h2 gform-status status loading"><i class="fa fa-cog fa-spin"></i> <span>'+ self._ajaxHeader('loading') +'</span></div>').appendTo( $(this), {'dynamic':false});
 					}
 				},
 				statusCode : {
@@ -719,8 +723,7 @@
 					}
 					else {
 						$(this).html('');
-						$('<div class="h2 status fail"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error') +'</span></div>').appendTo( $(this), {'dynamic':false});
-					}
+						$('<div class="h2 gform-status status fail"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error') +'</span></div>').appendTo( $(this), {'dynamic':false});					}
 				},
 				success: function(data, textStatus, jqXHR) {
 					if(self.config.debug) { console.log(data); }
@@ -735,15 +738,22 @@
 							$(this).html('');
 							var ans = $(data);
 							if( ans.find('var[error]').length ) {
-								$('<div class="h2 status fail"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error', ans) +'</span></div>').appendTo( $(this), {'dynamic':false});
+								$('<div class="h2 gform-status status fail"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error', ans) +'</span></div>').appendTo( $(this), {'dynamic':false});
 
 // если задана функция обработки ошибки, внутри удачного ответа, то запустим ее
 								if(self.config.func.ajax_success_error) {
 									(self.config.func.ajax_success_error)(self, data);
 								}
+								else if( self.config.reload ) {
+									setTimeout(function () {
+										self.destroy();
+										self.build();
+									}, self.config.reload_time);
+
+								}
 							}
 							else {
-								$('<div class="h2 status success"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success') +'</span></div>').appendTo( $(this), {'dynamic':false});
+								$('<div class="h2 gform-status status success"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success') +'</span></div>').appendTo( $(this), {'dynamic':false});
 								if( self.config.auth ) {
 									window.location.reload(true);
 								}

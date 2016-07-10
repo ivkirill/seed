@@ -56,10 +56,10 @@
 			},
 
 			'selector': {
-				'auto' : '[role="basket-status"]:first .items, [role="basket-status-items"]:first',
+				'auto' : '[role="basket-status"] .items, [role="basket-status-items"]',
 				'evented': '[role="button-buy"], [data-seed="buy"]',
-				'status' : '[role="basket-status"]:first',  // селектор статус корзины
-				'button' : '[role="button-buy-ajax"]:first, [role="basket-button"]:first',
+				'status' : '[role="basket-status"]',  // селектор статус корзины
+				'button' : '[role="button-buy-ajax"], [role="basket-button"]',
 				'page' : null, // селектор кнопки на конечной странице
 				'item' : null  // селектор элемента списка
 			},

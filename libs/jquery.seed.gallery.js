@@ -327,14 +327,14 @@
 				e.stopPropagation();
 				self._findNext()._create();
 				if( self.config.thumbs && self.config.carousel ) {
-					self.carousel.data('seed.Carousel').$next.click();
+					self.carousel.data('seed.carousel').$next.click();
 				}
 			});
 			this.$prev.on('click', function(e) {
 				e.stopPropagation();
 				self._findPrev()._create();
 				if( self.config.thumbs && self.config.carousel ) {
-					self.carousel.data('seed.Carousel').$next.click();
+					self.carousel.data('seed.carousel').$next.click();
 				}
 			});
 

@@ -27,7 +27,7 @@
 			'lazy' : false,
 			'evented' : false,
 			'fullscreen' : false,
-			'lazy' : false,
+			'lazy' : true,
 			'cssclass': {},
 			'selector': {
 				'auto' : null,
@@ -148,7 +148,7 @@
 			return fullScreenApi;
 		},
 
-		// парсинг data- атрибутов в объект
+		// парсинг data-config- атрибутов в объект
 		_dataset: function(el) {
 			var config = {};
 			[].forEach.call(el.attributes, function(attr) {
@@ -168,7 +168,6 @@
 					}
 				}
 			});
-			
 			return config;
 		},
 		
@@ -251,17 +250,17 @@
 
 					// добавляем глобальные опции для библиотек
 					this.config = $.extend(true, this.config, seed.config.defaults);					
-					
+
 					 // добавляем в конфиг глобально определенную локализацию
 					if( seed.config.locale[self._name] ) {
 						this.config.locale = $.extend(true, this.config.locale, seed.config.locale[self._name]);
 					}
 					
 					// добавляем локальные опции вызова
-					this.config = $.extend({}, this.config, options);
-					
+					this.config = $.extend(true, {}, this.config, options);
+
 					// добавляем data-config элемента
-					this.config = $.extend({}, this.config, this._core._dataset( this.el ));
+					this.config = $.extend(true, {}, this.config, this._core._dataset( this.el ));
 					
 					this.config.selector.current = this._$list.selector;
 
@@ -344,7 +343,6 @@
 				
 				// инициализация плагина
 				var init = function(e, dynamic) {
-					
 					// если инициализация вызвана через событие, то проверим, чтобы делегирующий и целевой элемент не совпадали
 					if( e.currentTarget ) {
 						if( e.currentTarget === e.delegateTarget ) {
@@ -419,7 +417,13 @@
 			// автозапуск библиотеки для элементов определенных по умолчанию
 			seed.ready(function() {
 				// автозапуск элементов обработки по DOM ready
-				if(Seed.fn.defaults.selector.auto) $(Seed.fn.defaults.selector.auto)[core._name]({'evented':false});
+				if(Seed.fn.defaults.selector.auto) {
+					$(Seed.fn.defaults.selector.auto)[core._name]({'evented':false});
+
+					seed.config.selector.lazy[Seed.fn.defaults.selector.auto] = function(nodes) {
+						$(nodes)[core._name]();
+					};
+				}
 
 				// автозапуск элементов обработки по евентами определнных в библиотеки по умолчанию
 				if(Seed.fn.defaults.selector.evented) $(Seed.fn.defaults.selector.evented)[core._name]({'evented':true});
@@ -428,9 +432,8 @@
 	}
 
 	seed.core = $.fn.seedCore = core;
-	$.fn.seedLazy = function() {
-		seed.lazy(this.selector, arguments[0], arguments[1]); // экспортируем метод в jQuery		
-	}
+
+	$.fn.seedLazy = seed.lazy;
 	
 	return $;
 })(jQuery, seed, window, document);

@@ -370,7 +370,6 @@
 			qs['mime'] = 'txt';
 			qs['show'] = this.config.module.main;
 
-
 			$.ajax({
 				url: this.query,
 				data: $.param(qs),
@@ -399,9 +398,10 @@
 						self.$answer = $('<div>').html(data);
 
 						var $block = self.$answer.find(self._$list.selector);
+
 						var $items = $block.find(self.config.selector.items).hide();
 
-						var total = self.$answer.find(self._$list.selector).attr('data-total');
+//						var total = self.$answer.find(self._$list.selector).attr('data-total');
 
 						var $cutter = $('<div>', {'class':'page-cut'}); 
 

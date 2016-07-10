@@ -70,6 +70,10 @@ seed.libs = {
 		"path" : "/js/jquery/jquery.mousewheel.js",
 		"depents": [seed.config.jquery]
 	},
+	"common.swipe" : {
+		"path" : "/js/jquery/jquery.swipe.js",
+		"depents": [seed.config.jquery]
+	},
 	"common.scrollbar" : {
 		"path" : "/js/jquery/jquery.mCustomScrollbar.min.js",
 		"depents": [seed.config.jquery, 'common.mousewheel']

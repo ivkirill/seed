@@ -284,7 +284,6 @@
 
 // обновление статуса корзины
 		info: function() {
-console.log('info');
 		        var self = this;
 
 			var qs = {}
