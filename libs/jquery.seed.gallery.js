@@ -23,7 +23,6 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic': true,
 			'evented': true,
 
 			'thumbs': false,

@@ -25,7 +25,6 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic': true,
 			'evented': true,
 
 			'attribute' : 'title',
@@ -44,10 +43,16 @@
 				'evented' : '[data-error], [data-seed="tooltip"]'
 			},
 			'event' : {
-				'__on' : ('ontouchstart' in document.documentElement) ? 'touchstart.seed.tooltip' : 'mouseenter.seed.tooltip focus.seed.tooltip',
-				'__off': ('ontouchstart' in document.documentElement) ? 'touchend.seed.tooltip' : 'mouseleave.seed.tooltip blur.seed.tooltip',
-				'on' : ('ontouchstart' in document.documentElement) ? 'touchstart.seed.tooltip' : 'mouseenter.seed.tooltip focus.seed.tooltip',
-				'off' : ('ontouchstart' in document.documentElement) ? 'touchend.seed.tooltip' : 'mouseleave.seed.tooltip blur.seed.tooltip'
+				/* 				
+				'__on' : ('ontouchstart' in document.documentElement) ? 'touchstart.seed.tooltip focus.seed.tooltip' : 'mouseenter.seed.tooltip focus.seed.tooltip',
+				'__off': ('ontouchstart' in document.documentElement) ? 'touchend.seed.tooltip blur.seed.tooltip' : 'mouseleave.seed.tooltip blur.seed.tooltip',
+				'on' : ('ontouchstart' in document.documentElement) ? 'touchstart.seed.tooltip focus.seed.tooltip' : 'mouseenter.seed.tooltip focus.seed.tooltip',
+				'off' : ('ontouchstart' in document.documentElement) ? 'touchend.seed.tooltip blur.seed.tooltip' : 'mouseleave.seed.tooltip blur.seed.tooltip'
+				*/
+				'__on' : 'mouseenter.seed.tooltip focus.seed.tooltip',
+				'__off': 'mouseleave.seed.tooltip blur.seed.tooltip',
+				'on' : 'mouseenter.seed.tooltip focus.seed.tooltip',
+				'off' : 'mouseleave.seed.tooltip blur.seed.tooltip'
 			},
 			'func' : {
 				'ready' : null,
@@ -59,19 +64,6 @@
 					'no_content' : 'нет нужного контента для подсказки'
 				}
 			}
-		},
-
-		destroy: function() {
-
-			if( this.config.func.hide ) {
-				(this.config.func.hide)(this);
-			}
-
-			this.$el.off( this.config.event.off +' '+ this.config.event._off);
-
-			$('#'+this.id).remove();
-			this.$el.attr({'title': this.title });
-			this._destroy();
 		},
 
 		build: function() {
@@ -118,7 +110,7 @@
 			var self = this;
 			this.$el.off(this.config.event.off +' '+ this.config.event._off).on(this.config.event.off, function(e) {
 				self.destroy();
-				return false;
+				//return false;
 			});
 		},
 
@@ -282,10 +274,21 @@
 				boxing : {}
 			});
 			return this;
+		},
+		
+		destroy: function() {
+			if( this.config.func.hide ) {
+				(this.config.func.hide)(this);
+			}
+
+			this.$el.off( this.config.event.off +' '+ this.config.event._off);
+
+			$('#'+this.id).remove();
+			this.$el.attr({'title': this.title });
+			this._destroy();
 		}
 	});
 
 	
 	var module = new $.fn.seedCore(name, $.seed[name]);
-//	var module = seed.core(name, $.seed[name]);
 })(jQuery, window, document);

@@ -1,26 +1,9 @@
 /* 
  * seed AMD Core
- * @version 2.0.33
+ * @version 2.1.0
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-
-		// Polyfill for "matches"
-		// For browsers that do not support Element.matches() or Element.matchesSelector(), but carry support for document.querySelectorAll()
-		if (!Element.prototype.matches) {
-			Element.prototype.matches = 
-			Element.prototype.matchesSelector || 
-			Element.prototype.mozMatchesSelector ||
-			Element.prototype.msMatchesSelector || 
-			Element.prototype.oMatchesSelector || 
-			Element.prototype.webkitMatchesSelector ||
-			function(s) {
-				var matches = (this.document || this.ownerDocument).querySelectorAll(s), i = matches.length;
-				while (--i >= 0 && matches.item(i) !== this) {}
-				return i > -1;            
-			};
-		}
-
 
 (function(window, document, undefined) {
 	'use strict';
@@ -34,6 +17,22 @@
 		};
 	}
 
+	// Polyfill for "matches"
+	// For browsers that do not support Element.matches() or Element.matchesSelector(), but carry support for document.querySelectorAll()
+	if (!Element.prototype.matches) {
+		Element.prototype.matches = 
+		Element.prototype.matchesSelector || 
+		Element.prototype.mozMatchesSelector ||
+		Element.prototype.msMatchesSelector || 
+		Element.prototype.oMatchesSelector || 
+		Element.prototype.webkitMatchesSelector ||
+		function(s) {
+			var matches = (this.document || this.ownerDocument).querySelectorAll(s), i = matches.length;
+			while (--i >= 0 && matches.item(i) !== this) {}
+			return i > -1;            
+		};
+	}
+	
 	// создаем объект seed, если он не существует
 	if (!window.seed) {
 		window.seed = {};
@@ -44,7 +43,7 @@
 	seed.config = {
 		'debug' : false,
 		'performance' : false,
-		'lazy' : true,
+		'lazy' : false,
 		'jquery' : 'jquery.2.1.4',
 		'selector' : {
 			'lazy' : {}
@@ -54,6 +53,7 @@
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
 			'libs_path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
 		},
+		'ui' : {}, // настройки для UI
 		'locale': {}, // локализация библиотек ядра
 		'defaults' : {}
 	};
@@ -138,7 +138,7 @@
 	
 	seed.lazy = function(func) {
 		// определяе selector для DOM
-		var selector = ( typeof this.selector == 'string' ) ? this.selector : ( ( seed.isObject(this.selector) && typeof this.selector.selector ) ? this.selector.selector : false );
+		var selector = ( typeof this.selector == 'string' && !/^</.test(this.selector) ) ? this.selector : ( ( seed.isObject(this.selector) && typeof this.selector.selector ) ? this.selector.selector : false );
 
 		// если не было передано selector или функции то отключаем функционал
 		if( !seed.isFunction(func) || !selector ) return false;
@@ -153,45 +153,61 @@
 		var observer = new MutationObserver(function(mutations) {
 			mutations.forEach(function(mutation) {
 				var nodes = mutation.addedNodes;
-				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType === 3)) return; 
+				
+				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType !== 1)) return; 
 
 				for(var selector in seed.config.selector.lazy) { 
-					var newNodes = Array.prototype.filter.call(nodes, function(node) {
+					/*
+					Array.prototype.filter.call(nodes, function(node) {
 						return node.nodeType !== 3 && node.matches(selector);
 					});
-
 					if(newNodes.length) seed.config.selector.lazy[selector].call(newNodes);
-				}
-    			});
-    		});
+					*/
 
-    		observer.observe(document, {subtree: true, childList: true});
+					var newNodes = [];
+
+					nodes.forEach(function(node) {
+						if( node.nodeType === 1 ) {
+							if( node.matches(selector) ) newNodes.push(node);
+							
+							var childs = node.querySelectorAll(selector);
+							if( childs.length ) {
+								childs.forEach(function(node) {
+									newNodes.push(node);
+								});
+							}
+						}
+					});
+					
+					if(newNodes.length) seed.config.selector.lazy[selector].call(newNodes, selector);
+					if( seed.config.performance ) console.info('End:', performance.now());
+				}
+   			});
+   		});
+
+   		observer.observe(document, {subtree: true, childList: true});
 	};
 	
-	// Фильтр для Array Nodes
-	seed.filter = Array.prototype.filter;
-
 	// Расширение фунционала метода
-	seed.hook = function(name, func, obj) {
+	seed.hook = function(name, extend, obj) {
 		if( !obj ) obj = this;
-
-		var title = ( func.event ) ? name + '_' + func.event : name;
+		var title = ( extend.event ) ? name + '_' + extend.event : name;
 
 		// сохраняем метод 
 		$.fn[base._name][title] = obj[name] || function() { return this; };
 
 		// заменяем метод на новый
 		obj[name] = function() {
-			if( seed.isFunction(func.before) ) (func.before)(this);
+			if( seed.isFunction(extend.before) ) (extend.before)(this);
 			
 			var returned = $.fn[base._name][title].apply(this, arguments);
 			
-			if( seed.isFunction(func.after) ) (func.after)(returned);
+			if( seed.isFunction(extend.after) ) (extend.after)(returned);
 			
 			return returned;
 		};
 
-		if( func.exec ) obj[name]();
+		if( extend.exec ) obj[name]();
 	}
 
 	// Снятие фунционала метода
@@ -209,7 +225,11 @@
 		return seed.config = seed.extend(seed.config, obj);
 	}
 	
-	seed.STATE = 'loading';	
+	// текущее состоянии загрузки
+	seed.STATE = 'loading';
+	
+	// зарезервированные имена для модулей
+	seed._reserved = ['filter', 'selector', 'items'];
 	
 	// инициалиация ядра Seed
 	seed.init = function() {
@@ -224,10 +244,9 @@
 					// создаем функцию для исполнения внешнего в нашей области видимости
 					(seed.AMD._exec({source: source}))();
 
-					seed.AMD._libs(seed.libs).then(function(callback) {
-						// библиотеки определены
-						resolve();
-					});
+					// определяем библиотеки
+					seed.AMD._libs(seed.libs);
+					resolve();
 				});
 			}
 			else {
@@ -237,26 +256,26 @@
 		});
 		
 		corelibs.then(function(resolve) {
-			seed.STATE = 'ready';
-			seed.AMD._init();
+			seed.ready(function() {
+				seed.STATE = 'ready';
+				seed.AMD._init();
+			
+				// запускаем наблюдатель
+				if (seed.config.lazy) seed.observe();
+			})
 		});
-
-		// запускаем наблюдатель
-		if (seed.config.lazy) seed.observe();
 		
 		return seed;
 	}	
 	
 	// AMD функционал
-	seed.AMD = {};
-	// модули, которые были определены
-	seed.AMD.modules = [];
-	// ключи модулей (имена), которые были определены
-	seed.AMD.defined = [];
-	// ключи модулей (имена), которые были запрошены
-	seed.AMD.required = [];
-	// массив промисов ожидающих загрузки модулей
-	seed.AMD.pending = {};
+	seed.AMD = {
+		modules : [], // модули, которые были определены
+		defined : [], // ключи модулей (имена), которые были определены
+		required : [], // ключи модулей (имена), которые были запрошены
+		storage : [], // возвращаемые данные от модулей
+		pending : {} // массив промисов ожидающих загрузки модулей
+	};
 	 	
 	// AMD. Запрос модуля
 	// Принимает имя модуля, callback-функцию
@@ -264,8 +283,9 @@
 		if (seed.config.debug) console.log('%cREQUIRE:', 'color: #3e3;', 'запрашиваем модуль', depents);
 		
 		// создаем объект конфигурации модуля
-		var config = {}	
-		config.depents = [];
+		var config = {
+			depents : []
+		}
 		
 		// если первый аргумент строка или массив то мы нашли модули, которые требуются
 		if (seed.isArray(arguments[0]) ) config.depents = arguments[0];
@@ -274,8 +294,9 @@
 
 		// определяем callback-функцию
 		config.callback = ( seed.isFunction(arguments[1]) ) ? arguments[1] : function() { };
-
-		return seed.AMD.define('seed'+Date.now(), config.depents, config.callback, { global : true });			
+		var module = seed.AMD.define('seed'+Date.now(), config.depents, config.callback, { global : true });
+		
+		return (config.depents.length === 1) ? seed.AMD._restore(config.depents) : module;
 	}
 	
 	// AMD. Определение модуля
@@ -294,7 +315,7 @@
 			return false;
 		}
 		//Если первый аргумент является зарезервированным
-		else if (typeof arguments[0] === 'string' && arguments[0] == 'filter') {
+		else if (typeof arguments[0] === 'string' && arguments[0] in seed._reserved) {
 			console.error('Слово '+ arguments[0] +' зарезервировано, используйте другое имя для модуля!');
 			return false;
 		}
@@ -332,22 +353,36 @@
 				if( /\.(css|js)$/.test(config.name)  ) config.data.path = config.name;
 			} else {
 				config.data.inited = ( config.data.inited ) ? config.data.inited : false;
-				config.data.require = ( config.data.plugin === true ) ? false : true;
+				config.data.require = (
+					(config.data.plugin === true && seed.STATE != 'ready') || (seed.config.lazy === true && config.data.selector)
+				) ? false : true;
 			}
 			
-			// находим модуль, если такого модуля нет - создаем новый пустой.
-			var module = (seed.AMD.modules[config.name]) ? (seed.AMD.modules[config.name]) : (seed.AMD.modules[config.name] = {
-				name: config.name,
-				depents: config.depents,
-				callback: config.callback,
-				data: config.data,
-				values: {},
-				source : null
-			});
-
+			var module; 
+			// находим модуль, если такого модуля нет - создаем новый пустой
+			if( seed.AMD.modules[config.name] ) {
+				module = seed.AMD.modules[config.name]
+				module.data.require = true;
+			}
+			// модуль уже был определен ранее, и значит он теперь вызывается, передаем ставим require = true;
+			else {
+				module = seed.AMD.modules[config.name] = {
+					name: config.name,
+					depents: config.depents,
+					callback: config.callback,
+					data: config.data,
+					values: {},
+					value: null,
+					source : null
+				};
+			}
+			
 			// добавляем имя модуля в массив определенных
 			seed.AMD.defined.push(module.name);
 			module = seed.AMD._update(module, config);
+			
+			// если в конфиге модуля есть определенный селектор и включена функция lazy
+			if(module.data.selector && seed.config.lazy === true) seed.AMD._lazyReady(module.name, module.data.selector);
 			
 			return (seed.STATE == 'ready') ? (( config.data.plugin !== true ) ? seed.AMD._pending(module) : module) : module;
 		}
@@ -492,37 +527,31 @@
 	}
 	
 	// AMD. Определение списка библиотек
-	seed.AMD._libs = function(config, callback, require) {
+	seed.AMD._libs = function(config) {
 		if (seed.config.debug) console.log('%c_libs', 'color: #00f; font-weight: bold', 'определяем конфиг seed');
 		
-		return new Promise(function(resolve, reject) {
-			// поочередно определяем переданные в объекте модули
-			for (var name in config) {
+		// поочередно определяем переданные в объекте модули
+		for (var name in config) {
+			if (config.hasOwnProperty(name)) {
+				var data = config[name];
+				var callback = data.callback;
+				delete data.callback;
 				
-				if (config.hasOwnProperty(name)) {
-					var data = config[name];
-					var callback = data.callback;
-					delete data.callback;
-					
-					// если модуль уже определен в системе, обновим его новым данными
-					if( seed.AMD.modules[name] ) {
-						seed.AMD._update(seed.AMD.modules[name], {
-							depents : data.depents,
-							callback : callback,
-							data : seed.extend(data, {plugin : true})
-						});
-					}
-					
-					// если модуль не определен, то определим
-					else {
-						seed.AMD.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
-					}
+				// если модуль уже определен в системе, обновим его новым данными
+				if( seed.AMD.modules[name] ) {
+					seed.AMD._update(seed.AMD.modules[name], {
+						depents : data.depents,
+						callback : callback,
+						data : seed.extend(data, {plugin : true})
+					});
 				}
-			};
-
-			// после определения всех модулей, запускаем callback-функцию, если она есть
-			resolve(callback);
-		});				
+					
+				// если модуль не определен, то определим
+				else {
+					seed.AMD.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
+				}
+			}
+		}
 	};
 
 	// AMD. Получение библиотеки по url
@@ -571,13 +600,15 @@
 
 		storage[module.name] = module.callback.apply(storage, storage_array);
 		
+		seed.AMD._save(module, storage[module.name]);
+		
 		// обновим конфиг модуля
-		return seed.AMD._update(module, {values : storage});
+		return seed.AMD._update(module, {values : storage, value: storage[module.name]});
 	}
 	
 	// AMD. Возращаем из хранилища все данные по родительским модуялм
 	// Принимает модуль
-	// Возвращает обещание
+	// Возвращает обьект
 	seed.AMD._storage = function(module) {
 		if (seed.config.debug) console.log(' _storage', module.name, module.depents);
 		var storage = {};
@@ -587,12 +618,37 @@
 				return (typeof value === 'string');
 			}).forEach(function(module) {
 				storage = seed.extend(storage, seed.AMD.modules[module].values);
-			})
+			});
+			
+			if( module.data.selector ) {
+				storage.items = document.querySelectorAll(module.data.selector);
+				storage.selector = module.data.selector;
+			}
 		}
 		
 		return storage;
-	}	
-
+	}
+	
+	// AMD. Сохраняет значение, которое вернула функция модуля
+	// Принимает модуль и значение
+	seed.AMD._save = function(module, value) {
+		seed.AMD.storage[module.name] = (value) ? value : null;
+	}
+	
+	// AMD. Сохраняет значение, которое вернула функция модуля
+	// Принимает массив зависимостей
+	// Возвращает либо одно значение, либо обьект значений
+	seed.AMD._restore = function(depents) {
+		return new Promise(function(resolve, reject) {
+			if (!seed.isArray(depents) || depents.length !== 1) resolve(false);
+			
+			if( depents.length === 1 ) {
+				var value = seed.AMD.storage[depents[0]];
+				if( value !== undefined ) resolve(value);
+			}
+		});
+	}
+	
 	// AMD. Оборачиваем внешний код
 	// Принимает исходный код
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
@@ -617,7 +673,6 @@
 			var s = document.createElement('script');
 			
 			s.type = 'text/javascript';
-			//s.innerHTML = module.source;
 			s.src = url;
 			
 			if( seed.config.AMD.charset ) s.charset = seed.config.AMD.charset;
@@ -631,6 +686,12 @@
 		});
 	}
 	
+	seed.AMD._lazyReady = function(module, selector) {
+		seed.config.selector.lazy[selector] = function(selector) {
+			if( document.querySelector(selector) ) seed.AMD.modules[module].data.require = true;
+			if( seed.AMD.modules[module].data.require === true ) return seed.AMD._pending( seed.AMD.modules[module] );
+		};
+	}
 	
 	// AMD. Вызов всех определенных модулей
 	/* Инициализируем все модули, которые были определены ранее */
@@ -639,6 +700,10 @@
 		
 		return Promise.all(
 			seed.AMD.defined.map(function(module) {
+				var selector = seed.AMD.modules[module].data.selector;
+
+				// если в DOM находятся селекторы зависимостей библиотек, то ставим модули нужными
+				if( document.querySelector(selector) ) seed.AMD.modules[module].data.require = true;
 				if( seed.AMD.modules[module].data.require === true ) return seed.AMD._pending( seed.AMD.modules[module] );
 			})
 		).then(function(resolve) {

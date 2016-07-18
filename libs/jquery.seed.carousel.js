@@ -25,7 +25,6 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic' : true,
 			'evented': false,
 
 			'autoplay' : true,
