@@ -182,7 +182,7 @@
 		var base = this;
 
 		this._name = name;
-		this._data_seed = name.replace('seed','seed.').toLowerCase();
+		this._label = name.replace('seed','seed.').toLowerCase();
 		this._method = module || $.seed[name];
 
 		this._stack = 0;
@@ -252,7 +252,7 @@
 
 					this._core = base;
 					this._name = base._name;
-					this._data_seed = base._data_seed;
+					this._label = base._label;
 
 					this._$list = list;
 
@@ -343,7 +343,7 @@
 				},
 
 				_destroy: function() {
-					this.$el.removeData(this._data_seed);
+					this.$el.removeData(this._label);
 					try {
 						delete this;
 					}
@@ -418,12 +418,12 @@
 
 					var option = setting || ((typeof e == 'object') ? e.data.option : false);
 					var options = typeof setting == 'object' && setting;
-					var data = $element.data(base._data_seed);
+					var data = $element.data(base._label);
 
 
 // если обьект бибилотеки еще не создан, то нужно его инициализировать
 					if( !data ) {
-						$element.data(base._data_seed, (data = new Seed(element, list, dynamic, options, e)));
+						$element.data(base._label, (data = new Seed(element, list, dynamic, options, e)));
 
 // сохраним данные о том какие объекты были обработаны
 						if(!$.seed[base._name]._inited[uniq] && !evented) {

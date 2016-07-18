@@ -76,6 +76,7 @@ seed.libs = {
 	},
 	"common.scrollbar" : {
 		"path" : "/js/jquery/jquery.mCustomScrollbar.min.js",
+		"selector" : "[data-seed='scroll']",
 		"depents": [seed.config.jquery, 'common.mousewheel']
 	},
 	"common.map" : {
@@ -120,19 +121,19 @@ seed.libs = {
 	},
 	"ui.datepicker-ru" : {
 		"path" : "/js/jquery/ui/jquery.ui.datepicker-ru-utf.js",
-		"depents": [seed.config.jquery]
+		"depents": [seed.config.jquery, "ui.datepicker"]
 	},
 	"ui.datepicker-extension" : {
 		"path" : "/js/jquery/ui/jquery.ui.datepicker-extension.js",
-		"depents": [seed.config.jquery]
+		"depents": [seed.config.jquery, "ui.datepicker"]
 	},
 	"ui.timepicker" : {
 		"path" : "/js/jquery/ui/jquery.ui.timepicker.js",
-		"depents": [seed.config.jquery]
+		"depents": [seed.config.jquery, "ui.datepicker"]
 	},
 	"ui.timepicker-ru" : {
 		"path" : "/js/jquery/ui/jquery.ui.timepicker-ru.js",
-		"depents": [seed.config.jquery]
+		"depents": [seed.config.jquery, "ui.datepicker"]
 	},
 	"ui.mouse" : {
 		"path" : "/js/jquery/ui/jquery.ui.mouse.js",
@@ -180,16 +181,19 @@ seed.libs = {
 		"path" : "/js/seed/libs/jquery.seed.core.js",
 		"depents": [seed.config.jquery]
 	},
-	"seed.buy" : {
-		"path" : "/js/seed/libs/jquery.seed.buy.js",
-		"depents": ["seed.core"]
-	},
 	"seed.basket" : {
 		"path" : "/js/seed/libs/jquery.seed.basket.js",
+		"selector" : "[data-seed='basket']",
 		"depents": ["seed.core", "seed.gform", "common.json"]
+	},
+	"seed.buy" : {
+		"path" : "/js/seed/libs/jquery.seed.buy.js",
+		"selector" : "[role='basket-status'] .items, [role='basket-status-items'], [role='button-buy'], [data-seed='buy']",
+		"depents": ["seed.core"]
 	},
 	"seed.carousel" : {
 		"path" : "/js/seed/libs/jquery.seed.carousel.js",
+		"selector" : "[data-seed='carousel']",
 		"depents": ["seed.core", "common.easing"]
 	},
 	"seed.compare" : {
@@ -197,46 +201,57 @@ seed.libs = {
 	},
 	"seed.dropdown" : {
 		"path" : "/js/seed/libs/jquery.seed.dropdown.js",
+		"selector" : "[data-seed='dropdown']",
 		"depents": ["seed.core"]
 	},
 	"seed.filter" : {
 		"path" : "/js/seed/libs/jquery.seed.filter.js",
+		"selector" : "[data-seed='filter']",
 		"depents": ["seed.core", "common.cookie"]
 	},
 	"seed.gallery" : {
 		"path" : "/js/seed/libs/jquery.seed.gallery.js",
+		"selector" : "[data-seed='gallery']",
 		"depents": ["seed.core"]
 	},
 	"seed.gform" : {
 		"path" : "/js/seed/libs/jquery.seed.gform.js",
+		"selector" : "[data-seed='gform'], [data-seed='validate']",
 		"depents" : ["seed.core", "seed.tooltip"]
 	},
 	"seed.modal" : {
 		"path" : "/js/seed/libs/jquery.seed.modal.js",
+		"selector" : "[data-seed='modal'], [data-modal-html], [data-modal-url]",
 		"depents" : ["seed.core", "ui.draggable"]
 	},
 	"seed.page" : {
 		"path" : "/js/seed/libs/jquery.seed.page.js",
+		"selector" : "[data-seed='page'], [role='list-infinity']",
 		"depents": ["seed.core", "common.cookie"]
 	},
+	"seed.select" : {
+		"path" : "/js/seed/libs/jquery.seed.select.js",
+		"selector" : "[data-seed='select']",
+		"depents": ["seed.core", "seed.dropdown"]
+	},	
 	"seed.tab" : {
 		"path" : "/js/seed/libs/jquery.seed.tab.js",
+		"selector" : "[data-seed='tab']",
 		"depents": ["seed.core"]
 	},
 	"seed.tooltip" : {
 		"path" : "/js/seed/libs/jquery.seed.tooltip.js",
+		"selector" : "[data-error], [data-seed='tooltip']",
 		"depents": ["seed.core"]
-	},
-	"seed.select" : {
-		"path" : "/js/seed/libs/jquery.seed.select.js",
-		"depents": ["seed.core", "seed.dropdown"]
 	},
 	"seed.ui" : {
 		"path" : "/js/seed/libs/jquery.seed.ui.js",
+		"selector" : "[data-seed='ui'][data-ui]",
 		"depents": ["seed.core", "seed.modal", "seed.gform"]
 	},
 	"seed.zoom" : {
 		"path" : "/js/seed/libs/jquery.seed.zoom.js",
-		"depents": ["seed.core"]
+		"selector" : "[data-seed='zoom']",
+		"depents" : ["seed.core"]
 	}
 };

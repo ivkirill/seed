@@ -24,7 +24,6 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic' : true,
 			'evented': true,
 
 			'modal' : null,
@@ -133,7 +132,7 @@
 			var self = this;
 			if( method == 'off' ) {
 				this.$el.off( this.config.event.on +' '+ this.config.event._on).on(this.config.event.on, function(e) {
-					self.$el.data(self._data_seed)['add']();
+					self.$el.data(self._label)['add']();
 					return false;
 				});
 			}

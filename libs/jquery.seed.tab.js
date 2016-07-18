@@ -24,22 +24,21 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic' : true,
 
 			'hash' : window.location.hash.replace('#',''),
 			'group' : null,
 			'empty' : null,
 			'selector': {
 				'auto' : '[data-seed="tab"]',
-				'holder_menu' : '[role="tabmenu"]',
-				'holder_tabs' : '[role="tablist"]',
+				'tabmenu' : '[role="tabmenu"]',
+				'tablist' : '[role="tablist"]',
 				'menu' : ''
 			},
 
 			'cssclass': {
 				'menu' : 'menu-tabs',
-				'holder_menu' : 'menu-tabs-place',
-				'holder_tabs' : 'tabs-place'
+				'tabmenu' : 'menu-tabs-place',
+				'tablist' : 'tabs-place'
 			},
 			'func' : {
 				'open' : null,
@@ -68,51 +67,51 @@
 			this.$el.addClass('content-tab content-tab-'+this.hash).attr({'data-group':this.group, 'role':'tab'});
 
 // находим определенное местоположение для меню табов, либо создаем его сами
-			this.$selector_holder_menu = $(this.config.selector.holder_menu);
+			this.$selector_tabmenu = $(this.config.selector.tabmenu);
 
-			if( this.$selector_holder_menu.filter('[data-group="'+this.group+'"]').length ) {
-				this.$holder_menu = this.$selector_holder_menu.filter('[data-group="'+this.group+'"]');
+			if( this.$selector_tabmenu.filter('[data-group="'+this.group+'"]').length ) {
+				this.$tabmenu = this.$selector_tabmenu.filter('[data-group="'+this.group+'"]');
 			}
 			else {
-				if( $(this.config.cssclass.holder_menu+'[data-group="'+this.group+'"]').length ) {
-					this.$holder_menu = $(this.config.cssclass.holder_menu+'[data-group="'+this.group+'"]');
+				if( $(this.config.cssclass.tabmenu+'[data-group="'+this.group+'"]').length ) {
+					this.$tabmenu = $(this.config.cssclass.tabmenu+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$holder_menu = $('<div>',{'class': this.config.cssclass.holder_menu, 'data-group':this.group, 'role': 'tabmenu'}).insertBefore(this.$el, {'dynamic':false});
+					this.$tabmenu = $('<div>',{'class': this.config.cssclass.tabmenu, 'data-group':this.group, 'role': 'tabmenu'}).insertBefore(this.$el, {'dynamic':false});
 				}
 			}
 
 // находим определенное местоположение для списка табов, либо создаем его сами
-			this.$selector_holder_tabs = $(this.config.selector.holder_tabs);
+			this.$selector_tablist = $(this.config.selector.tablist);
 
-			if( this.$selector_holder_tabs.filter('[data-group="'+this.group+'"]').length ) {
-				this.$holder_tabs = this.$selector_holder_tabs.filter('[data-group="'+this.group+'"]');
+			if( this.$selector_tablist.filter('[data-group="'+this.group+'"]').length ) {
+				this.$tablist = this.$selector_tablist.filter('[data-group="'+this.group+'"]');
 			}
 			else {
-				if( $(this.config.cssclass.holder_tabs+'[data-group="'+this.group+'"]').length ) {
-					this.$holder_tabs = $(this.config.cssclass.holder_tabs+'[data-group="'+this.group+'"]');
+				if( $(this.config.cssclass.tablist+'[data-group="'+this.group+'"]').length ) {
+					this.$tablist = $(this.config.cssclass.tablist+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$holder_tabs = $('<div>', {'class': this.config.cssclass.holder_tabs, 'data-group':this.group, 'role':'tablist'}).insertBefore(this.$el, {'dynamic':false});
+					this.$tablist = $('<div>', {'class': this.config.cssclass.tablist, 'data-group':this.group, 'role':'tablist'}).insertBefore(this.$el, {'dynamic':false});
 				}
 			}
 
 // определяем меню табов
-			if( this.$holder_menu.find(this.config.selector.menu).length ) {
-				this.$menu = this.$holder_menu.find(this.config.selector.menu);
+			if( this.$tabmenu.find(this.config.selector.menu).length ) {
+				this.$menu = this.$tabmenu.find(this.config.selector.menu);
 			}
 			else {
 				if( $('.'+this.config.cssclass.menu+'[data-group="'+this.group+'"]').length ) {
 					this.$menu = $('.'+this.config.cssclass.menu+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$menu = $('<ul>', {'class': this.config.cssclass.menu, 'data-group':this.group}).prependTo( this.$holder_menu, {'dynamic':false});
+					this.$menu = $('<ul>', {'class': this.config.cssclass.menu, 'data-group':this.group}).prependTo( this.$tabmenu, {'dynamic':false});
 				}
 			}
                                                                                         
 
 // определяем список табов
-			this.$tabs = ( !this.$holder_tabs.find('.tabs').length ) ? $('<div>', {'class': 'tabs'}).prependTo( this.$holder_tabs, {'dynamic':false}) : this.$holder_tabs.find('.tabs');
+			this.$tabs = ( !this.$tablist.find('.tabs').length ) ? $('<div>', {'class': 'tabs'}).prependTo( this.$tablist, {'dynamic':false}) : this.$tablist.find('.tabs');
 
 			this.$el.appendTo( this.$tabs, {'dynamic':false});
 
@@ -133,7 +132,6 @@
 
 			this.$title.appendTo( this.$caption, {'dynamic':false});
 
-//console.log( this.config.event.__on );
 			this.bind();
 		},
 

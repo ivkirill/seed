@@ -24,7 +24,6 @@
 		defaults: {
 			'debug': false,
 
-			'dynamic' : true,
 			'evented': false,
 
 			'type' : 'mixed',

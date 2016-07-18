@@ -23,26 +23,20 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic' : true,
 			'evented': false,
 
 			'title' : null,
-
 			'html' : null,
-
 			'width': null,
-
 			'overlay' : false,
-
 			'ajax' : false,
-
 			'name' : '',
+			'draggable' : true,
 
 			'module' : {
 				'main' : null,
 				'func': false
 			},
-
 			'selector': {
 				'auto' : '[data-seed="modal"]',
 				'evented' : '[data-modal-html], [data-modal-url]',
@@ -62,10 +56,12 @@
 				'position' : null,
 				'close' : null
 			},
+			
 			'cssclass' : {
 				'modal' : '',
 				'close' : 'fa fa-close',
 				'content' : '',
+				'header' : '',
 				'button' : 'btn btn-default'
 			},
 			'locale' : {
@@ -83,21 +79,22 @@
 
 		build: function() {
 			var self = this;
+			
+			console.log('MODAL', this);
 
 			this.type = 'html';
 			this.config.overlay = this.$el.attr('data-modal-overlay') || this.config.overlay;
 
 			if( this.config.overlay ) {
-				this.$overlay = ( !$('#overlay-modal').length ) ? $('<div>', {'id':'overlay-modal', 'class':'seed-overlay'}).html('<div class="loader"></div>').prependTo( $('body'), {'dymanic':false}) : $('#overlay-modal:first').show();
+				this.$overlay = ( !$('#overlay-modal').length ) ? $('<div>', {'id':'overlay-modal', 'class':'seed-overlay'}).html('<div class="loader"></div>').prependTo( $('body')) : $('#overlay-modal:first').show();
 			}
 
-// определяем имя модального окна, если задано
+			// определяем имя модального окна, если задано
 			if( this.$el.attr('data-modal-name') ) {
 				this.config.name = this.$el.attr('data-modal-name') || '';
 			}
 
-
-// если holder не задан
+			// если holder не задан
 			if( !this.config.selector.holder ) {
 				this.$holder = $('body');
 				$('body').addClass('modal-holder');
@@ -106,25 +103,34 @@
 				this.$holder = $(this.config.selector.holder);
 			}
 
-			this.$modal = $('<div>',{'id':'modal-box', 'class': 'modal '+ this.config.cssclass.modal }).hide().appendTo( this.$holder.addClass('modal-holder'), {'dymanic':false});
-			this.$dialog = $('<div>',{'class':'modal-dialog effect-modal on'}).addClass('modal-'+this.config.name).appendTo( this.$modal, {'dymanic':false});
+			this.$modal = $('<div>',{'id':'modal-box', 'class': 'modal '+ this.config.cssclass.modal }).hide().appendTo(this.$holder.addClass('modal-holder'));
+			this.$dialog = $('<div>',{'class':'modal-dialog effect-modal on'}).addClass('modal-'+this.config.name).appendTo(this.$modal);
 
-// применим ширину если она задана
-			if( this.config.width) {
+			// применим ширину если она задана
+			if( this.config.width ) {
 				this.$dialog.css('width',this.config.width);
 			}
 
-			this.$content = $('<div>',{'class':'modal-content'}).appendTo( this.$dialog, {'dymanic':false});
-			this.$header = $('<div>',{'class':'modal-header'}).appendTo( this.$content, {'dymanic':false});
-			this.$caption = $('<div>',{'class':'modal-title'}).appendTo( this.$header, {'dymanic':false});
+			// Обьект контента окна
+			this.$content = $('<div>',{'class':'modal-content'}).appendTo(this.$dialog);
 
-			this.$close = $('<button>',{'type':'button', 'data-dismiss':'modal', 'class':'btn close modal-close'}).html('<span class="'+ self.config.cssclass.close +'">'+ self.config.locale.interface.close +'</span>').appendTo( this.$header, {'dymanic':false});
+			// Обьект хедера окна
+			this.$header = $('<div>',{'class':'modal-header '+ this.config.cssclass.header}).appendTo(this.$content);
+
+			// Обьект заголовка
+			this.$caption = $('<div>',{'class':'modal-title'}).appendTo(this.$header);
+
+			// Обьект статуса, используется в Seed UI
+			this.$status = $('<div>',{'class':'modal-status'}).insertAfter(this.$caption);
+
+			// Кнопка закрытия
+			this.$close = $('<button>',{'type':'button', 'data-dismiss':'modal', 'class':'btn close modal-close'}).html('<span class="'+ self.config.cssclass.close +'">'+ self.config.locale.interface.close +'</span>').appendTo(this.$header);
 		
-			this.$body = $('<div>',{'class':'modal-body'}).appendTo(this.$content, {'dymanic':false});
-			this.$footer = $('<div>',{'class':'modal-footer'}).appendTo(this.$content, {'dymanic':false});
+			this.$body = $('<div>',{'class':'modal-body'}).appendTo(this.$content);
+			this.$footer = $('<div>',{'class':'modal-footer'}).appendTo(this.$content);
 
 			if( this.config.buttons ) {
-				this.$buttons = $('<div>',{'class':'modal-buttons'}).appendTo(this.$footer, {'dymanic':false});
+				this.$buttons = $('<div>',{'class':'modal-buttons'}).appendTo(this.$footer);
 				this.buttons();
 			}
 
@@ -136,8 +142,8 @@
 			else if( this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.ajax == true || this.config.url.ajax ) {
 				this.type = 'ajax';
 				this.config.ajax = true;
-				this.config.url.ajax =  this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.url.ajax || this._error(this.config.url.ajax, 'url.ajax');
-				this.config.module.main =  this.$el.attr('data-module') || this.$el.attr('data-module-main') || this.config.module.main || false;
+				this.config.url.ajax = this.config.url.ajax || this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this._error(this.config.url.ajax, 'url.ajax');
+				this.config.module.main =  this.config.module.main || this.$el.attr('data-module') || this.$el.attr('data-module-main') || false;
 			}
 
 			if( this.config.debug ) {
@@ -146,10 +152,7 @@
 
 			this._getContent();
 
-
 			this.bind();
-
-//			this.reinit();
 		},
 
 // создаем бинды для элементов библиотеки
@@ -175,17 +178,16 @@
 
 // закрытие окна
 		close: function() {
-			if( this.config.overlay ) { this.$overlay.remove(); }
-
-//			$('body').removeClass('modal-open');
-
-			this.$holder.removeClass('modal-holder');
-			$('body').removeClass('modal-holder');
-
 			if( $.isFunction(this.config.func.close) ) {
 				(this.config.func.close)(self);
 			}
 
+			if( this.config.overlay ) this.$overlay.remove();
+
+			this.$holder.removeClass('modal-holder');
+			$('body').removeClass('modal-holder');
+
+			$('.tooltip').remove();
 			this.$modal.remove();
 			this._destroy();
 		},
@@ -208,7 +210,7 @@
 //			this.$html = $(html)
 			this.$html = $('<div>', {'class':'modal-html '+ this.config.cssclass.content}).html(html);
 
-			this.$html.appendTo( this.$body, { 'dynamic':false });
+			this.$html.appendTo(this.$body, { 'dynamic':false });
 
 			var $source = this.$body.find('.h1:first, h1:first'); 
 
@@ -220,8 +222,10 @@
 			this.position();
 			this.setHeight();
 
-			this.$dialog.draggable({handle:self.$header});
-			this.$header.addClass('draggable');
+			if( this.config.draggable === true ) {
+				this.$dialog.draggable({handle:self.$header});
+				this.$header.addClass('draggable');
+			}
 
 			if( this.config.func.open ) {
 				(this.config.func.open)(self);
@@ -236,7 +240,7 @@
 
 				var qs = {};
 				qs['mime'] = 'txt';
-				qs['show'] = this.config.module.main;
+				if( this.config.module.main ) qs['show'] = this.config.module.main;
 
 				if( this.config.debug ) { console.log(this.config.url.ajax, qs); }
 
@@ -275,14 +279,13 @@
 			if( $.isFunction(this.config.func.position) ) {
 				(this.config.func.position)(self);
 			}
-//				this.win.css('top', ( (self.box.height() - self.win.height())/2 > 40 ) ? ( (self.box.height() - self.win.height())/2 ) : 40);
 		},
 
-		buttons : function() {
+		buttons : function(buttons) {
 			var self = this;
 			this.$buttons.html('');
-			$.each( this.config.buttons, function(title, func) {
-				var $button = $('<button>').text(title).addClass( self.config.cssclass.button ).appendTo( self.$buttons, {'dymanic':false});
+			$.each( buttons || this.config.buttons, function(title, func) {
+				var $button = $('<button>').html(title).addClass( self.config.cssclass.button ).appendTo(self.$buttons);
 				$button.on('click touchend', function() {
 					func.apply(self);
 					return false;

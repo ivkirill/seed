@@ -24,7 +24,6 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic' : false,
 			'evented': false,
 
 			'ajax' : false,

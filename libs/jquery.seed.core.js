@@ -24,10 +24,9 @@
 		// дефолтные настройки библиотек
 		this._defaults = {
 			'debug': false,
-			'lazy' : false,
 			'evented' : false,
 			'fullscreen' : false,
-			'lazy' : true,
+			'lazy' : ( typeof seed.config.lazy != "undefined") ? seed.config.lazy : false,
 			'cssclass': {},
 			'selector': {
 				'auto' : null,
@@ -200,7 +199,7 @@
 
 			// прототипируем конструктор
 			Seed.fn = Seed.prototype = $.extend(true, {
-				defaults: {},
+				defaults: core._defaults,
 				
 				// инициализация библиотеки
 				init: function(data) {
@@ -413,16 +412,20 @@
 				$.fn[core._name] = noConflict;
 				return this;
 			}
-
+			
 			// автозапуск библиотеки для элементов определенных по умолчанию
 			seed.ready(function() {
+
 				// автозапуск элементов обработки по DOM ready
 				if(Seed.fn.defaults.selector.auto) {
 					$(Seed.fn.defaults.selector.auto)[core._name]({'evented':false});
 
-					seed.config.selector.lazy[Seed.fn.defaults.selector.auto] = function(nodes) {
-						$(nodes)[core._name]();
-					};
+					// автозапуск ленивой инициализации
+					if(Seed.fn.defaults.lazy) {
+						seed.config.selector.lazy[Seed.fn.defaults.selector.auto] = function(nodes) {
+							$(nodes)[core._name]();
+						};
+					}
 				}
 
 				// автозапуск элементов обработки по евентами определнных в библиотеки по умолчанию
@@ -433,6 +436,7 @@
 
 	seed.core = $.fn.seedCore = core;
 
+	// экспортируем метод в jQuery
 	$.fn.seedLazy = seed.lazy;
 	
 	return $;

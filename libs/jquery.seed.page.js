@@ -23,7 +23,6 @@
 	$.extend($.seed[name], {
 		defaults: {
 			'debug': false,
-			'dynamic' : false,
 			'evented': false,
 
 			'quant' : 20, // epp (element per page) - количество элементов на странице
@@ -116,7 +115,7 @@
 		destroy: function() {
 			this.$list.insertBefore( this.$holder );
 			this.$holder.remove();
-			this.$el.removeData(this._data_seed);
+			this.$el.removeData(this._label);
 			delete this;
 
 			return false;
