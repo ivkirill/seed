@@ -153,17 +153,10 @@
 		var observer = new MutationObserver(function(mutations) {
 			mutations.forEach(function(mutation) {
 				var nodes = mutation.addedNodes;
+				// если массив нодов нулевой или состоит из текстового нода, то его пропускаем
+				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType === 3)) return; 
 				
-				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType !== 1)) return; 
-
 				for(var selector in seed.config.selector.lazy) { 
-					/*
-					Array.prototype.filter.call(nodes, function(node) {
-						return node.nodeType !== 3 && node.matches(selector);
-					});
-					if(newNodes.length) seed.config.selector.lazy[selector].call(newNodes);
-					*/
-
 					var newNodes = [];
 
 					nodes.forEach(function(node) {
