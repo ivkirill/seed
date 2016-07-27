@@ -92,7 +92,7 @@
 			this.config.preload = this.$el.attr('data-preload') || this.config.preload;
 			this.config.delta = this.$el.attr('data-delta') || this.config.delta;
 			this.config.url.current = this.$el.attr('data-url') || this.config.url.current;
-			this.config.total = this.config.total || this.$el.attr('data-total') || this.config.total || this._error(this.config.total, 'total'); // количество элементов всего
+			this.config.total = this.config.total || this.$el.attr('data-total') || this.config.total || ''; // количество элементов всего
 
 			if( this.config.debug ) { console.log( this ); }
 

@@ -94,27 +94,27 @@
 
 // биндим кнопки удаления
 			this.$button_remove = this.$el.on('click touchend', '[name="remove"]', function(e) {
-				$(this).parents('[data-item]:first').addClass('warning');
+				$(this).parents('[data-item]:first').addClass('bg-warning');
 
 				if (confirm(self.config.locale.interface.confirm_remove)) {
 					self.remove = $(this).val() || $(this).parents('[data-item]:first').attr('data-item');
 					self.update('remove');
 				}
 
-				$(self.config.selector.item).removeClass('warning');
+				$(self.config.selector.item).removeClass('bg-warning');
 				return false;
 			});
 
 // если определена общая кнопка удаления, биндим ее
 			if( $(this.config.selector.clear).length ) {
 				$('body').on('click touchend', this.config.selector.clear, function() {
-					$(self.config.selector.item).addClass('warning');
+					$(self.config.selector.item).addClass('bg-warning');
 
 					if (confirm(self.config.locale.interface.confirm_clear)) {
 						self.update('clear');
 					}
 
-					$(self.config.selector.item).removeClass('warning');
+					$(self.config.selector.item).removeClass('bg-warning');
 
 					return false;
 				});

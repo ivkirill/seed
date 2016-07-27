@@ -116,7 +116,7 @@ seed.libs = {
 		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker" : {
-		"path" : "/js/jquery/ui/jquery.ui.datepicker.1.11.4.js.js",
+		"path" : "/js/jquery/ui/jquery.ui.datepicker.1.11.4.js",
 		"depents": [seed.config.jquery]
 	},
 	"ui.datepicker-ru" : {
@@ -144,9 +144,14 @@ seed.libs = {
 		"depents": [seed.config.jquery]
 	},
 	"ui.slider" : {
-		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js.js",
+		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js",
 		"depents": [seed.config.jquery]
 	},
+	"ui.touch" : {
+		"path" : "/js/jquery/ui/jquery.ui.touch.min.js",
+		"depents": [seed.config.jquery]
+	},
+
 
 // библиотеки html5
 	"html5.jQueryPlugin" : {
@@ -188,13 +193,13 @@ seed.libs = {
 	},
 	"seed.buy" : {
 		"path" : "/js/seed/libs/jquery.seed.buy.js",
-		"selector" : "[role='basket-status'] .items, [role='basket-status-items'], [role='button-buy'], [data-seed='buy']",
+		"selector" : "[role='button-buy-ajax'], [role='basket-button'], [role='button-buy'], [data-seed='buy']",
 		"depents": ["seed.core"]
 	},
 	"seed.carousel" : {
 		"path" : "/js/seed/libs/jquery.seed.carousel.js",
 		"selector" : "[data-seed='carousel']",
-		"depents": ["seed.core", "common.easing"]
+		"depents": ["seed.core", "common.easing", "ui.touch"]
 	},
 	"seed.compare" : {
 //			"path" : "/js/seed/libs/jquery.seed.compare.js"

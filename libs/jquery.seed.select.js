@@ -100,10 +100,10 @@
 			this.config.height = this.$el.attr('data-select-height') || this.config.height;
 			if( this.config.height ) { this.config.height += 'px'; }
 
-			this.config.cssclass.dropdown = ' pull-'+this.config.side;
+			//this.config.cssclass.dropdown = ' pull-'+this.config.side;
 
 // выпадающее поле селекта
-			this.$drop = $('<div>', { 'class': 'dropdown-menu' + this.config.cssclass.dropdown }).appendTo( this.$holder, {'dynamic':false});
+			this.$drop = $('<div>', { 'class': 'dropdown-menu ' + this.config.cssclass.dropdown }).appendTo( this.$holder, {'dynamic':false});
 // меню списка вариантов
 			this.$menu = $('<ul>', {'class': 'select-options'}).css('max-height',this.config.height).appendTo( this.$drop, {'dynamic':false});
 // подвал поля
@@ -253,11 +253,13 @@
 
 							self._status('show');
 
+							var qs_name = self.config.name || self.$input.attr('name');
+
 //Отправляем ajax запрос на получение списка доступных значений
 							var qs = {};
 							qs['show'] = self.config.module.main;
 							qs['items'] = self.config.module.main;
-							qs[self.$input.attr('name')] = self.string;
+							qs[qs_name] = self.string;
 							qs['mime'] = 'txt';
 							qs['type'] = self.type;
 

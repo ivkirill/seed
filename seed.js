@@ -53,7 +53,7 @@
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
 			'libs_path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
 		},
-		'ui' : {}, // настройки для UI
+		'ui' : [], // настройки для UI
 		'locale': {}, // локализация библиотек ядра
 		'defaults' : {}
 	};
@@ -66,6 +66,9 @@
 	// расширяем свойства объекта
 	seed.extend = function(obj) {
 		obj = obj || {};
+		
+		// если передан не обьект, вернем пустой обьект
+		if( !seed.isObject(obj) ) return {};
 
 		for (var i = 1; i < arguments.length; i++) {
 			if (!arguments[i]) continue;
@@ -73,12 +76,17 @@
 				if (arguments[i].hasOwnProperty(key)) obj[key] = arguments[i][key];
 			}
 		}
+		
 		return obj;
 	}
 
 	// уникальные значения массива
 	seed.unique = function(arr) {
 		var a = [];
+		
+		// если передан не обьект, вернем пустой обьект
+		if( !seed.isArray(arr) ) return a;
+		
 		for (var i=0, l=arr.length; i<l; i++) {
 			if (a.indexOf(arr[i]) === -1 && arr[i] !== '') a.push(arr[i]);
 		}
@@ -143,6 +151,8 @@
 		// если не было передано selector или функции то отключаем функционал
 		if( !seed.isFunction(func) || !selector ) return false;
 		seed.config.selector.lazy[selector] = func;
+		
+		return document.querySelectorAll(selector);
 	}
 	
 	// создание наблюдателя
@@ -153,6 +163,8 @@
 		var observer = new MutationObserver(function(mutations) {
 			mutations.forEach(function(mutation) {
 				var nodes = mutation.addedNodes;
+				nodes = Array.prototype.slice.call(nodes);
+				
 				// если массив нодов нулевой или состоит из текстового нода, то его пропускаем
 				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType === 3)) return; 
 				
@@ -164,6 +176,7 @@
 							if( node.matches(selector) ) newNodes.push(node);
 							
 							var childs = node.querySelectorAll(selector);
+							childs = Array.prototype.slice.call(childs);
 							if( childs.length ) {
 								childs.forEach(function(node) {
 									newNodes.push(node);
@@ -300,7 +313,8 @@
 		
 		//Если первый полученный аргумент Объект и второй функция или не передан, то значит мы получили конфиг и обработаем его через специальную функцию.
 		if (seed.isObject(arguments[0])) {
-			return seed.AMD._libs(arguments[0], arguments[1]);
+			seed.AMD._libs(arguments[0], arguments[1]);
+			return false;
 		}
 		//Если первый аргумент не является строкой, то сообщаем об ошибке и возвращаем false
 		else if (typeof arguments[0] !== 'string') {

@@ -66,7 +66,7 @@
 			"path" : "/js/jquery/ui/jquery.ui.dialog.js"
 		},
 		"ui.datepicker" : {
-			"path" : "/js/jquery/ui/jquery.ui.datepicker.1.11.4.js.js"
+			"path" : "/js/jquery/ui/jquery.ui.datepicker.1.11.4.js"
 		},
 		"ui.datepicker-ru" : {
 			"path" : "/js/jquery/ui/jquery.ui.datepicker-ru-utf.js"
@@ -87,7 +87,7 @@
 			"path" : "/js/jquery/ui/jquery.ui.draggable.1.11.4.min.js"
 		},
 		"ui.slider" : {
-			"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js.js"
+			"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js"
 		},
 		"ui.touch" : {
 			"path" : "/js/jquery/jquery.ui.touch.js"
