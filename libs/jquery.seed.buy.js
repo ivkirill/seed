@@ -142,7 +142,6 @@
 
 		add: function() {
 			var self = this;
-			console.log('add');
 
 			// если у нас параметр trigger false, то перекидываем юзера на страницу
 			if( this.$el.hasClass('active') ) {

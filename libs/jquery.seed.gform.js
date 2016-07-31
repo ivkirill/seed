@@ -273,7 +273,7 @@
 		},
 
 		_createGroup: function(args) {
-			if( !args ) { return false; }
+			if( !args || args.create === false ) { return false; }
 			if (this.config.debug) { console.log(args); }
 
 //если параметр не задан, отрубаем функцию
@@ -430,7 +430,7 @@
 				args.$input = $('<input>', { 'type':args.type, 'class':'input-form form-control'}).prependTo( args.$el);
 			}
 
-// если существует input тогда обработаем его
+			// если существует input тогда обработаем его
 			if(args.$input) {
 				self._modifyObj(args);
 
@@ -462,7 +462,7 @@
 
 				// вешаем обработчик динамической проверки заполнения данного поля
 				if(args.check != false || args.submit === true) {
-					args.$input.on('input focus blur', function(e) {
+					args.$input.on('input blur', function(e) {
 						self._eventObj($(this), e);
 					});
 				}

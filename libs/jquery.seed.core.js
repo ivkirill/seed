@@ -28,7 +28,9 @@
 			'reinit' : false,
 			'fullscreen' : false,
 			'lazy' : ( typeof seed.config.lazy != "undefined") ? seed.config.lazy : false,
-			'cssclass': {},
+			'cssclass': {
+				'nolazy' : 'nolazy'
+			},
 			'selector': {
 				'auto' : null,
 				'evented' : null
@@ -418,8 +420,10 @@
 
 					// автозапуск ленивой инициализации
 					if(Seed.fn.defaults.lazy) {
+//						seed.config.selector.lazy[Seed.fn.defaults.selector.auto + ':not(.' + Seed.fn.defaults.cssclass.nolazy + ')'] = function(nodes) {
 						seed.config.selector.lazy[Seed.fn.defaults.selector.auto] = function(nodes) {
 							$(nodes)[core._name]();
+							console.log('it`s lazy time!', Seed.fn.defaults.selector.auto);
 						};
 					}
 				}

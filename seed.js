@@ -36,7 +36,6 @@
 	// создаем объект seed, если он не существует
 	if (!window.seed) {
 		window.seed = {};
-		seed = window.seed;
 	}
 	
 	// дефолтный конфиг проекта
@@ -107,7 +106,7 @@
 	
 	// биндим событие по domReady
 	seed.ready = function(func) {
-		if (document.readyState != 'loading') func();
+		if (document.readystate != 'loading') func();
 		else document.addEventListener('DOMContentLoaded', func);
 	}
 	
@@ -173,7 +172,7 @@
 
 					nodes.forEach(function(node) {
 						if( node.nodeType === 1 ) {
-							if( node.matches(selector) ) newNodes.push(node);
+							if( node.matches(selector) && !node.matches('[data-config-lazy="false"]') ) newNodes.push(node);
 							
 							var childs = node.querySelectorAll(selector);
 							childs = Array.prototype.slice.call(childs);
@@ -232,7 +231,7 @@
 	}
 	
 	// текущее состоянии загрузки
-	seed.STATE = 'loading';
+	seed.state = 'loading';
 	
 	// зарезервированные имена для модулей
 	seed._reserved = ['filter', 'selector', 'items'];
@@ -263,7 +262,7 @@
 		
 		corelibs.then(function(resolve) {
 			seed.ready(function() {
-				seed.STATE = 'ready';
+				seed.state = 'ready';
 				seed.AMD._init();
 			
 				// запускаем наблюдатель
@@ -357,11 +356,11 @@
 					require : true,
 					plugin : false
 				}
-				if( /\.(css|js)$/.test(config.name)  ) config.data.path = config.name;
+				if( /\.js$/.test(config.name)  ) config.data.path = config.name;
 			} else {
 				config.data.inited = ( config.data.inited ) ? config.data.inited : false;
 				config.data.require = (
-					(config.data.plugin === true && seed.STATE != 'ready') || (seed.config.lazy === true && config.data.selector)
+					(config.data.plugin === true && seed.state != 'ready') || (seed.config.lazy === true && config.data.selector)
 				) ? false : true;
 			}
 			
@@ -391,7 +390,7 @@
 			// если в конфиге модуля есть определенный селектор и включена функция lazy
 			if(module.data.selector && seed.config.lazy === true) seed.AMD._lazyReady(module.name, module.data.selector);
 			
-			return (seed.STATE == 'ready') ? (( config.data.plugin !== true ) ? seed.AMD._pending(module) : module) : module;
+			return (seed.state == 'ready') ? (( config.data.plugin !== true ) ? seed.AMD._pending(module) : module) : module;
 		}
 	}
 	
@@ -407,7 +406,6 @@
 			
 		// если переданы зависимости, до добавим их к текущим
 		if ( seed.isArray(config.depents) ) module.depents = seed.unique( module.depents.concat(config.depents) );
-
 		
 		// если передана callback-функция, то обновим её
 		if ( seed.isFunction(config.callback) ) module.callback = module.callback;
@@ -417,7 +415,6 @@
 		if ( config.source ) module.source = config.source;
 		if ( config.values ) module.values = config.values;
 		
-		if (/\.(css)$/.test(module.data.path)) module.data.type = 'html';
 		if (seed.config.debug) console.log('  Новый конфиг', module);
 		return module;
 	}
