@@ -25,9 +25,12 @@
 		this._defaults = {
 			'debug': false,
 			'evented' : false,
+			'reinit' : false,
 			'fullscreen' : false,
 			'lazy' : ( typeof seed.config.lazy != "undefined") ? seed.config.lazy : false,
-			'cssclass': {},
+			'cssclass': {
+				'nolazy' : 'nolazy'
+			},
 			'selector': {
 				'auto' : null,
 				'evented' : null
@@ -150,23 +153,28 @@
 		// парсинг data-config- атрибутов в объект
 		_dataset: function(el) {
 			var config = {};
-			[].forEach.call(el.attributes, function(attr) {
-				if (/^data-config-/.test(attr.name)) {
-					var key = attr.name.replace('data-config-','');
-					var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
-					if( value === 'false' ) value = false;
-					if( value === 'true' ) value = true;
-					
-					if (/-/.test(key)) {
-						var keys = key.split('-')
-						if( !config[keys[0]] ) config[keys[0]] = {};
-						config[keys[0]][keys[1]] = value;
+			if(!el || el.nodeType != 1) return config;
+			
+			var attributes = el.attributes;
+			if( attributes ) {
+				[].forEach.call(attributes, function(attr) {
+					if (/^data-config-/.test(attr.name)) {
+						var key = attr.name.replace('data-config-','');
+						var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
+						if( value === 'false' ) value = false;
+						if( value === 'true' ) value = true;
+						
+						if (/-/.test(key)) {
+							var keys = key.split('-')
+							if( !config[keys[0]] ) config[keys[0]] = {};
+							config[keys[0]][keys[1]] = value;
+						}
+						else {
+							config[key] = value;
+						}
 					}
-					else {
-						config[key] = value;
-					}
-				}
-			});
+				});
+			}
 			return config;
 		},
 		
@@ -288,11 +296,15 @@
 						this._error(e, value);
 					}
 				},
+				
+				destroy: function() {
+					this._destroy();
+				},
 
 				// метод отключения библиотеки
 				_destroy: function() {
-					this.$el.removeData(this._label);
 					try {
+						this.$el.removeData(this._label);
 						delete this;
 					}
 					catch(e) {
@@ -344,9 +356,7 @@
 				var init = function(e, dynamic) {
 					// если инициализация вызвана через событие, то проверим, чтобы делегирующий и целевой элемент не совпадали
 					if( e.currentTarget ) {
-						if( e.currentTarget === e.delegateTarget ) {
-							return false;
-						}
+						if( e.currentTarget === e.delegateTarget ) return false;
 					}
 
 					var element = this;
@@ -357,23 +367,11 @@
 					var data = $element.data(core._label);
 
 					// если обьект библиотеки еще не создан, то нужно его инициализировать
-					if( !data ) {
-						$element.data(core._label, (data = new Seed(element, {list:list, dynamic:dynamic, options:options, e:e} )));
-
-						// сохраним данные о том какие объекты были обработаны
-						if(!$.seed[core._name]._inited[uniq] && !evented) {
-							$.seed[core._name]._inited.push({
-								'uniq' : uniq,
-								'selector' : list.selector,
-								'dynamic' : defaults.dynamic,
-								'config' : options
-							});
-						}
-					}
+					if( !data ) $element.data(core._label, (data = new Seed(element, {list:list, dynamic:dynamic, options:options, e:e} )));
 					
-					// обновим конфиг
-					if( typeof option == 'string' ) {
-						if(config) { data['_config'](config); }
+					// если передан метод, обновим конфиг и вызовем этот метод
+					if( typeof option == 'string' && seed.isFunction(data[option]) ) {
+						if(config) data['_config']($.extend(true, {}, config, data.config));
 						data[option]();
 					}
 
@@ -422,8 +420,10 @@
 
 					// автозапуск ленивой инициализации
 					if(Seed.fn.defaults.lazy) {
+//						seed.config.selector.lazy[Seed.fn.defaults.selector.auto + ':not(.' + Seed.fn.defaults.cssclass.nolazy + ')'] = function(nodes) {
 						seed.config.selector.lazy[Seed.fn.defaults.selector.auto] = function(nodes) {
 							$(nodes)[core._name]();
+							console.log('it`s lazy time!', Seed.fn.defaults.selector.auto);
 						};
 					}
 				}

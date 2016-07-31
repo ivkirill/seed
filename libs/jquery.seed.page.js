@@ -83,6 +83,8 @@
 
 		build: function() {
 			var self = this;
+
+console.log(this);
 			this.config.module.main = this.config.module.main || this.$el.attr('data-module') || this._error(this.config.module.main, 'module.main');
 			this.config.module.func = this.config.module.func || this.$el.attr('data-function') || this.$el.attr('data-func') || this._error(this.config.module.func, 'module.func');
 
@@ -92,7 +94,7 @@
 			this.config.preload = this.$el.attr('data-preload') || this.config.preload;
 			this.config.delta = this.$el.attr('data-delta') || this.config.delta;
 			this.config.url.current = this.$el.attr('data-url') || this.config.url.current;
-			this.config.total = this.config.total || this.$el.attr('data-total') || this.config.total || this._error(this.config.total, 'total'); // количество элементов всего
+			this.config.total = this.config.total || this.$el.attr('data-total') || this.config.total || ''; // количество элементов всего
 
 			if( this.config.debug ) { console.log( this ); }
 
@@ -308,7 +310,7 @@
 			}
 		},
 
-// постраничный разделитель
+		// постраничный разделитель
 		bindCut: function(el) {
 			var self = this;
 
@@ -398,6 +400,9 @@
 
 						var $block = self.$answer.find(self._$list.selector);
 
+						// добавим атрибут отключение обработки элемента через lazy, чтобы исключить повторную инициализацию
+
+						$block.attr('data-config-lazy', 'false');
 						var $items = $block.find(self.config.selector.items).hide();
 
 //						var total = self.$answer.find(self._$list.selector).attr('data-total');
@@ -405,8 +410,8 @@
 						var $cutter = $('<div>', {'class':'page-cut'}); 
 
 						if(page == 'next') {
-							$cutter.html('<span>'+self.config.locale.interface.page+': '+(self.page_current_next*1+1)+'</span>').appendTo( self.$wrapper, {'dynamic':false});
-							$block.appendTo( self.$wrapper, {'dynamic':false});
+							$cutter.html('<span>'+self.config.locale.interface.page+': '+(self.page_current_next*1+1)+'</span>').appendTo( self.$wrapper );
+							$block.appendTo( self.$wrapper );
 							self.page_current_next++;
 							$block.attr({'data-page':self.page_current_next});
 							self.page_loaded[self.page_current_next] = {el: $block};
@@ -414,8 +419,8 @@
 						if(page == 'prev') {
 							self.page_current_prev--;
 							self.page_loaded.push( self.page_current_prev );
-							$cutter.html('<span>'+self.config.locale.interface.page+': '+(self.page_current_prev*1+1)+'</span>').prependTo( self.$wrapper, {'dynamic':false});
-							$block.prependTo( self.$wrapper, {'dynamic':false});
+							$cutter.html('<span>'+self.config.locale.interface.page+': '+(self.page_current_prev*1+1)+'</span>').prependTo( self.$wrapper );
+							$block.prependTo( self.$wrapper );
 							$block.attr({'data-page':self.page_current_prev});
 							self.page_visible = self.page_current_prev;
 							self.page_loaded[self.page_current_prev] = {el: $block};

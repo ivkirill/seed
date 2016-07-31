@@ -166,7 +166,7 @@
 				self.update();
 			});
 
-			this.$el.on('input', 'input:not(input[name="product_chr_string"])', function() {
+			this.$el.on('input', 'input:not(input[data-seed="select"])', function() {
 				clearTimeout(self.timer);
 
 				var $input = $(this);
@@ -189,19 +189,19 @@
 			})
 
 
-			if(this.config.module.func == 'product') {
-				this.$el.on('keyup.seed.filter', 'input[name="product_chr_string"]', function(e) {
+//			if(this.config.module.func == 'product') {
+				this.$el.on('keyup.seed.filter', 'input[data-seed="select"]', function(e) {
 					if(e.keyCode == 13) self.update();
 				});
 
-				this.$el.on('input', 'input[name="product_chr_string"]', function(e) {
+				this.$el.on('input', 'input[data-seed="select"]', function(e) {
 					$(this).val( $(this).val().trim() );
 				});
 
-				this.$el.on('enter.seed.select', 'input[name="product_chr_string"]', function(e) {
+				this.$el.on('enter.seed.select', 'input[data-seed="select"]', function(e) {
 					self.update();
 				});
-			}
+//			}
 
 			this.$el.on('submit', function() {
 				if( self.config.func.submit ) {

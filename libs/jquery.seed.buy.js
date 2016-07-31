@@ -55,7 +55,7 @@
 			},
 
 			'selector': {
-				'auto' : '[role="basket-status"] .items, [role="basket-status-items"]',
+				'auto' : '[role="button-buy-ajax"], [role="basket-button"]',
 				'evented': '[role="button-buy"], [data-seed="buy"]',
 				'status' : '[role="basket-status"]',  // селектор статус корзины
 				'button' : '[role="button-buy-ajax"], [role="basket-button"]',
@@ -95,11 +95,8 @@
 
 		build: function() {
 			var self = this;
-
+			
 			if( this.$el.hasClass('disabled') ) { return false; }
-
-			if( this.$el.attr('data-buy-modal') == 'true' ) { this.config.modal = true; }
-			if( this.$el.attr('data-buy-trigger') == 'true' ) { this.config.trigger = true; }
 
 			this.config.selector.button = this.config.selector.button || null;
 			this.config.selector.status = this.config.selector.status || this._error(this.config.selector.status, 'selector.status'); 
@@ -108,7 +105,10 @@
 			this.config.module.button = this.config.module.button  || $(this.config.selector.button).attr('data-module-button')*1 || this._getAttr('data-module-button');
 
 			this.config.module.page = this.config.module.page || $(this.config.selector.button).attr('data-module-page')*1 || this._error(this.config.module.page, 'module.page'); 
-
+			
+			if( this.$el.attr('data-buy-modal') == 'true' ) { this.config.modal = true; }
+			if( this.$el.attr('data-buy-trigger') == 'true' ) { this.config.trigger = true; }
+		
 			if( this.config.modal ) {
 				this.config.url.buy = this.$el.attr('href') || this.$el.attr('data-buy-url') || this._error(this.config.url.buy, 'href');
 			}
@@ -119,13 +119,15 @@
 			this._checking();
 
 			if( this.config.modal && !this.$el.hasClass('active') ) {
-				$.require('seed.modal', function() {
+				require('seed.modal', function() {
 					self.addModal();
 				});
 			}
-			else {
+			else if( this._event ) {
 				this.add();
 			}
+			
+			return this;
 		},
 
 		bind: function(method) {
@@ -139,9 +141,9 @@
 		},
 
 		add: function() {
-		        var self = this;
+			var self = this;
 
-// если у нас параметр trigger false, то перекидываем юзера на страницу
+			// если у нас параметр trigger false, то перекидываем юзера на страницу
 			if( this.$el.hasClass('active') ) {
 				if( !this.config.trigger ) {
 					window.location.href = this.config.url.basket;
@@ -302,7 +304,7 @@
 
 // обновление статуса корзины
 		status: function() {
-		        var self = this;
+			var self = this;
 
 			var qs = {}
 			qs['mime'] = 'txt';
@@ -321,9 +323,9 @@
 			});
 		},
 
-//проверим купленные товары и отметим их при загрузке страницы
+		//проверим купленные товары и отметим их при загрузке страницы
 		check: function() {
-		        var self = this;
+	        var self = this;
 
 			$(this.config.selector.status).find('[data-uid]').each(function(i, el) {
 				var button = self._$list.add(self.config.selector.evented).filter('[data-buy="'+$(el).data('uid')+'"]').not('.active');
@@ -340,9 +342,17 @@
 
 		_checking: function() {
 			var self = this;
-			setInterval(function() {
-				self.check();
-			}, 2000);
+			
+			if( window.MutationObserver && seed.lazy ) {
+				$(self.config.selector.evented).seedLazy(function() {
+					self.check();
+				});
+			}
+			else {
+				setInterval(function() {
+					self.check();
+				}, 2000);
+			}
 		}
 	});
 

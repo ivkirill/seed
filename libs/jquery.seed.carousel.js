@@ -192,15 +192,20 @@
 				});
 			}
 
-// бинд свайпа для основного элемента карусели
-			this.$el.on({
-				'swipe' : function() {
-				}
-			});
-
 // банды кнопок Вперед и Назад
 			this.$next.on('click touchend', function() { self._page('next'); return false; });
 			this.$prev.on('click touchend', function() { self._page('prev'); return false; });
+
+// бинд свайпа для основного элемента карусели
+			if( jQuery.event.special.swipe ) {
+console.log('swipe');
+				this.$el.on({
+					'swipeLeft' : function() {
+alert('swipeLeft');
+					}
+				});
+			}
+
 
 		},
 

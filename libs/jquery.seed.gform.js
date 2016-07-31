@@ -56,7 +56,7 @@
 			'tooltip' : 'seed',
 			'tooltip_side' : 'left',
 
-			'selector': {
+			'selector' : {
 				'auto' : '[data-seed="gform"], [data-seed="validate"]',
 				'context' : '',
 				'emulate' : '[contenteditable="true"], input, select'
@@ -151,6 +151,7 @@
 		build: function() {
 			var self = this;
 			if(this.config.debug) { console.log(this); }
+			this.generated = false;
 			
 			if( this.$el.attr('data-gform-ajax') ) { this.config.ajax = this.$el.attr('data-gform-ajax'); }
 			if( this.$el.attr('data-gform-merge') ) { this.config.merge = this.$el.attr('data-gform-merge'); }
@@ -178,9 +179,10 @@
 			}
 			else {
 				this.fields = this.config.fields || this.$el.attr('data-fields') || this.$el.attr('data-gform-fields') || this.$el.data('fields') || this._error(this.config.fields, 'fields'); 
-				if( typeof this.fields == 'string') { this.fields = window[this.fields] };
+				if( typeof this.fields == 'string') this.fields = window[this.fields];
 
 				this._create();
+				this.generated = true;
 			}
 		},
 
@@ -220,8 +222,7 @@
 
 		_create: function() {
 			var self = this;
-
-			this.$holder = $('<div>', {'class':'form-wrapper'}).appendTo( this.$el, {'dynamic':false});
+			this.$holder = $('<div>', {'class':'form-wrapper'}).appendTo( this.$el);
 // создаем форму
 			this.$form = $('<form>', {
 				'class':'gform gform-'+ this._index +' ' + this.config.cssclass.form,
@@ -229,13 +230,13 @@
 				'action': this.config.url.post,
 				'novalidate':'novalidate',
 				'method' : this.config.method
-			}).appendTo( this.$holder, {'dynamic':false});
+			}).appendTo( this.$holder);
 
 // создаем инпут для проверки защиты от спама :)
 			$('<input>', {
 				'name' : 'from',
 				'type' : 'hidden'
-			}).appendTo( self.$form, {'dynamic':false});
+			}).appendTo( self.$form);
 			
 			if( this.config.debug ) { console.log(this.fields); }
 
@@ -246,7 +247,7 @@
 
 // добавляем блок с обязательностью заполенения полей
 			if( this.config.required_status === true ) {	
-				$('<p>',{'class':'gform-reqtitle alert alert-warning'}).html(this.config.locale.interface.required).insertAfter( self.$form.find('.form-group:last'), {'dynamic':false});
+				$('<p>',{'class':'gform-reqtitle alert alert-warning'}).html(this.config.locale.interface.required).insertAfter( self.$form.find('.form-group:last'));
 			}
 
 			if(this.config.enctype == 'true') { this.$form.attr('enctype','multipart/form-data'); }
@@ -256,7 +257,7 @@
 				$('<input>', {
 					'name' : ( this.config.form_event == 'update' ) ? 'Text' : 'text',
 					'type' : 'hidden'
-				}).appendTo( self.$form, {'dynamic':false});
+				}).appendTo( self.$form);
 			}
 
 			this.bind();
@@ -272,7 +273,7 @@
 		},
 
 		_createGroup: function(args) {
-			if( !args ) { return false; }
+			if( !args || args.create === false ) { return false; }
 			if (this.config.debug) { console.log(args); }
 
 //если параметр не задан, отрубаем функцию
@@ -285,7 +286,7 @@
 
 			if (!args.tip) { args.tip = ''; }
 
-			args.$group = $('<div>',{'class':'form-group ' + ((args.name) ? 'form-group-'+args.name.toLowerCase() : '') }).appendTo( this.$form, {'dynamic':false});
+			args.$group = $('<div>',{'class':'form-group ' + ((args.name) ? 'form-group-'+args.name.toLowerCase() : '') }).appendTo( this.$form);
 
 			if(args.hide) { args.$group.addClass('gform-hidden hidden hide'); }
 
@@ -294,14 +295,14 @@
 
 		_createHolder: function(args) {
 			if (args.type == 'caption') {
-				args.$title = $('<div>',{'class':'caption '+this.config.cssclass.caption}).appendTo( args.$group, {'dynamic':false});
-				args.$caption = $('<div>').addClass('h3').html(args.title).appendTo( args.$title, {'dynamic':false});
+				args.$title = $('<div>',{'class':'caption '+this.config.cssclass.caption}).appendTo( args.$group);
+				args.$caption = $('<div>').addClass('h3').html(args.title).appendTo( args.$title);
 				args.$el = args.$title;
 				this._createObj(args);
 			}
 			else if (args.type == 'header' ) {
-				args.$title = $('<div>',{'class':'caption '+this.config.cssclass.header}).appendTo( args.$group, {'dynamic':false});
-				args.$caption = $('<h1>').html(args.title).appendTo( args.$title, {'dynamic':false});
+				args.$title = $('<div>',{'class':'caption '+this.config.cssclass.header}).appendTo( args.$group);
+				args.$caption = $('<h1>').html(args.title).appendTo( args.$title);
 				args.$el = args.$title;
 			}
 			else if (args.type == 'hidden') {
@@ -310,14 +311,14 @@
 				this._createObj(args);
 			}
 			else {
-				args.$title = $('<div>',{'class':'title ' + this.config.cssclass.title}).appendTo( args.$group, {'dynamic':false});
+				args.$title = $('<div>',{'class':'title ' + this.config.cssclass.title}).appendTo( args.$group);
        				if(args.type != 'submit') if(args.type != 'reset') {
-					args.$caption = $('<label>',{'for':'gform-'+this._index+'-'+args.name.toLowerCase()}).html( (args.title) ? (args.title+':') : '').appendTo( args.$title, {'dynamic':false});
-					args.$req = $('<span>').addClass('gform-required').text( (args.required === true) ? '*' : '').prependTo( args.$caption, {'dynamic':false});
+					args.$caption = $('<label>',{'for':'gform-'+this._index+'-'+args.name.toLowerCase()}).html( (args.title) ? (args.title+':') : '').appendTo( args.$title);
+					args.$req = $('<span>').addClass('gform-required').text( (args.required === true) ? '*' : '').prependTo( args.$caption);
 				}      
-				args.$el = $('<div>',{'class':'input-holder ' + this.config.cssclass.column}).appendTo( args.$group, {'dynamic':false});
+				args.$el = $('<div>',{'class':'input-holder ' + this.config.cssclass.column}).appendTo( args.$group);
        				if(args.type != 'submit') {
-					args.$icon = $('<div>',{'class':'input-status fa', 'aria-hidden':'true'}).appendTo( args.$el, {'dynamic':false});
+					args.$icon = $('<div>',{'class':'input-status fa', 'aria-hidden':'true'}).appendTo( args.$el);
 				}
 				this._createObj(args);
 			}
@@ -325,13 +326,12 @@
 
 		_createObj: function(args) {
 			var self = this;
-
-			args.valid = false;
+			
 			args.datatype = args.type;
 
-// если поле является checkbox или radio
+			// если поле является checkbox или radio
 			if (args.type == 'checkbox' || args.type == 'radio') {
-				args.$input = $('<input>',{type:'hidden','disabled': true}).prependTo( args.$el, {'dynamic':false});
+				args.$input = $('<input>',{type:'hidden','disabled': true}).prependTo( args.$el);
 				args.options = [];
 
 				if( typeof args.items === 'object') {
@@ -339,17 +339,17 @@
 						var $label = $('<label>',{
 							'class':args.type+' input-checkbox-label',
 							'data-tooltip-side': self.config.tooltip_side
-						}).appendTo( args.$el, {'dynamic':false});
+						}).appendTo( args.$el);
 
-						var $title = $('<span>').text(args.items[i].name || args.items[i].value).appendTo( $label, {'dynamic':false})
+						var $title = $('<span>').text(args.items[i].name || args.items[i].value).appendTo( $label)
 
-						args.options[i] = $('<input type="'+args.datatype+'">').prependTo( $label, {'dynamic':false}).addClass('input-checkbox').attr({
+						args.options[i] = $('<input type="'+args.datatype+'">').prependTo( $label).addClass('input-checkbox').attr({
 							'name': args.name,
 							'value': args.items[i].value,
 							'data-type': args.datatype
 						});
 
-// сохраним обьект свойств в data созданного инпута
+						// сохраним обьект свойств в data созданного инпута
 						args.options[i].data(this);
 
 						if( args.value ) {
@@ -367,23 +367,23 @@
 				}
 			}       
 
-// если поле является select
+			// если поле является select
 			else if (args.type == 'select') {
-				args.$input = $('<select>', {'class': 'form-control'}).prependTo( args.$el, {'dynamic':false});
+				args.$input = $('<select>', {'class': 'form-control'}).prependTo( args.$el);
 				args.options = [];
 
-				args.options[0] = $('<option>').val( this.config.locale.interface.select_value ).text( this.config.locale.interface.select_name ).appendTo( args.$input, {'dynamic':false});
+				args.options[0] = $('<option>').val( this.config.locale.interface.select_value ).text( this.config.locale.interface.select_name ).appendTo( args.$input);
 				if( args.required == 'true' ) args.options[0].attr({'disabled':'disabled', 'selected':'selected'});
 
 				if( typeof args.items === 'object') {
 					$.each(args.items, function(i, el) {
-						args.options[i+1] = $('<option>').text(args.items[i].name || args.items[i].value).appendTo( args.$input, {'dynamic':false});
+						args.options[i+1] = $('<option>').text(args.items[i].name || args.items[i].value).appendTo( args.$input);
 
 						if( args.value ) {
 							if(args.items[i].value == args.value) { args.options[i+1].attr('selected','selected'); }
 						}
 						else {
-							if(args.items[i].active == true) { args.options[i+1].attr('selected','selected'); }
+							if(args.items[i].active === true) { args.options[i+1].attr('selected','selected'); }
 						}
 
 						$.each(args.items[i], function(j, param) {
@@ -397,30 +397,40 @@
 				}
 			}
 		
-// если поле является submit
+			// если поле является submit
 			else if (args.type == 'submit') {
-				args.$submit = $('<div>',{ 'class': 'submit' }).prependTo( args.$el, {'dynamic':false});
-				args.$input = $('<button>',{ 'type':args.type }).text( $('<span>').html(args.title).text() ).addClass('input-submit input-submit btn btn-primary').appendTo( args.$submit, {'dynamic':false});
-			}
-// если поле является file
-			else if (args.type == 'file') {
-				args.$input = $('<input>',{ 'type':args.type }).addClass('input-file').prependTo( args.$el, {'dynamic':false});
-				this.config.enctype = 'true';
-			}
-// если поле является textarea
-			else if (args.type == 'textarea') {
-				args.$input = $('<textarea>', {'class':'form-control'}).text( args.value ).prependTo( args.$el, {'dynamic':false});
-			}
-// если поле является hidden
-			else if (args.type == 'hidden') {
-				args.$input = $('<input>',{ 'type':args.type }).prependTo( self.$form, {'dynamic':false});
-			}
-			else {
-				if( args.type == 'caption' ) { args.type = 'hidden'; }
-				args.$input = $('<input>',{ 'type':args.type, 'class':'form-control'}).prependTo( args.$el, {'dynamic':false});
+				args.$submit = $('<div>',{ 'class': 'submit' }).prependTo( args.$el);
+				args.$input = $('<button>',{ 'type':args.type }).text( $('<span>').html(args.title).text() ).addClass('input-submit input-submit btn btn-primary').appendTo( args.$submit);
 			}
 
-// если существует input тогда обработаем его
+			// если поле является file
+			else if (args.type == 'file') {
+				args.$input = $('<input>',{ 'type':args.type }).addClass('input-file').prependTo( args.$el);
+				this.config.enctype = 'true';
+			}
+
+			// если поле является textarea
+			else if (args.type == 'textarea') {
+				args.$input = $('<textarea>', {'class':'form-control'}).text( args.value ).prependTo( args.$el);
+			}
+
+			// если поле является hidden
+			else if (args.type == 'hidden') {
+				args.$input = $('<input>',{ 'type':args.type }).prependTo( self.$form);
+			}
+
+			// если поле является caption
+			else if (args.type == 'caption') {
+				if( args.merge ) {
+					args.type = 'hidden';
+					args.$input = $('<input>',{ 'type':args.type }).prependTo( self.$form);	
+				}
+			}
+			else {
+				args.$input = $('<input>', { 'type':args.type, 'class':'input-form form-control'}).prependTo( args.$el);
+			}
+
+			// если существует input тогда обработаем его
 			if(args.$input) {
 				self._modifyObj(args);
 
@@ -452,7 +462,7 @@
 
 				// вешаем обработчик динамической проверки заполнения данного поля
 				if(args.check != false || args.submit === true) {
-					args.$input.on('input focus blur', function(e) {
+					args.$input.on('input blur', function(e) {
 						self._eventObj($(this), e);
 					});
 				}
@@ -466,11 +476,12 @@
 		// назначим для элемента необходимые атрибуты и свойства
 		_modifyObj: function(args) {
 			var self = this;
-
+			
 			if( args.type != 'file' && args.type != 'submit' ) { args.$input.addClass('input'); }
 
 			args.$input.attr('name', args.name);
-			args.$input.attr('value', args.value);
+			args.$input.attr('value', $('<i>').html(args.value).text() );
+
 			args.$input.attr('data-type', args.datatype);
 			args.$input.attr('data-title', args.title);
 			args.$input.attr('id', 'gform-'+this._index+'-'+args.name);
@@ -479,6 +490,9 @@
 
 			if(args.autocomplete == 'off') { args.$input.attr('autocomplete','off'); }
 			if(args.autocomplete == 'on') { args.$input.attr('autocomplete','on'); }
+			if(args.step) { args.$input.attr('step', args.step); }
+			
+			
 			if(args.valid === false) { args.$input.attr('data-valid','false'); }
 			if(args.submit === true) { args.$input.attr('data-submit','true'); }
 			if(args.important === true) { args.$input.attr('data-important','true'); }
@@ -498,7 +512,7 @@
 				args.$input.attr('data-tooltip-side', this.config.tooltip_side);
 
 				if( !$.seed.seedTooltip || self.config.tooltip != 'seed' ) {
-					( !args.$input.nextAll('small.error.gform-error').length ) ? ( $('<small>', {'class':'error gform-error'}).text(args.tip || args.tooltip).insertAfter(args.$input, {'dynamic':false}) ) : ( args.$input.nextAll('small.error.gform-error').text(args.tip || args.tooltip) );
+					( !args.$input.nextAll('small.error.gform-error').length ) ? ( $('<small>', {'class':'error gform-error'}).text(args.tip || args.tooltip).insertAfter(args.$input) ) : ( args.$input.nextAll('small.error.gform-error').text(args.tip || args.tooltip) );
 				}
 			}
 
@@ -574,7 +588,7 @@
 			return ( this.config.emulate == true ) ? this.$form.find(this.config.selector.emulate) : this.$form.find(':input:not(input[type="image"], [type="submit"])');
 		},
 
-		//Валидация и отравка формы
+		// валидация и отравка формы
 		validate: function(validation) {
 			var self = this;
 			var valid = true;
@@ -591,7 +605,7 @@
 			
 			var $field
 
-			//Выполняем валидацию каждого поля и возвращаем логическое значение проверки
+			// выполняем валидацию каждого поля и возвращаем логическое значение проверки
 			$.each( this.$fields.get().reverse(), function(j, obj) {
 
 				//если поле не прошло валидацию, форму не отравляем
@@ -617,7 +631,7 @@
 
 					self.$form.find('input[name="from"]').val(window.location.href);
 
-// если есть объединение полей, то выполним его, учитывая кастомную функцию					
+					// если есть объединение полей, то выполним его, учитывая кастомную функцию					
 					if( this.config.merge == true ) { (this.config.func.merge) ? (this.config.func.merge)() : this.merge(); }
 
 					if( this.config.func.ajax_custom ) {
@@ -644,10 +658,11 @@
 			return true;
 		},
 
-//Валидация поля формы
+		// валидация поля формы
 		validateObj: function(obj) {
 			var self = this;
-//дефолтные значения функции, сбрасываем все ошибки для поля
+			
+			//дефолтные значения функции, сбрасываем все ошибки для поля
 			var valid = true;
 			var value = obj.val() || obj.text();
 
@@ -659,7 +674,7 @@
 
 			$holder.removeClass('has-success has-error');
 			$status.removeClass('fa-remove fa-check');
-			obj.removeClass('valid').removeAttr('data-error');
+			obj.removeClass('valid invalid').removeAttr('data-error');
 
 			if( ( obj.attr('required') == 'required' || obj.attr('data-required') == 'true' ) && ( obj.is(':visible') || ( obj.attr('type') == 'hidden' && ( type == 'checkbox' || type == 'radio' ) ) ) ) {
 				var re = ( obj.data('pattern') ) ? new RegExp(obj.data('pattern'), 'm') : '';
@@ -681,8 +696,8 @@
 				else if ( obj.attr('data-valid') == 'false' ) { error = obj.attr('data-error-self'); }
 
 				else if ( type =='file' && name=='photo' ) {
-					if( value.search(/[А-Яа-яЁё]/)>=0 ) { error = this.config.locale.error.symbols_file; }
-					else if( value.search(/(jpg|gif|jpeg|png)$/i)<0 ) { error = this.config.locale.error.extension; }
+					if( !/[a-zA-Z0-9_\s-]/.test(value) ) { error = this.config.locale.error.symbols_file; }
+					if( value.search(/(jpg|gif|jpeg|png)$/i)<0 ) { error = this.config.locale.error.extension; }
 				}
 
 				else if ( obj.attr('type') == 'hidden' && ( type == 'checkbox' || type == 'radio' ) ) {
@@ -705,17 +720,17 @@
 				valid = false;
 				$holder.addClass('has-feedback has-error');
 				$status.addClass('fa-remove');
-        			obj.attr('data-error', error);
+       			obj.attr('data-error', error).addClass('invalid');
 
 				if( !$.seed.seedTooltip ) {
-					( !obj.nextAll('small.error.gform-error').length ) ? ( $('<small>', {'class':'gform-error error text-danger'}).text(error).insertAfter(obj, {'dynamic':false}) ) : ( obj.nextAll('small.error.gform-error').text(error) );
+					( !obj.nextAll('small.error.gform-error').length ) ? ( $('<small>', {'class':'gform-error error text-danger'}).text(error).insertAfter(obj) ) : ( obj.nextAll('small.error.gform-error').text(error) );
 				}
 			}
 
 			if( valid === true ) {
 				$holder.addClass('has-feedback has-success');
 				$status.addClass('fa-check');
-				obj.addClass('valid');
+				obj.addClass('valid').removeClass('invalid');
 			}
         
 			return valid;
@@ -800,8 +815,6 @@
 			// найдем к нему все поля типа important
 			if( $field ) this.$fields = this.$fields.filter('[data-important="true"]').add( $field.get(0) );
 			
-
-			
 			// сформируем отдельный formData
 			this.$fields.each(function(i, el) {
 				var $input = $(this);
@@ -831,11 +844,15 @@
 			// определяем formData
 			this.form_data = (form_data) ? form_data : new FormData( this.$form.get(0) );
 			
-			// если поле from не было передано, добавляем его сами
-			if( !this.form_data.get('from') ) this.form_data.append('from', window.location.href);
-			
-			// если передано поле mime=json, значит отправлять будем как JSON
-			if( this.form_data.get('mime') == 'json' ) this.config.dataType = 'json';
+			// для браузеров которые тупые и не знают что такое formData.get()
+			try {
+				// если поле from не было передано, добавляем его сами
+				if( !this.form_data.get('from') ) this.form_data.append('from', window.location.href);
+
+				// если передано поле mime=json, значит отправлять будем как JSON
+				if( this.form_data.get('mime') == 'json' ) this.config.dataType = 'json';
+			}
+			catch(e) {}
 
 			// лог для дебага
 			if(this.config.debug) { console.log(this.form_data); }
@@ -860,7 +877,7 @@
 					else {
 						$(this).html('');
 						$('.tip, .tooltip').remove();
-						$('<div class="h2 gform-status status loading"><i class="fa fa-cog fa-spin"></i> <span>'+ self._ajaxHeader('loading') +'</span></div>').appendTo( $(this), {'dynamic':false});
+						$('<div class="h2 gform-status status loading"><i class="fa fa-cog fa-spin"></i> <span>'+ self._ajaxHeader('loading') +'</span></div>').appendTo( $(this));
 					}
 				},
 				statusCode : {
@@ -878,13 +895,13 @@
 
 					if(self.config.debug) { console.log(data); }
 
-// если задана функция обработки ошибки, запустим ее
+					// если задана функция обработки ошибки, запустим ее
 					if(self.config.func.ajax_error) {
 						(self.config.func.ajax_error)(self, data);
 					}
 					else {
 						$(this).html('');
-						$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error') +'</span></div>').appendTo( $(this), {'dynamic':false});
+						$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error') +'</span></div>').appendTo( $(this));
 					}
 
 					self.$form.find('input[type="submit"]').removeClass('btn-loading').removeAttr('disabled');
@@ -900,7 +917,7 @@
 							return false;
 						}
 
-// если задана функция обработки удачного ответа, то запустим ее
+						// если задана функция обработки удачного ответа, то запустим ее
 						if(self.config.func.ajax_success) {
 							(self.config.func.ajax_success)(self, data);
 						}
@@ -914,9 +931,9 @@
 								if( ans.find('var[error]').length ) error = true;
 							}
 							if( error ) {
-								$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error', ans) +'</span></div>').appendTo( $(this), {'dynamic':false});
+								$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error', ans) +'</span></div>').appendTo( $(this));
 
-// если задана функция обработки ошибки, внутри удачного ответа, то запустим ее
+								// если задана функция обработки ошибки, внутри удачного ответа, то запустим ее
 								if(self.config.func.ajax_success_error) {
 									(self.config.func.ajax_success_error)(self, data);
 								}
@@ -928,7 +945,7 @@
 								}
 							}
 							else {
-								$('<div class="h2 gform-status status success" data-time="'+ self._getTimeNow() +'"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success') +'</span></div>').appendTo( $(this), {'dynamic':false});
+								$('<div class="h2 gform-status status success" data-time="'+ self._getTimeNow() +'"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success') +'</span></div>').appendTo( $(this));
 								if( self.config.auth ) {
 									window.location.reload(true);
 								}
@@ -948,7 +965,7 @@
 			});
 		},
 
-//Функция формирования ответов и загловков при ajax отправке
+		//Функция формирования ответов и загловков при ajax отправке
 		_ajaxHeader: function(status, data) {
 			return ( status == 'error' && data.length && data.find('var').attr('text') ) ? data.find('var').attr('text') : this.config.locale.interface[status + (( this.config.auth ) ? '_auth' : '')];
 		},
@@ -961,7 +978,7 @@
 		destroy : function() {
 			this.$el.off('submit');
 			this.$form.off('submit');
-			this.$el.find('> *').remove();
+			if( this.generated ) this.$el.find('> *').remove();
 			this._destroy();
 		}
 	});
