@@ -2,6 +2,8 @@
 2.1.3
 
 Simple Flex Framework 
+Javascript: http://seedunit.ru/libs.html
+
 
 Projects included Seed:
 
