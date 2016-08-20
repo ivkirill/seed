@@ -201,7 +201,6 @@
 console.log('swipe');
 				this.$el.on({
 					'swipeLeft' : function() {
-alert('swipeLeft');
 					}
 				});
 			}

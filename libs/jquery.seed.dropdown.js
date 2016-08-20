@@ -26,6 +26,7 @@
 			'evented': true,
 
 			'group' : 'default',
+			'area' : null,
 
 			'selector': {
 				'auto' : null,

@@ -164,11 +164,15 @@
 
 			if (this.$el.attr('data-modal-html')) {
 				this.$html = $('[name="' + this.$el.attr('data-modal-html') + '"]').clone().html();
-			} else if (this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.ajax === true || this.config.url.ajax) {
+			} 
+			else if( this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.ajax == true || this.config.url.ajax ) {
 				this.type = 'ajax';
 				this.config.ajax = true;
-				this.config.url.ajax = this.config.url.ajax || this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this._error(this.config.url.ajax, 'url.ajax');
-				this.config.module.main = this.config.module.main || this.$el.attr('data-module') || this.$el.attr('data-module-main') || false;
+
+				// для seed1 нельзя определять текущий конфиг, через сохраненных конфиг, в seed2 это исправлено
+				this.config.url.ajax =  this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.url.ajax || this._error(this.config.url.ajax, 'url.ajax');
+//				this.config.url.ajax = this.config.url.ajax || this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this._error(this.config.url.ajax, 'url.ajax');
+				this.config.module.main =  this.$el.attr('data-module') || this.$el.attr('data-module-main') || this.config.module.main || false;
 			}
 
 			if (this.config.debug) console.log(this);

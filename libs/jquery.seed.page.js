@@ -84,7 +84,6 @@
 		build: function() {
 			var self = this;
 
-console.log(this);
 			this.config.module.main = this.config.module.main || this.$el.attr('data-module') || this._error(this.config.module.main, 'module.main');
 			this.config.module.func = this.config.module.func || this.$el.attr('data-function') || this.$el.attr('data-func') || this._error(this.config.module.func, 'module.func');
 
@@ -401,7 +400,6 @@ console.log(this);
 						var $block = self.$answer.find(self._$list.selector);
 
 						// добавим атрибут отключение обработки элемента через lazy, чтобы исключить повторную инициализацию
-
 						$block.attr('data-config-lazy', 'false');
 						var $items = $block.find(self.config.selector.items).hide();
 
