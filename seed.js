@@ -14,7 +14,7 @@
 			log: function() {},
 			error: function() {},
 			info: function() {}
-		};
+		};                                                                                      	
 	}
 
 	// Polyfill for "matches"
@@ -32,6 +32,11 @@
 			return i > -1;            
 		};
 	}
+
+	if (!typeof Promise) {
+		return;
+	}
+
 	
 	// создаем объект seed, если он не существует
 	if (!window.seed) {
@@ -50,9 +55,8 @@
 		'AMD': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
-			'libs_path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
+			'path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
 		},
-		'ui' : [], // настройки для UI
 		'locale': {}, // локализация библиотек ядра
 		'defaults' : {}
 	};
@@ -244,8 +248,8 @@
 		
 		var corelibs = new Promise(function(resolve, reject) {
 			// определяем модуль с основными библиотеками
-			if( seed.config.AMD.libs_path ) {
-				seed.AMD._include(seed.config.AMD.libs_path).then(function(source) {
+			if( seed.config.AMD.path ) {
+				seed.AMD._include(seed.config.AMD.path).then(function(source) {
 					// создаем функцию для исполнения внешнего в нашей области видимости
 					(seed.AMD._exec({source: source}))();
 
@@ -360,7 +364,7 @@
 			} else {
 				config.data.inited = ( config.data.inited ) ? config.data.inited : false;
 				config.data.require = (
-					(config.data.plugin === true && seed.state != 'ready') || (seed.config.lazy === true && config.data.selector)
+					(config.data.plugin === true && seed.state != 'ready') // || (seed.config.lazy === true && config.data.selector)
 				) ? false : true;
 			}
 			
@@ -389,6 +393,8 @@
 			
 			// если в конфиге модуля есть определенный селектор и включена функция lazy
 			if(module.data.selector && seed.config.lazy === true) seed.AMD._lazyReady(module.name, module.data.selector);
+			
+			
 			
 			return (seed.state == 'ready') ? (( config.data.plugin !== true ) ? seed.AMD._pending(module) : module) : module;
 		}
@@ -677,6 +683,7 @@
 			var s = document.createElement('script');
 			
 			s.type = 'text/javascript';
+			s.defer = 'defer';
 			s.src = url;
 			
 			if( seed.config.AMD.charset ) s.charset = seed.config.AMD.charset;
@@ -717,7 +724,7 @@
 			console.error('Ошибка загрузки модулей', reject);
 		});
 	}
-	
+
 	// ярлыки
 	if (!window.define) window.define = seed.AMD.define;
 	if (!window.require) window.require = seed.AMD.require;

@@ -78,11 +78,11 @@
 				display: 'block'
 			};
 
-			this.id = 'tooltip-'+Math.round(Math.random()*1000000);
+			this.id = 'tooltip-' + Date.now();
 
-			this.$tip = $('<div>',{'class':'tooltip '+this.config.cssclass.tooltip, 'role':'tooltip'}).css(this.css).appendTo( $('body'), {'dymanic':false});
-			this.$arrow = $('<div>',{'class':'tooltip-arrow'}).prependTo( this.$tip, {'dymanic':false});
-			this.$inner = $('<div>',{'class':'tooltip-inner'}).appendTo( this.$tip, {'dymanic':false});
+			this.$tip = $('<div>',{'class':'tooltip '+this.config.cssclass.tooltip, 'role':'tooltip'}).css(this.css).appendTo( $('body'));
+			this.$arrow = $('<div>',{'class':'tooltip-arrow'}).prependTo( this.$tip);
+			this.$inner = $('<div>',{'class':'tooltip-inner'}).appendTo( this.$tip);
 
 			this.$tip.attr('id', this.id);
 			this.$el.attr('data-tooltip-id', this.id);
@@ -106,11 +106,11 @@
 		},
 
 
-		bind: function(e) {
+		bind: function() {
 			var self = this;
-			this.$el.off(this.config.event.off +' '+ this.config.event._off).on(this.config.event.off, function(e) {
+			this.$el.off(this.config.event.off).off(this.config.event.__off).on(this.config.event.off, function(e) {
 				self.destroy();
-				//return false;
+				return false;
 			});
 		},
 
@@ -281,7 +281,7 @@
 				(this.config.func.hide)(this);
 			}
 
-			this.$el.off( this.config.event.off +' '+ this.config.event._off);
+			this.$el.off(this.config.event.off).off(this.config.event.__off);
 
 			$('#'+this.id).remove();
 			this.$el.attr({'title': this.title });

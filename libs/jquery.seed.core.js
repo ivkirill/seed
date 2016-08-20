@@ -5,7 +5,7 @@
  */
 
 // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-;(function ($, seed, window, document, undefined) {
+;(function ($, window, document, undefined) {
 	'use strict';
 
 	// поддержка 'selector' для jQuery 3+
@@ -17,40 +17,45 @@
 	};
 	jQuery.fn.init.prototype = jQuery.fn;
 
-	
+	// создаем объект seed, если он не существует
+	if (!window.seed) {
+		window.seed = {};
+		window.seed.config = {};
+		window.seed.config.locale = {};
+	}
+
+
 	// ядро seed lib
 	function core(name, library) {
 		
 		// дефолтные настройки библиотек
 		this._defaults = {
 			'debug': false,
-			'evented' : false,
-			'reinit' : false,
-			'fullscreen' : false,
 			'lazy' : ( typeof seed.config.lazy != "undefined") ? seed.config.lazy : false,
+			'evented' : false,
+			'fullscreen' : false,
 			'cssclass': {
-				'nolazy' : 'nolazy'
 			},
 			'selector': {
-				'auto' : null,
-				'evented' : null
+				'auto' : '',
+				'evented' : ''
 			},
 			'event' : {
-				'__on' : null,
-				'__off' : null,
-				'on' : null,
-				'off' : null
+				'__on' : '',
+				'__off' : '',
+				'on' : '',
+				'off' : ''
 			},
 			'url' : {
-				'current': null,
-				'ajax':null
+				'current': '',
+				'ajax':''
 			},
 			'func' : {
 				'ready' : null
 			},
 			'module' : {
-				'main' : null,
-				'func' : null
+				'main' : '',
+				'func' : ''
 			},
 			'locale' : {
 				'error' : {
@@ -63,7 +68,7 @@
 		
 		this._name = name;
 		this._label = name.replace('seed','seed.').toLowerCase();
-		this._method = library || $.seed[name];
+		this._method = library;
 		this._seedCount = 0;
 		this._init();
 	}
@@ -350,7 +355,7 @@
 				var evented = (typeof setting == 'object') ? ( (setting.evented === false || setting.evented === true) ? setting.evented : Seed.fn.defaults.evented) : Seed.fn.defaults.evented;
 				var uniq = '.'+ core._seedCount*1 + 1;
 
-				if( seed.isObject(setting) ) defaults = $.extend({}, defaults, setting);
+				if( $.type(setting) === 'object' ) defaults = $.extend({}, defaults, setting);
 				
 				// инициализация плагина
 				var init = function(e, dynamic) {
@@ -370,7 +375,7 @@
 					if( !data ) $element.data(core._label, (data = new Seed(element, {list:list, dynamic:dynamic, options:options, e:e} )));
 					
 					// если передан метод, обновим конфиг и вызовем этот метод
-					if( typeof option == 'string' && seed.isFunction(data[option]) ) {
+					if( typeof option == 'string' && $.type(data[option]) === 'function' ) {
 						if(config) data['_config']($.extend(true, {}, config, data.config));
 						data[option]();
 					}
@@ -412,18 +417,15 @@
 			}
 			
 			// автозапуск библиотеки для элементов определенных по умолчанию
-			seed.ready(function() {
-
+			$(function() {
 				// автозапуск элементов обработки по DOM ready
 				if(Seed.fn.defaults.selector.auto) {
 					$(Seed.fn.defaults.selector.auto)[core._name]({'evented':false});
 
 					// автозапуск ленивой инициализации
 					if(Seed.fn.defaults.lazy) {
-//						seed.config.selector.lazy[Seed.fn.defaults.selector.auto + ':not(.' + Seed.fn.defaults.cssclass.nolazy + ')'] = function(nodes) {
 						seed.config.selector.lazy[Seed.fn.defaults.selector.auto] = function(nodes) {
 							$(nodes)[core._name]();
-							console.log('it`s lazy time!', Seed.fn.defaults.selector.auto);
 						};
 					}
 				}
@@ -440,4 +442,4 @@
 	$.fn.seedLazy = seed.lazy;
 	
 	return $;
-})(jQuery, seed, window, document);
+})(jQuery, window, document);

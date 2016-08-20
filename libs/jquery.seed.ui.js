@@ -48,7 +48,8 @@
 				'reload' : window.location.href
 			},
 			'func' : {
-				'open' : null,
+				'open_add' : null,
+				'open_edit' : null,
 				'reload' : null
 			},
 			'module' : {
@@ -122,7 +123,7 @@
 
 			// обновляем селекторы конфига
 			$.each(this.config.selector, function(name, selector) {
-				if( selector ) self.config.selector[name] = selector.replace(/data-ui/g, 'data-ui="'+self.fullname+'"');
+				if( selector ) self.config.selector[name] = selector.replace(/\[data-ui\]/g, '[data-ui="'+self.fullname+'"]');
 			});
 			
 			// список
@@ -192,6 +193,8 @@
 						self.$form_add = modal.$content.find(self.config.selector.addform);
 						if( self.$form_add.attr('data-seed') == 'gform' && self.config.lazy === true ) self.$form_add.seedGform('destroy');
 						self.gform(self.$form_add, options, modal);
+
+						if( $.isFunction(options.func.open_add) ) config.func.open_add.call(self, options);
 					},
 					'close' : function() {
 						// после закрытия окна
@@ -243,7 +246,7 @@
 						if( self.$form_edit.attr('data-seed') == 'gform' && self.config.lazy === true ) self.$form_edit.seedGform('destroy');
 						self.gform(self.$form_edit, options, modal);
 						
-						if( $.isFunction(options.func.open) ) config.func.open.call(self, options);
+						if( $.isFunction(options.func.open_edit) ) config.func.open_edit.call(self, options);
 					},
 					'close' : function() {
 						// после закрытия окна, обновляем список
