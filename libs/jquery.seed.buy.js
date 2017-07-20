@@ -33,8 +33,15 @@
 			'module' : {
 				'button' : null,
 				'status' : null,
-				'page' : null
+				'page' : null,
+				'func' : 'product' // по умолчанию покупаем продукцию
 			},
+
+			'api' : 'old', //'proto' для покупки в новой версии API покупки
+
+			'method' : 'txt',
+
+			'mixin' : true,
 
 			'data' : {
 				'amount1' : null,
@@ -59,13 +66,14 @@
 				'evented': '[role="button-buy"], [data-seed="buy"]',
 				'status' : '[role="basket-status"]',  // селектор статус корзины
 				'button' : '[role="button-buy-ajax"], [role="basket-button"]',
+				'amount' : '[role="basket-input-amount"]',
 				'page' : null, // селектор кнопки на конечной странице
 				'item' : null  // селектор элемента списка
 			},
 
 			'event' : {
-				'__on' : 'click.seed.buy touchend.seed.buy',
-				'on' : 'click.seed.buy touchend.seed.buy'
+				'__on' : 'click.seed.buy',
+				'on' : 'click.seed.buy'
 			},
 
 			'func' : {
@@ -103,16 +111,18 @@
 
 			this.config.module.status = this.config.module.status ||  $(this.config.selector.status).attr('data-module-status')*1 || this._error(this.config.module.status, 'module.status');
 			this.config.module.button = this.config.module.button  || $(this.config.selector.button).attr('data-module-button')*1 || this._getAttr('data-module-button');
-
 			this.config.module.page = this.config.module.page || $(this.config.selector.button).attr('data-module-page')*1 || this._error(this.config.module.page, 'module.page'); 
 			
 			if( this.$el.attr('data-buy-modal') == 'true' ) { this.config.modal = true; }
 			if( this.$el.attr('data-buy-trigger') == 'true' ) { this.config.trigger = true; }
+
+			// меняем API
+			if( $(this.config.module.button).attr('data-config-api') === 'proto' ) this.config.api = 'proto';
+
 		
 			if( this.config.modal ) {
 				this.config.url.buy = this.$el.attr('href') || this.$el.attr('data-buy-url') || this._error(this.config.url.buy, 'href');
 			}
-
 			this.$title = this.$el.find('.title:first');
 
 			this.event = 'buy';
@@ -126,7 +136,7 @@
 			else if( this._event ) {
 				this.add();
 			}
-			
+
 			return this;
 		},
 
@@ -143,41 +153,86 @@
 		add: function() {
 			var self = this;
 
-			// если у нас параметр trigger false, то перекидываем юзера на страницу
-			if( this.$el.hasClass('active') ) {
-				if( !this.config.trigger ) {
-					window.location.href = this.config.url.basket;
-					return false;
-				}
-				else {
-					this.event = 'remove';
-				}
-			}
-			
 			this.buyQS = {};
-			this.buyQS['event'] = this.event;
-			this.buyQS['mime'] = 'txt';
-			this.buyQS['show'] = this.config.module.button;
-			this.buyQS['module_parent'] = this.config.module.page;
-			this.buyQS['member'] = this.$el.attr('data-buy') || this._getAttr('data-buy');
 
-			this.params = {
-				'price1' : this.config.data.price1 || this.$el.attr('data-price'),
-				'price2' : this.config.data.price2 || this.$el.attr('data-price2'),
-				'amount1' : this.config.data.amount1 || this.$el.parent().parent().find('input[name="amount"]:first, input[name="number"]:first').val() || this.$el.attr('data-amount') || 1,
-				'amount2' : this.config.data.amount2 || this.$el.attr('data-amount2'),
-				'synopsis' : this.config.data.synopsis || this.$el.attr('data-synopsis'),
-				'image' : this.config.data.image || this.$el.attr('data-image'),
-				'name' : this.config.data.name || this.$el.attr('data-name'),
-				'text' : this.config.data.text || this.$el.attr('data-text'),
-				'flag' : this.config.data.flag || this.$el.attr('data-flag') || 0
-			};
+			if( this.config.api == 'old' ) {
+
+				// если у нас параметр trigger false, то перекидываем юзера на страницу
+				if( this.$el.hasClass('active') ) {
+					if( !this.config.trigger ) {
+						window.location.href = this.config.url.basket;
+						return false;
+					}
+					else {
+						this.event = 'remove';
+					}
+				}
+
+				this.buyQS['event'] = this.event;
+				this.buyQS['mime'] = 'txt';
+				this.buyQS['show'] = this.config.module.button;
+				this.buyQS['module_parent'] = this.config.module.page;
+				this.buyQS['member'] = this.$el.attr('data-buy') || this.$el.attr('data-buy-id') || this._getAttr('data-buy');
+
+				this.params = {
+					'price1' : this.config.data.price1 || this.$el.attr('data-price'),
+					'price2' : this.config.data.price2 || this.$el.attr('data-price2'),
+					'amount1' : this.config.data.amount1 
+							|| $(this.config.selector.amount).val() 
+							|| this.$el.parent().parent().find('input[name="amount"]:first, input[name="number"]:first').val() 
+							|| this.$el.attr('data-amount') || 1,
+					'amount2' : this.config.data.amount2 || this.$el.attr('data-amount2'),
+					'synopsis' : this.config.data.synopsis || this.$el.attr('data-synopsis'),
+					'image' : this.config.data.image || this.$el.attr('data-image'),
+					'name' : this.config.data.name || this.$el.attr('data-name'),
+					'text' : this.config.data.text || this.$el.attr('data-text'),
+					'flag' : this.config.data.flag || this.$el.attr('data-flag') || 0
+				};
+			}
+			else if( this.config.api == 'proto' ) {
+
+				// если у нас параметр trigger false, то перекидываем юзера на страницу
+				if( this.$el.hasClass('active') ) {
+					if( this.config.trigger === false ) {
+						window.location.href = this.config.url.basket;
+						return false;
+					}
+				}
+
+				this.buyQS['action'] = 'buy';
+				this.buyQS['mime'] = 'json';
+				this.buyQS['show'] = this.config.module.button;
+				this.buyQS['basket_mdl_module'] = this.config.module.page;
+				this.buyQS['basket_lnk_link'] = this.$el.attr('data-buy') || this.$el.attr('data-buy-id') || this._getAttr('data-buy');
+
+				this.params = {
+					'quantity' : this.config.data.amount1 
+							|| this.$el.attr('data-amount')
+							|| $(this.config.selector.amount).val() 
+							|| this.$el.parent().parent().find('input[name="amount"]:first, input[name="number"]:first').val() 
+							|| this.$el.parents('[role="block-buy"]').find('input[name="amount"]:first, input[name="number"]:first').val() 
+							|| 1,
+					'quantity2' : this.config.data.amount2 || this.$el.attr('data-amount2'),
+					'basket_chr_text' : this.config.data.synopsis || this.$el.attr('data-synopsis'),
+					'basket_img_image' : this.config.data.image || this.$el.attr('data-image'),
+					'basket_chr_name' : this.config.data.name || this.$el.attr('data-name'),
+					'basket_txt_text' : this.config.data.text || this.$el.attr('data-text'),
+					'basket_int_flag' : this.config.data.flag || this.$el.attr('data-flag') || 0,
+					
+					// данные для xindao
+					'item' : this.config.data.item || this.$el.attr('data-item'),
+					'guid' : this.config.data.guid || this.$el.attr('data-guid'),
+					'date' : this.config.data.date || this.$el.attr('data-date'),
+					'store' : this.config.data.store || this.$el.attr('data-store')
+					
+				};
+			}
 
 			if( this._getData() ) {
-
 				$.ajax({
 					url: self.config.url.button,
 					data: $.param(self.buyQS),
+					method: ( this.config.api == 'proto' ) ? 'POST' : 'GET',
 					cache: false,
 					beforeSend: function() {
 						self.blocked = true;
@@ -188,7 +243,7 @@
 							console.error(self._name+': Нет такой страницы!');
 							self.unblock();
 						},
-							503 : function() {
+						503 : function() {
 							console.error(self._name+': Страница недоступна!');
 							self.unblock();
 						}
@@ -212,7 +267,7 @@
 						}
 					},
 					error: function() {
-						console.error(self._name+': Произошла неизвестная ошибка!');
+						console.error(self._name+': Произошла неизвестная ошибка!', this);
 						self.unblock();
 					}
 				});
@@ -253,20 +308,52 @@
 		_getData: function() {
 			var self = this;
 			var valid = true;
-			$.each(this.params, function(i, func) {
 
-				if( $.isFunction(func) ) {
-					var value = (func)(self);
-					if( value !== false ) {
-						self.buyQS[i+'_'+self.buyQS.member] = value;
+			if( this.config.api == 'old' ) {
+				$.each(this.params, function(i, func) {
+					if( $.isFunction(func) ) {
+						var value = (func)(self);
+						if( value !== false ) {
+							if( self.config.mixin === true ) {
+								self.buyQS[i+'_'+self.buyQS.member] = value;
+							}
+							else {
+								self.buyQS[i] = value;
+							}
+						}
+						else {
+							valid = false;
+							return false;
+						}
 					}
-					else {
-						valid = false;
-						return false;
+					else if( func ) {
+						if( self.config.mixin === true ) {
+							self.buyQS[i+'_'+self.buyQS.member] = func;
+						}
+						else {
+							self.buyQS[i] = func;
+						}
 					}
-				}
-				else if( func ) { self.buyQS[i+'_'+self.buyQS.member] = func; }
-			});
+				});
+			}
+			else if( this.config.api == 'proto' ) {
+				$.each(this.params, function(i, func) {
+					if( $.isFunction(func) ) {
+						var value = (func)(self);
+						if( value !== false ) {
+							self.buyQS[i] = value;
+						}
+						else {
+							valid = false;
+							return false;
+						}
+					}
+					else if( func ) {
+						self.buyQS[i] = func;
+					}
+				});
+			}
+
 			return valid;
 		},
 
@@ -318,24 +405,24 @@
 				success: function(data) {
 					$(self.config.selector.status).replaceWith(data);
 					self.check();
-					if( self.config.func.update_status ) { (self.config.func.update_status)(); }
+					if( self.config.func.update_status ) { (self.config.func.update_status)(self); }
 				}
 			});
 		},
 
 		//проверим купленные товары и отметим их при загрузке страницы
 		check: function() {
-	        var self = this;
-
+		    var self = this;
+			
 			$(this.config.selector.status).find('[data-uid]').each(function(i, el) {
-				var button = self._$list.add(self.config.selector.evented).filter('[data-buy="'+$(el).data('uid')+'"]').not('.active');
+				var $button = self._$list.add(self.config.selector.evented).filter('[data-buy="'+$(el).data('uid')+'"], [data-buy-id="'+$(el).data('uid')+'"]').not('.active');
 
 				if( self.config.func.success_buy ) {
-					(self.config.success_buy)(self, button);
+					(self.config.success_buy)(self, $button, el);
 				}
 				else {
-					button.addClass('active');
-					button.find('.title:first').text(self.config.locale.interface.buy_added);
+					$button.addClass('active');
+					$button.find('.title:first').text(self.config.locale.interface.buy_added);
 				}
 			});
 		},
@@ -344,9 +431,11 @@
 			var self = this;
 			
 			if( window.MutationObserver && seed.lazy ) {
-				$(self.config.selector.evented).seedLazy(function() {
+				$(self.config.selector.evented+', .abracadabra').seedLazy(function() {
 					self.check();
 				});
+
+				self.check();
 			}
 			else {
 				setInterval(function() {

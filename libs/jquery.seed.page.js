@@ -25,6 +25,8 @@
 			'debug': false,
 			'evented': false,
 
+			'init' : true,
+
 			'quant' : 20, // epp (element per page) - количество элементов на странице
 			'offset' : 0, // количество с которых начинается просмотр
 			'preloaded' : 0, // количество уже загруженных
@@ -42,7 +44,7 @@
 			'selector': {
 				'auto' : '[data-seed="page"], [role="list-infinity"]',
 				'items' : '> *', // элементы которые нужно найти в ответе ajax
-				'pages' : '.pages, .pagination, [role="pagination"]' // класс тега где содержиться пагинация, нужно знать что скрывать
+				'pages' : '.pages, .pagination, [role="pagination"], [role="pages"]' // класс тега где содержиться пагинация, нужно знать что скрывать
 			},
 			'cssclass': {
 				'button' : 'btn btn-primary',
@@ -90,15 +92,17 @@
 			this.config.quant = this.$el.attr('data-quant') || this.config.quant;
 			this.config.offset = this.$el.attr('data-offset') || this.config.offset;
 			this.config.preloaded = this.$el.attr('data-preloaded') || this.config.preloaded;
-			this.config.preload = this.$el.attr('data-preload') || this.config.preload;
+			this.config.preload = Boolean(this.$el.attr('data-preload')) || this.config.preload;
 			this.config.delta = this.$el.attr('data-delta') || this.config.delta;
 			this.config.url.current = this.$el.attr('data-url') || this.config.url.current;
 			this.config.total = this.config.total || this.$el.attr('data-total') || this.config.total || ''; // количество элементов всего
 
+			this.offset_func = '';
+
 			if( this.config.debug ) { console.log( this ); }
 
 			if( this.config.preload ) {
-				$.require('common.cookie', function() {
+				require('common.cookie', function() {
 					self.create();
 				});
 			}
@@ -114,8 +118,10 @@
 
 
 		destroy: function() {
-			this.$list.insertBefore( this.$holder );
-			this.$holder.remove();
+			try {
+				this.$list.insertBefore( this.$holder );
+				this.$holder.remove();
+			} catch(e) {}
 			this.$el.removeData(this._label);
 			delete this;
 
@@ -147,6 +153,9 @@
 			this.counter = 0; // количество подгруженных страниц
 
 			this.page_last = this.page_total;
+			this.url_prev_state = '';
+			this.scroll_direction = 1; // направление скролла по умаолчанию вниз (1-вниз, 0-вверх)
+			this.scroll_position = $(window).scrollTop(); // позиция скролл при инициализации
 
 			this.page_current = Math.floor(this.config.preloaded/this.config.quant) + Math.floor(this.config.offset/this.config.quant) + ( (this.config.preload) ? 0 : 1 );
 			if( this.page_current == 0 ) { this.page_current = 1; }
@@ -166,6 +175,7 @@
 // создаем область загрузки и область навигации
 //				this.buildLoader().buildNavigation().globalBind();
 			this.buildLoader().globalBind();
+			this.showNavigation();
 			this.check();
 		},
 
@@ -187,14 +197,13 @@
 			this.$holder.addClass('page-holder');		
 
 //Создание областей загрузки и кнопок
-			this.$ajaxblock = $('<div>', {'class': 'loader page-loader'}).html('<span><i class="'+this.config.cssclass.loader+'"></i>' + this.config.locale.interface.loading + '</span>').insertAfter( this.$wrapper, {'dymanic':false});
+			this.$ajaxblock = $('<div>', {'class': 'loader page-loader'}).html('<span><i class="'+this.config.cssclass.loader+'"></i>' + this.config.locale.interface.loading + '</span>').insertAfter( this.$wrapper);
 
-			this.$button_prev = $('<div>', {'class': 'btn btn-prev ' + this.config.cssclass.button }).text(this.config.locale.interface.page_prev).insertBefore( this.$wrapper, {'dymanic':false});
-			this.$button_next = $('<div>', {'class': 'btn btn-next ' + this.config.cssclass.button }).text(this.config.locale.interface.page_next).insertAfter( this.$ajaxblock, {'dymanic':false});
+			this.$button_prev = $('<div>', {'class': 'btn btn-prev ' + this.config.cssclass.button }).text(this.config.locale.interface.page_prev).insertBefore( this.$wrapper);
+			this.$button_next = $('<div>', {'class': 'btn btn-next ' + this.config.cssclass.button }).text(this.config.locale.interface.page_next).insertAfter( this.$ajaxblock);
 
-			this.$ajaxblock_prev = $('<div>', {'class': 'loader page-loader'}).html('<span><i class="'+this.config.cssclass.loader+'"></i>' + this.config.locale.interface.loading + '</span>').insertAfter( this.$button_prev, {'dymanic':false});
-
-			this.bindCut(this.$list);
+			this.$ajaxblock_prev = $('<div>', {'class': 'loader page-loader'}).html('<span><i class="'+this.config.cssclass.loader+'"></i>' + this.config.locale.interface.loading + '</span>').insertAfter( this.$button_prev);
+//			this.bindCut(this.$list);
 
 			return self;
 		},
@@ -204,44 +213,47 @@
 			if(this.page_visible == 0) { this.page_visible = 1; }
 
 			this.limit = (this.page_visible*1-1)*this.config.quant;
+			this.offset_func = 'first'+this.config.module.func +'='+ this.limit;
 
-			var hash = 'first'+this.config.module.func +'='+ this.limit;
 			var newUrl = '';
 
-
 // если включена функции preload
-			if( this.config.preload == 'true' ) {
+			if( this.config.preload === true ) {
 // проверим есть ли знак вопроса в нашем урле
 				if( /\?/.test(this.config.url.current) ) {
-// если знак вопроса есть, то проверит если параметр first
+// если знак вопроса есть, то проверим если параметр first
 					if( /first/.test(this.config.url.current) ) {
-// заменим first на hash
-						newUrl = this.config.url.current.replace(/first[a-zA-Z]+\=\d+/, hash);
+// заменим first на this.offset_func
+						newUrl = this.config.url.current.replace(/first[a-zA-Z]+\=\d+/, this.offset_func);
 					}
-// допишем hash в конце строки
+// допишем this.offset_func в конце строки
 					else {
-						newUrl = this.config.url.current + '&' + hash;
+						newUrl = this.config.url.current + '&' + this.offset_func;
 					}
 				}
 				else {
-// напишем hash
-					newUrl = this.config.url.current + '?' + hash;
+// напишем this.offset_func
+					newUrl = this.config.url.current + '?' + this.offset_func;
 				}
 
 				this.config.url.current = newUrl;
 			}
 // если функция preload выключена
 			else {
-				newUrl = (/\?/.test(window.location.search) ) ? ( ( /first/.test(window.location.search) ) ? window.location.search.replace(/first[a-zA-Z]+\=\d+/,hash) : window.location.href + '&'+hash ) : (window.location.href + '?'+hash);
+				newUrl = (/\?/.test(window.location.search) ) ? ( ( /first/.test(window.location.search) ) ? window.location.search.replace(/first[a-zA-Z]+\=\d+/, this.offset_func) : window.location.href + '&'+this.offset_func ) : (window.location.href + '?'+this.offset_func);
+
 
 				if( !/\?/.test(this.config.url.current) ) {
 					this.config.url.current = newUrl;
 				}
 
-				if( window.history.pushState ) {
+				if( window.history.pushState && this.url_prev_state != newUrl ) {
+					this.url_prev_state = newUrl;
 					window.history.pushState({}, 'page', newUrl);
 				}
 			}
+
+			return self;
 		},
 
 		check: function() {
@@ -254,18 +266,27 @@
 			}
 		},
 
+// определение направления скролла
+		scrollDirection: function() {
+			var st = $(window).scrollTop();
+			this.scroll_direction = (st > this.scroll_position) ? 1 : 0;
+			this.scroll_position = st;
+		},
+
 // проверка видимости элемента на экране пользователя
-		isElementVisible: function(el, add) {
+		isElementVisible: function(el, delta) {
+			var type = ( typeof delta === 'number' ) ? 'in' : 'over';
+			var delta = delta || 0;
+
 		        var viewTop = $(window).scrollTop(),
-				viewBottom      = viewTop + $(window).height() + add,
+				viewBottom      = viewTop + $(window).height() + delta,
 				offset          = el.offset(),
 				_top            = offset.top,
 				_bottom         = _top + el.height(),
 				compareTop      = _bottom,
 				compareBottom   = _top;
 
-//console.info(compareBottom ,viewBottom, compareTop, viewTop, ((compareBottom <= viewBottom) && (compareTop >= viewTop)));
-
+			// если проверяем только видимость внутри вьюпорта
 			return ((compareBottom <= viewBottom) && (compareTop >= viewTop));
 		},
 
@@ -273,7 +294,8 @@
 		globalBind: function() {
 			var self = this;
 			this.$button_next.on({
-				'click touchend' : function() {
+				'click' : function() {
+console.log(self);
 					if(self.config.debug) { console.log('click next'); }
 					self.counter = 0;
 					self.load('next');
@@ -282,51 +304,56 @@
 			});
 
 			this.$button_prev.on({
-				'click touchend': function() {
+				'click': function() {
 					if(self.config.debug) { console.log('click prev'); }
 					self.load('prev');
 					return false;
 				}
 			});
 
+			// во время скролла
 			$(window).scroll(function() {
-				var pos = self.$button_next.position();
-				if( self.counter >= self.config.until ) { return false; }
+				self.scrollDirection(); // определяем текущее направление скроллинга
 
-				if( self.isElementVisible( self.$button_next, self.config.delta ) ) {
-					self.load('next');
+				// проверка отображения кнопка "Следующая страница"
+				if( self.config.until > 0 ) {
+					var pos = self.$button_next.position();
+					if( self.counter >= self.config.until ) { return false; }
+					if( self.isElementVisible( self.$button_next, self.config.delta ) ) {
+						self.load('next');
+					}
+				}
+
+				// проверка видимости во вьюпорт блоков страницы
+				self.checkLoaderVisibility();
+			});
+		},
+
+		// проверка видимости блоков
+		checkLoaderVisibility: function() {
+			var self = this;
+			var $lists = self.$wrapper.find('[data-page]').removeClass('visible');
+			$lists.each(function(i, el) {
+				if( self.isElementVisible( $(el) ) ) {
+					$(el).addClass('in-viewport');
+				}
+				else {
+					$(el).removeClass('in-viewport');
 				}
 			});
+			
+			var $viewport = $lists.filter('.in-viewport');
+			self.page_visible = $viewport.filter( ((this.scroll_direction === 1)) ? ':last' : ':first').data('page')*1 || 0;
+			self.showNavigation();
 		},
 
 		bindLinks: function() {
 			var self = this;
 			if( this.limit > 0 && this.config.preload ) {
-				this.$holder.find('a[href]').on('click touchend', function() {
+				this.$holder.find('a[href]').on('click', function() {
 					$.cookie('quant'+self.config.module.func, self.limit*1+self.config.quant*1);
-//					return false;
 				});
 			}
-		},
-
-		// постраничный разделитель
-		bindCut: function(el) {
-			var self = this;
-
-			this.ST = 0;
-			this.STdir = 'down';
-			this.STlast = 0;
-
-			var lastScrollTop = 0;
-
-			$(window).scroll(function(e) {
-				var st = $(this).scrollTop();
-				if( self.isElementVisible( el, 0 ) ) {
-					self.page_visible = el.data('page')*1;
-					self.showNavigation();
-				}
-				lastScrollTop = st;
-			});
 		},
 
 		unblock: function() {
@@ -336,6 +363,7 @@
 
 		load: function(page, callback) {
 
+console.log(arguments, this);
 			var self = this;
 
 			this.config.url.current = this.query || this.config.url.current || window.location.href;
@@ -355,7 +383,18 @@
 				this.$button_prev.hide();
 			}
 
-			this.query = this.config.url.current.replace(/^\//,'').replace(/first([a-zA-Z]+)\=\d+/,'first$1'+'='+this.page_load_items);
+
+			this.query = this.config.url.current;
+
+			// если знак вопроса есть, то проверим есть ли параметр first
+			if( /\?/.test(this.query) ) {
+				if( /first/.test(this.query) ) {
+					this.query = this.config.url.current.replace(/^\//,'').replace(/first([a-zA-Z]+)\=\d+/,'first$1'+'='+this.page_load_items);
+				}
+				else {
+					this.query = this.config.url.current + '&' + this.offset_func.replace(/first([a-zA-Z]+)\=\d+/,'first$1'+'='+this.page_load_items);
+				}
+			}
 
 			this.counter++;
 
@@ -365,6 +404,10 @@
 
 				this.query = this.query.replace(/^\//,'').replace(/first([a-zA-Z]+)\=\d+/,'first$1'+'='+this.page_load_items);
 			}
+
+			this.query = this.query.replace('&&', '&');
+
+console.log(this.query);
 
 			var qs = {};
 			qs['mime'] = 'txt';
@@ -429,7 +472,7 @@
 						});
 
 						self.check();
-						self.bindCut($block);
+//						self.bindCut($block);
 						self.bindLinks($block);
 						self.unblock();
 

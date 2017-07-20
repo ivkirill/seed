@@ -40,11 +40,12 @@
 			'selector': {
 				'auto': '[data-seed="modal"]',
 				'evented': '[data-modal-html], [data-modal-url]',
-				'holder': null
+				'holder': null,
+				'html' : null
 			},
 			'event': {
-				'__on': 'click.seed.modal touchend.seed.modal',
-				'on': 'click.seed.modal touchend.seed.modal'
+				'__on': 'click.seed.modal',
+				'on': 'click.seed.modal'
 			},
 			'url': {
 				'current': window.location.href,
@@ -54,7 +55,10 @@
 			'func': {
 				'open': null,
 				'position': null,
-				'close': null
+				'close': null,
+				'query' : function(qs) {
+					return qs;
+				}
 			},
 
 			'cssclass': {
@@ -89,8 +93,13 @@
 			if (this.config.overlay) {
 				this.$overlay = (!$('#overlay-modal').length) ? $('<div>', {
 					'id': 'overlay-modal',
-					'class': 'seed-overlay'
+					'class': 'seed-overlay ' + self.config.cssclass.modal
 				}).html('<div class="loader"></div>').prependTo($('body')) : $('#overlay-modal:first').show();
+			}
+
+			// для seed1, принудительно сбрасываем ajax.url если указан атрибут
+			if( this.$el.attr('data-modal-url-reset') ) {
+				this.config.url.ajax = null;
 			}
 
 			// определяем имя модального окна, если задано
@@ -165,12 +174,15 @@
 			if (this.$el.attr('data-modal-html')) {
 				this.$html = $('[name="' + this.$el.attr('data-modal-html') + '"]').clone().html();
 			} 
+			else if ( this.config.selector.html ) {
+				this.$html = $(this.config.selector.html).clone().html();
+			} 
 			else if( this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.ajax == true || this.config.url.ajax ) {
 				this.type = 'ajax';
 				this.config.ajax = true;
 
 				// для seed1 нельзя определять текущий конфиг, через сохраненных конфиг, в seed2 это исправлено
-				this.config.url.ajax =  this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this.config.url.ajax || this._error(this.config.url.ajax, 'url.ajax');
+				this.config.url.ajax =  this.config.url.ajax || this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this._error(this.config.url.ajax, 'url.ajax');
 //				this.config.url.ajax = this.config.url.ajax || this.$el.attr('data-modal-ajax') || this.$el.attr('data-modal-url') || this._error(this.config.url.ajax, 'url.ajax');
 				this.config.module.main =  this.$el.attr('data-module') || this.$el.attr('data-module-main') || this.config.module.main || false;
 			}
@@ -270,6 +282,10 @@
 				var qs = {};
 				qs['mime'] = 'txt';
 				if (this.config.module.main) qs['show'] = this.config.module.main;
+				
+				if ($.isFunction(this.config.func.query)) {
+					qs = this.config.func.query.call(self, qs);
+				}
 
 				if (this.config.debug) {
 					console.log(this.config.url.ajax, qs);

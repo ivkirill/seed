@@ -13,7 +13,7 @@
 		$.seed = {};
 	};
 
-// данные для конструктора
+	// данные для конструктора
 	var name = 'seedGallery';
 
 	$.seed[name] = {};
@@ -50,6 +50,13 @@
 			'slideshow' : false,
 			'time' : 5000,
 
+			'offset' : {
+				'top' : 260,
+				'left' : 200
+			},
+			
+			'refresh' : true, // обнуляем элемент this.gallery, чтобы пересобрать все элементы со страницы с нуля
+
 			'video_icon': false,
 			'video_width' : 560,
 			'video_height' : 360,
@@ -61,11 +68,16 @@
 				'evented' : '[data-seed="gallery"]'
 			},
 			'event' : {
-				'__on' : 'click.seed.gallery touchend.seed.gallery',
-				'on' : 'click.seed.gallery touchend.seed.gallery'
+				'__on' : 'click.seed.gallery',
+				'on' : 'click.seed.gallery'
 			},
 			'func' : {
-				'obj3d' : null
+				'ready' : null,
+				'create' : null,
+				'close' : null,
+				'obj3d' : null,
+				'next' : null,
+				'prev' : null
 			},
 			'cssclass' : {
 				'close' : 'fa fa-close'
@@ -100,7 +112,7 @@
 
 
 			if( this.config.fullscreen ) {
-				this.$fullscreen = ( $('.fullscreen').length ) ? $('.fullscreen:first') : $('<div>',{'class':'fullscreen'}).prependTo( $('body'), {'dymanic':false});
+				this.$fullscreen = ( $('.fullscreen').length ) ? $('.fullscreen:first') : $('<div>',{'class':'fullscreen'}).prependTo( $('body'));
 				this.$fullscreen.requestFullScreen();
 				this.fullscreen = true;
 			}
@@ -112,17 +124,33 @@
 				this._$list = $(this._$list.selector);
 			}
 
+			if( this.config.refresh === true ) {
+		        	this.gallery = null;
+				this._$list = $(this._$list.selector);
+			}
+
 			if( !this.gallery ) {
 				this.gallery = {};
+				this.group = this.$el.attr('data-group') || this.$el.attr('data-config-group') || self.config.group;
 
-				this._$list.each(function(i, img) {
-				        var $el = $(img);
-					self.group = $el.attr('data-group') || self.config.group;
+				this._$temp = (this.group === 'default') ? this._$list : this._$list.filter('[data-group="'+this.group+'"], [data-config-group="'+this.group+'"]');
+				
+				// сортировка для элементов, с принудительной индексацией
+				if( this._$temp.filter('[data-config-index]').length ) {
+					this._$temp = this._$temp.filter('[data-config-index]').sort(function(a, b) {
+						return $(a).attr('data-config-index') - $(b).attr('data-config-index');
+					});
+				}
+				
+				this._$temp.each(function(i, img) {
+				    var $el = $(img);
+					self.group = $el.attr('data-group') || self.$el.attr('data-config-group') || self.config.group;
 
 					if( !self.gallery[self.group] ) { self.gallery[self.group] = []; }
-
 					var index = self.gallery[self.group].length;
 
+					//console.log(index, i, $el.attr('data-config-index'));
+					
 					self.gallery[self.group][index] = {};
 					self.gallery[self.group][index].el = $el;
 					self.gallery[self.group][index].src = $el.attr('href') || $el.attr('data-src') || '';
@@ -130,7 +158,7 @@
 					self.gallery[self.group][index].video = $el.attr('data-video') || false;
 
 					if( self.gallery[self.group][index].video && !/^http/.test(self.gallery[self.group][index].video) ) {
-						self.gallery[self.group][index].video = 'https://' + self.gallery[self.group][index].video
+						self.gallery[self.group][index].video = 'https://' + self.gallery[self.group][index].video.trim();
 					}
 
 					self.gallery[self.group][index].mp4 = $el.attr('data-mp4');
@@ -149,22 +177,35 @@
 					if( $el.hasClass('gallery-video') || $el.attr('data-video') ) { self.gallery[self.group][index].type = 'video'; }
 
 					if(  self.gallery[self.group][index].type == 'video' && /youtu/.test(self.gallery[self.group][index].video) && self.gallery[self.group][index].src == '' ) {
-						self.gallery[self.group][index].src = /(be\/|v=)([^?]+)/.exec(self.gallery[self.group][index].video)[2] +'/sddefault.jpg'; 
-						self.gallery[self.group][index].src = 'https://i.ytimg.com/vi/'+ self.gallery[self.group][index].src;
+						if( /embed/.test(self.gallery[self.group][index].video) ) {
+							self.gallery[self.group][index].src = /(embed\/)([^?]+)/.exec(self.gallery[self.group][index].video)[2] +'/sddefault.jpg'; 
+							self.gallery[self.group][index].src = 'https://i.ytimg.com/vi/'+ self.gallery[self.group][index].src;
+						}
+						else if( /v=/.test(self.gallery[self.group][index].video) ) {
+							self.gallery[self.group][index].src = /(be\/|v=)([^?]+)/.exec(self.gallery[self.group][index].video)[2] +'/sddefault.jpg'; 
+							self.gallery[self.group][index].src = 'https://i.ytimg.com/vi/'+ self.gallery[self.group][index].src;
+						}
+						
 					}
 
 					if( self.gallery[self.group][index].video && /youtu/.test(self.gallery[self.group][index].video) ) {
-						self.gallery[self.group][index].video = self.gallery[self.group][index].video.replace('watch?v=','embed/').replace('.be','be.com/embed').replace(/$/,'?fs=0');
+						var src = self.gallery[self.group][index].video.replace('watch?v=','embed/').replace('.be','be.com/embed');
+						src = ( /\?/.test(src) ) ? src.replace(/$/,'&fs=0') : src.replace(/$/,'?fs=0');
+						self.gallery[self.group][index].video = src;
 					}
 
 				});
 			}
 
-	
-			this.group = this.$el.attr('data-group') || self.config.group;
+			this.group = this.$el.attr('data-group') || this.$el.attr('data-config-group') || self.config.group;
 
+			//console.log(this);
+			
+			// находим текущий активный элемент
 			$(this.gallery[this.group]).each(function(j,v) {
-				if ( v.el[0] === self.el ) { self.current = j; }
+				if( v ) {
+					if ( v.el[0] === self.el ) { self.current = j; }
+				}
 			});
 			
 			if( !this.current ) { this.current = 0; }
@@ -177,71 +218,83 @@
 			this._create();
 		},
 
-//функция создания лайтбокса
-		_create: function() {
-			var self = this;
+		//функция создания лайтбокса
+		_create: function(self) {
+			var self = self || this;
 			var callback = function() {
-//записываем тип текущего элемента
+
+				//записываем тип текущего элемента
 				self.typecur = self.gallery[self.group][self.current].type;
-//проверяем создан ли лайтбокс, если нет, то создаем его
+				
+				//проверяем создан ли лайтбокс, если нет, то создаем его
 				if( !self.$holder || !$('.seed-overlay').length ) {
 
-//Скрываем обьекты которые могут мешать отображенияю
+					//Скрываем обьекты которые могут мешать отображенияю
 					$('embed, object').css({'visibility': 'hidden'});
 					$('body').addClass('gallery-active');
 					$('.tooltip').remove();
 
-//создаем оверлэй                                                                                                                          
-					self.$overlay = $('<div>',{'id':'overlay-gallery','class':'seed-overlay'}).prependTo( (self.$fullscreen || $('body') ), {'dymanic':false});
-					self.$loader = $('<div>',{'class':'loader'}).prependTo( self.$overlay, {'dymanic':false});
-//создаем лайтбокс
-					self.$holder = $('<div>',{'id': 'modal-gallery'}).insertAfter( self.$overlay, {'dymanic':false});
-					self.$box = $('<div>',{'id':'gallery-box'}).appendTo( self.$holder, {'dymanic':false});
+					//создаем оверлэй                                                                                                                          
+					self.$overlay = $('<div>',{'id':'overlay-gallery','class':'seed-overlay'}).prependTo( (self.$fullscreen || $('body') ));
+					self.$loader = $('<div>',{'class':'loader'}).prependTo( self.$overlay);
 
-					self.$area = $('<div>',{'id':'gallery-area'}).appendTo( self.$box, {'dymanic':false});
+					//создаем лайтбокс
+					self.$holder = $('<div>',{'id': 'modal-gallery'}).insertAfter( self.$overlay);
+					self.$box = $('<div>',{'id':'gallery-box'}).appendTo( self.$holder);
+
+					self.$area = $('<div>',{'id':'gallery-area'}).appendTo( self.$box);
 
 					if( self.config.slideshow ) {
-						self.$controls = $('<div>',{'id': 'gallery-controls'}).appendTo( (( self.config.interface_in.slideshow ) ? self.$area : self.$box), {'dymanic':false});
-						self.$play = $('<button>',{'id': 'gallery-play','class':'active'}).attr({'title': self.config.locale.interface.slideshowstart}).html('<span>'+ self.config.locale.interface.play +'</span>').appendTo( self.$controls, {'dymanic':false});
-						self.$pause = $('<button>',{'id': 'gallery-pause'}).attr({'title': self.config.locale.interface.slideshowstop}).html('<span>'+ self.config.locale.interface.pause +'</span>').appendTo( self.$controls, {'dymanic':false});
+						self.$controls = $('<div>',{'id': 'gallery-controls'}).appendTo( (( self.config.interface_in.slideshow ) ? self.$area : self.$box));
+						self.$play = $('<button>',{'id': 'gallery-play','class':'active'}).attr({'title': self.config.locale.interface.slideshowstart}).html('<span>'+ self.config.locale.interface.play +'</span>').appendTo( self.$controls);
+						self.$pause = $('<button>',{'id': 'gallery-pause'}).attr({'title': self.config.locale.interface.slideshowstop}).html('<span>'+ self.config.locale.interface.pause +'</span>').appendTo( self.$controls);
 					}
 						
-					self.$closeleft = $('<div>',{'id':'gallery-close-left','class':'gallery-close-area'}).appendTo( ( ( self.config.interface_in.areas ) ? self.$area : self.$box ), {'dymanic':false});
-					self.$closeright = $('<div>',{'id':'gallery-close-right','class':'gallery-close-area'}).appendTo( ( ( self.config.interface_in.areas ) ? self.$area : self.$box), {'dymanic':false});
-					self.$close = $('<button>',{'id':'gallery-close'}).html('<span class="'+ self.config.cssclass.close +'">'+ self.config.locale.interface.close +'</span>').appendTo( ( ( self.config.interface_in.close ) ? self.$area : self.$box), {'dymanic':false});
+					self.$closeleft = $('<div>',{'id':'gallery-close-left','class':'gallery-close-area'}).appendTo( ( ( self.config.interface_in.areas ) ? self.$area : self.$box ));
+					self.$closeright = $('<div>',{'id':'gallery-close-right','class':'gallery-close-area'}).appendTo( ( ( self.config.interface_in.areas ) ? self.$area : self.$box));
+					self.$close = $('<button>',{'id':'gallery-close'}).html('<span class="'+ self.config.cssclass.close +'">'+ self.config.locale.interface.close +'</span>').appendTo( ( ( self.config.interface_in.close ) ? self.$area : self.$box));
 
-					self.$next = $('<button>',{'id':'gallery-next','class':'gallery-arrow'}).html('<span>'+ self.config.locale.interface.next +'</span>').appendTo( ( ( self.config.interface_in.arrow ) ? self.$area : self.$box), {'dymanic':false});
-					self.$prev = $('<button>',{'id':'gallery-prev','class':'gallery-arrow'}).html('<span>'+ self.config.locale.interface.prev +'</span>').appendTo( ( ( self.config.interface_in.arrow ) ? self.$area : self.$box), {'dymanic':false});
+					self.$next = $('<button>',{'id':'gallery-next','class':'gallery-arrow'}).html('<span>'+ self.config.locale.interface.next +'</span>').appendTo( ( ( self.config.interface_in.arrow ) ? self.$area : self.$box));
+					self.$prev = $('<button>',{'id':'gallery-prev','class':'gallery-arrow'}).html('<span>'+ self.config.locale.interface.prev +'</span>').appendTo( ( ( self.config.interface_in.arrow ) ? self.$area : self.$box));
 
 					if(!self.gallery[self.group].length > 1) {
 						self.$next.hide();
 						self.$prev.hide();
 					}
-//генерация превью
+
+					// генерация превью
 					if(self.config.thumbs) { self._thumbs(); }
 
-					self.$photo = $('<div>', {'id':'gallery-photo'}).appendTo( self.$area, {'dymanic':false});
+					self.$photo = $('<div>', {'id':'gallery-photo'}).appendTo( self.$area);
 
-// вставляем описание
-					self.$title = $('<div>', {'id': 'gallery-title'}).text( self.name ).appendTo( ( ( self.config.interface_in.title ) ? self.$area : self.$holder), {'dymanic':false});
-					self.$text = $('<div>', {'id': 'gallery-text'}).html( self.text ).appendTo( ( ( self.config.interface_in.text ) ? self.$area : self.$holder), {'dymanic':false});
+					// вставляем описание
+					self.$title = $('<div>', {'id': 'gallery-title'}).html( self.name ).appendTo( ( ( self.config.interface_in.title ) ? self.$area : self.$holder));
+					self.$text = $('<div>', {'id': 'gallery-text'}).html( self.text ).appendTo( ( ( self.config.interface_in.text ) ? self.$area : self.$holder));
 
-//сама фотография
+					//сама фотография
 					if( self.typecur == 'img' ) { 
 						self.img = $('<img>',{'src': self.src})
 						.css({'width':self.x,'height':self.y})
 						.attr({'title': (self.config.zoom) ? self.config.locale.interface.zoom : ''})
 						.appendTo( self.$photo );
 					}
-//если текущий тип не img
+
+					// если текущий тип не img
 					if( self.typecur == 'video' ) {
 						self.img = self._videoBox();
 						self._videoSource();
 					}
-// запускаем функцию биндов
+
+					// запускаем функцию биндов
 					self.bind();
-//анимированное показываем фотографию
+					//анимированное показываем фотографию
 					self._animate();
+
+					//console.log(self);
+
+					if( $.isFunction(self.config.func.create) ) {
+						( self.config.func.create )(self);
+					}
 				}
 				else {
 					if(self.typeprev == 'video' ) { 
@@ -259,9 +312,8 @@
 						self._videoSource();
 					}
 					else {
-						self.img2 = $('<img>', {'src': self.src}).attr({'width':self.x,'height':self.y}).css({'opacity':0,'display':'none'}).appendTo( self.$photo, {'dymanic':false});
+						self.img2 = $('<img>', {'src': self.src}).attr({'width':self.x,'height':self.y}).css({'opacity':0,'display':'none'}).appendTo( self.$photo);
 					}
-
 
 					if( self.config.animation ) {
 						self.img1.animate({opacity: '0'}, self.config.animation_time, function() {
@@ -272,15 +324,18 @@
 							}
 	
 							self._animate(function(){
+								self.$overlay.addClass('animate');
+
 								self.img1.remove();
 								self.$photo.find('> *:not(:last)').remove();
 
-								self.$title.text(self.name);
+								self.$title.html(self.name);
 								self.$text.html( ( self.text.length ) ? self.text.html() : self.text );
 								self.img2.show().stop().animate({opacity: '1'}, self.config.animation_time, function() {
 									if(self.typeprev == 'video' && self.typecur == 'img') { self.$videobox.remove(); }
 									self.typeprev = self.gallery[self.group][self.current].type;
-									self.ready = true;
+									self.$overlay.removeClass('animate');
+        								self.ready = true;
 								});
 							});
 						});
@@ -288,15 +343,19 @@
 					else {
 						self.img1.remove();
 						self._animate(function(){
+							self.$overlay.addClass('animate');
+
 							self.$photo.find('> *:not(:last)').remove();
 
-							self.$title.text(self.name);
-							self.$text.text(self.text);
+							self.$title.html(self.name);
+							self.$text.html(self.text);
 
 							self.img2.stop().show().css({'opacity':1}).show();
 
 							if(self.typeprev == 'video' && self.typecur == 'img') { self.$videobox.remove(); }
 							self.typeprev = self.gallery[self.group][self.current].type;
+							self.$overlay.removeClass('animate');
+
 							self.ready = true;
 						});
 
@@ -309,24 +368,29 @@
 				}
 			}
 
-//получим размеры, а после вызовем callback определенный выше
+			//получим размеры, а после вызовем callback определенный выше
 			this._getSizes(callback);
 		},
 
-// бинды
+		// бинды
 		bind: function() {
 			var self = this;
-// биндим кнопки закрытия
+
+			// биндим кнопки закрытия
 			this.$close.on('click', function() { self.close(); return false; });
 			this.$closeleft.on('click', function() { self.close(); return false; });
 			this.$closeright.on('click', function() { self.close(); return false; });
 
-// биндим кнопки следующих и предыдущих фотографий, а также области закрытия лайтбокса
+			// биндим кнопки следующих и предыдущих фотографий, а также области закрытия лайтбокса
 			this.$next.on('click', function(e) {
 				e.stopPropagation();
 				self._findNext()._create();
 				if( self.config.thumbs && self.config.carousel ) {
 					self.carousel.data('seed.carousel').$next.click();
+				}
+
+				if( $.isFunction(self.config.func.next) ) {
+					( self.config.func.next )(self);
 				}
 			});
 			this.$prev.on('click', function(e) {
@@ -334,6 +398,10 @@
 				self._findPrev()._create();
 				if( self.config.thumbs && self.config.carousel ) {
 					self.carousel.data('seed.carousel').$next.click();
+				}
+
+				if( $.isFunction(self.config.func.prev) ) {
+					( self.config.func.prev )(self);
 				}
 			});
 
@@ -355,7 +423,7 @@
 				});
 			}
 
-// биндим функцию при ресайзе окна
+			// биндим функцию при ресайзе окна
 			$(window).on('resize.seed.gallery', function() {
 				if(self) {
 					self._getSizes();
@@ -364,7 +432,7 @@
 				}
 			});
 
-// биндим кнопки клавиатуры для перелистывания и закрытия
+			// биндим кнопки клавиатуры для перелистывания и закрытия
 			$(document).off('keydown.seed.gallery').on('keyup.seed.gallery', function(e) {
 				if ( e.which == 39 ) { self.$next.click(); }
 				if ( e.which == 37 ) { self.$prev.click(); } 
@@ -380,7 +448,7 @@
 				} 
 			});                                                         
 
-//биндим функцию зума
+			//биндим функцию зума
 			if(this.config.zoom) {
 				this.$box.on('click', function() {
 					if( self.$box.hasClass('zoom') ) { self._setSizes(); self._zoom(); }
@@ -388,7 +456,7 @@
 			}
 		},
 
-// определяем размеры изображения
+		// определяем размеры изображения
 		_getSizes: function(callback) {
 			var self = this;
 			var img = this.gallery[this.group][this.current];
@@ -414,10 +482,10 @@
 			}
 		},
 
-// расчитываем и устанавливаем новые размеры для изображения
+		// расчитываем и устанавливаем новые размеры для изображения
 		_setSizes: function() {
-			var xCont = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 500) - 260, 300);
-			var yCont = Math.max(Math.max(document.documentElement.clientHeight, window.innerHeight || 480) - 200, 280);
+			var xCont = Math.max(Math.max(document.documentElement.clientWidth, window.innerWidth || 500) - this.config.offset.left, 300);
+			var yCont = Math.max(Math.max(document.documentElement.clientHeight, window.innerHeight || 480) - this.config.offset.top, 280);
 
 			var img = this.gallery[this.group][this.current], xImg = img.width, yImg = img.height;
 
@@ -438,13 +506,13 @@
 			xNew = Math.round(xNew); yNew = Math.round(yNew);
 			this.x = xNew; this.y = yNew;
 
-// расчет с привязкой к сетке
+			// расчет с привязкой к сетке
 			this.ix = this.config.mesh + this.config.mesh * Math.round(xNew/this.config.mesh);
 			this.iy = 0;
 
 			this.zoom = (( xImg > this.x || yImg > this.y) && this.config.zoom ) ? true : false;
 
-			this.src = img.src.replace(/(.*)/,'/tn'+((this.zoomed) ? this.zx : this.ix) +'x'+ ((this.zoomed) ? this.zy : this.iy)+'$1'); 
+			this.src = (this.zoomed) ? img.src.replace(/\/tn\d+x\d+/,'') : img.src.replace(/(.*)/,'/tn'+ this.ix +'x'+ this.iy+'$1'); 
 
 			this.name = img.name;
 			this.text = img.text;
@@ -452,43 +520,40 @@
 			return this;
 		},
 
-
-// находим предыдущий элемент
+		// находим предыдущий элемент
 		_findPrev: function() {
 			(this.current == 0) ? this.current = this.gallery[this.group].length-1 : this.current = parseInt(this.current)-1;
 			return this;             
 		},
-// находим следующий элемент
+		// находим следующий элемент
 		_findNext: function() {
 			(this.current == this.gallery[this.group].length-1) ? this.current = 0 : this.current = parseInt(this.current)+1;
 			return this;
 		},
-
-// создаем контейнер для видео
+		// создаем контейнер для видео
 		_videoBox: function(hide) {
-			this.$videobox = $('<div>', {'class': 'gallery-video', 'id': 'gallery-video'}).attr({'width':this.x,'height':this.y}).appendTo( this.$photo, {'dymanic':false});
+			this.$videobox = $('<div>', {'class': 'gallery-video', 'id': 'gallery-video'}).attr({'width':this.x,'height':this.y}).appendTo( this.$photo);
 			this.$videobox.css({'width':0,'height':0, opacity: (!hide) ? 1 : 0 });
 			return this.$videobox;
 		},
 
-// находим видео	
+		// находим видео	
 		_videoSource: function() {
 
 			var img_video = this.gallery[this.group][this.current];
-// если есть атрибут video, значит это плеер хостинга
+			// если есть атрибут video, значит это плеер хостинга
 			if( img_video.video ) {
-				var $video = $('<iframe>',{'src': img_video.video, 'frameborder':0, 'allowfullscreen':true, 'webkitallowfullscreen':true, 'mozallowfullscreen' :true, width:this.x, height:this.y}).attr({'width':this.x,'height':this.y}).css({'width':this.x,'height':this.y}).appendTo( this.$videobox, {'dymanic':false});
+				var $video = $('<iframe>',{'src': img_video.video, 'frameborder':0, 'allowfullscreen':true, 'webkitallowfullscreen':true, 'mozallowfullscreen' :true, width:this.x, height:this.y}).attr({'width':this.x,'height':this.y}).css({'width':this.x,'height':this.y}).appendTo( this.$videobox);
 			}
-// если есть атрибуты mp4, webm, ogv значит это HTML5video
+			// если есть атрибуты mp4, webm, ogv значит это HTML5video
 			if( img_video.mp4 || img_video.webm || img_video.ogv ) {
-				var $video = $('<video>', {'poster': img_video.src, 'preload':'none', 'controls':true, 'width':this.x, 'height':this.y}).addClass('video-js vjs-default-skin').appendTo( this.$videobox, {'dymanic':false});
-				$('<source>',{'src': img_video.mp4, 'type':'video/mp4'}).appendTo( $video, {'dymanic':false});
-				$('<source>',{'src': img_video.webm, 'type':'video/webm'}).appendTo( $video, {'dymanic':false});
-				$('<source>',{'src': img_video.ogv, 'type':'video/ogv'}).appendTo( $video, {'dymanic':false});
+				var $video = $('<video>', {'poster': img_video.src, 'preload':'none', 'controls':true, 'width':this.x, 'height':this.y}).addClass('video-js vjs-default-skin').appendTo( this.$videobox);
+				$('<source>',{'src': img_video.mp4, 'type':'video/mp4'}).appendTo( $video);
+				$('<source>',{'src': img_video.webm, 'type':'video/webm'}).appendTo( $video);
+				$('<source>',{'src': img_video.ogv, 'type':'video/ogv'}).appendTo( $video);
 			}
 		},
 
-			
 		_zoom: function() {
 			if(this.type != 'img') { return false; }
 			if(this.zoomed) {
@@ -526,17 +591,15 @@
 			this.$holder.stop().animate({ top: 0, left: 0 },  200, function() { if(callback) (callback)() }).show();
 		},
 
-
-// список превью
+		// список превью
 		_thumbs: function() {
 			var self = this;
 
-// функция генерации превью изображений
-//			this.$thumbs = $('<div>',{'id':'gallery-thumbs'}).prependTo(self.$holder, {'dymanic':false});
+			// функция генерации превью изображений
 			this.$thumbs = $('<div>',{'id':'gallery-thumbs'});
 
-// определим куда встроить в DOM 
-			( self.config.interface_in.carousel ) ? this.$thumbs.appendTo(self.$area, {'dymanic':false}) : this.$thumbs.prependTo(self.$holder, {'dymanic':false});
+			// определим куда встроить в DOM 
+			( self.config.interface_in.carousel ) ? this.$thumbs.appendTo(self.$area) : this.$thumbs.prependTo(self.$holder);
 
 			if( this.config.carousel ) {
 				this._createList();
@@ -554,16 +617,17 @@
 				});
 			}
 			else {
-				self.$row = $('<div>',{'class':'gallery-thumbs-list row start-xs nowrap-xs'}).appendTo(self.$thumbs, {'dymanic':false});
+				self.$row = $('<div>',{'class':'gallery-thumbs-list row start-xs nowrap-xs'}).appendTo(self.$thumbs);
 				this._createList();
 			}
-// прикрутим скроллинг
+
+			// прикрутим скроллинг
 			self.scrollto = self.$thumbs.find('a[data-index="'+self.current+'"]');
 			self._scroll();
 
 		},
 
-// создаем список превью изображений
+		// создаем список превью изображений
 		_createList: function() {
 			var self = this;
 
@@ -571,11 +635,11 @@
 				var index = i;
 				var $a = $('<a>').attr('data-index',i);
 
-				if( self.config.carousel ) { $a.appendTo(self.$thumbs, {'dymanic':false}); }
+				if( self.config.carousel ) { $a.appendTo(self.$thumbs); }
 
-				else { var $thumb = $('<div>', {'class':'col'}).appendTo( self.$row, {'dymanic':false}); $a.appendTo($thumb, {'dymanic':false}); }
+				else { var $thumb = $('<div>', {'class':'col'}).appendTo( self.$row); $a.appendTo($thumb); }
 
-				var $img = $('<img>', { 'src': ((v.type == 'video') ? (v.src || '/tn0x'+ self.config.thumb_height +self.config.video_icon) : ('/tn'+ self.config.thumb_width +'x' + self.config.thumb_height + v.src)), 'height':self.config.thumb_height, 'data-index': i }).appendTo($a, {'dymanic':false});
+				var $img = $('<img>', { 'src': ((v.type == 'video') ? (v.src || '/tn0x'+ self.config.thumb_height +self.config.video_icon) : ('/tn'+ self.config.thumb_width +'x' + self.config.thumb_height + v.src)), 'height':self.config.thumb_height, 'data-index': i }).appendTo($a);
 
 				if( self.current == index ) { $a.addClass('active'); }
 
@@ -595,8 +659,6 @@
 				});
 			});
 		},
-
-
 
 		_scroll: function() {
 			var self = this;
@@ -618,7 +680,7 @@
 			else { self.$thumbs.scrollLeft(0); }
 		},
 
-// фунция слайдшоу
+		// фунция слайдшоу
 		slideShow: function() {
 			var self = this;
 			if(self.autoplay == true) {
@@ -636,6 +698,12 @@
 				delete self.timer;
 			}
 		},
+		
+		// установим текущий аквтиный элемент самиы
+		setCurrent: function(num){
+			this.current = num;
+			return this;
+		},	
 
 		close: function() {
 
@@ -656,14 +724,17 @@
 				$('html,body').removeClass('zoomed zoomed-hld');
 				$('embed, object').css({'visibility' : 'visible'});
 
-// снимаем бинды с глобальных элементов
+				// снимаем бинды с глобальных элементов
 				$(window).off('resize.seed.gallery');
 				$(document).off('keydown.seed.gallery, keyup.seed.gallery')
 
 			});
+			
+			if( $.isFunction(self.config.func.close) ) {
+				( self.config.func.close )(self);
+			}			
 
 			this._destroy();
-
 		}
 	});
 	var module = new $.fn.seedCore(name, $.seed[name]);

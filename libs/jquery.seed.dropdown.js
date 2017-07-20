@@ -27,6 +27,9 @@
 
 			'group' : 'default',
 			'area' : null,
+			'hide' : true,
+
+			'outside' : false,
 
 			'selector': {
 				'auto' : null,
@@ -36,17 +39,18 @@
 				'close' : '[role="dropdown-close"]'
 			},
 			'event' : {
-				'__on' : 'click.seed.drop touchend.seed.drop',
-				'__off' : 'click.seed.drop touchend.seed.drop',
-				'on' : 'click.seed.drop touchend.seed.drop',
-				'off' : 'click.seed.drop touchend.seed.drop'
+				'__on' : 'click.seed.drop',
+				'__off' : 'click.seed.drop',
+				'on' : 'click.seed.drop',
+				'off' : 'click.seed.drop'
 			},
 			'url': {
 				'current' : window.location.href
 			},
 			'func' : {
 				'show' : function() { return true; },
-				'hide' : function() { return true; }
+				'hide' : function() { return true; },
+				'ready' : null
 			},
 			'module' : {
 				'main' : null,
@@ -54,12 +58,12 @@
 			}
 		},
 
-		build: function(e) {
-
+		build: function() {
 			var self = this;
 
 			if( this.$el.find(this.config.selector.handler).length ) {
 				this.$dropdown = this.$el.find(this.config.selector.handler);
+				this.handler = true;
 			}
 			else {
 				this.$dropdown = this.$el;
@@ -76,7 +80,7 @@
 				this.$close = this.$drop.find(this.config.selector.close);
 			}
 			else {
-				this.$close = this.$el;
+//				this.$close = this.$el;
 			}
 
 
@@ -92,61 +96,122 @@
 			}
 
 			if( this.$drop.length ) {
-				this.active = this.$dropdown.hasClass('dropped active');
+				this.active = this.$dropdown.hasClass('active');
 
 				if( !this.active ) {
-					//this._$list.filter('[data-dropdown-group="'+self.config.group+'"]').removeClass('dropped active');
+					this.$el.addClass('active');
 					$('[data-dropdown-group="'+self.config.group+'"]').removeClass('dropped active');
-				
+			
 					$('[data-dropdown-group="'+self.config.group+'"]').each(function() {
 						var $drop = ( $(this).find(self.config.selector.drop).length ) ? $(this).find(self.config.selector.drop) : $(this).next(':first');
-						$drop.hide();
+						if( self.config.hide ) {
+							$drop.css('display','none');
+						}
 					});
 
 					$('[data-dropdown-group="'+self.config.group+'"]').not(this.$el).each(function() {
-						$('[area-labelledby="'+ $(this).attr('data-dropdown-area') +'"]').removeClass('on').hide();
+						var $drop = $('[area-labelledby="'+ $(this).attr('data-dropdown-area') +'"]').addClass('off').removeClass('on').hide();
 					});
 
-					this.$drop.removeClass('off').addClass('on effect effect-drop').show();
+					this.$drop.removeClass('off').addClass('on effect effect-drop')
+					if( this.config.hide ) { this.$drop.show(); }
+
 					this.$dropdown.removeClass('off').addClass('dropped active on effect');
 
-// callback при отображении контента
+					// callback при отображении контента
 					self.config.func.show(self);
 
-					this.bind('off');
+					this.rebind('off');
 				}
 				else {
-					this.$drop.removeClass('on').addClass('off').css('display','none');
-					this.$dropdown.removeClass('dropped active on').addClass('off');
-
-// callback при скрытии контента
-					self.config.func.hide(self);
-
-					this.bind('on');
+					this.close();
+					this.rebind('on');
 				}
 			}
 			else {
 				return true;
 			}
-			this.bind('on');
+
+			this.bind();
+
 		},
 
-		bind: function(e) {
+		bind: function() {
 			var self = this;
-			if( e == 'off' ) {
-				this.$dropdown.off(this.config.event.off +' '+ this.config.event._off).on(this.config.event.off, function(e) {
-					self.build(e);
+
+			if( this.$close ) {
+				this.$close
+				.off(this.config.event.on)
+				.on(this.config.event.on, function(e) {
+					self.close();
+					e.stopPropagation();
 				});
 			}
-			if( e == 'on' ) {
-				this.$dropdown.off(this.config.event.off +' '+ this.config.event._off).on(this.config.event.on, function(e) {
-					self.build(e);
+
+			if( this.config.outside ) {
+				$('html')
+				.off(this.config.event.on + this.config.group)
+				.on(this.config.event.on + this.config.group, function(e) {
+
+					if(self.$drop.find( $(e.target) )[0] !== e.target ) {
+						$('html').off(self.config.event.on + self.config.group);
+
+						self.close();
+						e.stopPropagation();
+					}
+				});
+			}
+		},
+
+		rebind: function(event) {
+			var self = this;
+
+			if( this.handler === true ) {
+				this.$el.off(this.config.event.off +' '+ this.config.event._off +' '+ this.config.event.on +' '+ this.config.event._on);
+			}
+			
+			if( event == 'on' ) {
+				this.$dropdown
+				.off(this.config.event.off +' '+ this.config.event._off +' '+ this.config.event.on +' '+ this.config.event._on)
+				.on(this.config.event.on, function(e) {
+					self.build();
+					e.stopPropagation();
 				});
 
-				this.$close.off(this.config.event.off +' '+ this.config.event._off).on(this.config.event.on, function(e) {
-					self.build(e);
+			}
+			else if( ( event == 'on' || event == 'off' ) && this.config.event.on != this.config.event.off ) {
+				this.$dropdown
+				.off(this.config.event.off +' '+ this.config.event._off +' '+ this.config.event.on +' '+ this.config.event._on)
+				.on(this.config.event.off +' '+ this.config.event.on, function(e) {
+					self.build();
+					e.stopPropagation();
 				});
 			}
+			else if( event == 'off' ) {
+				this.$dropdown
+				.off(this.config.event.off +' '+ this.config.event._off +' '+ this.config.event.on +' '+ this.config.event._on)
+				.on(this.config.event.on, function(e) {
+					self.build();
+					e.stopPropagation();
+				});
+			}
+		},
+
+		close: function() {
+			this.$el.removeClass('active');
+			this.$drop.removeClass('on').addClass('off')
+			if( this.config.hide ) { this.$drop.css('display','none'); }
+
+			this.$dropdown.removeClass('dropped active on').addClass('off');
+
+			//снимаем бинды с окружения, если они были
+			if( this.config.outside ) {
+				$('html').off(this.config.event.on + this.config.group);
+			}
+
+
+// callback при скрытии контента
+			this.config.func.hide(this);
 		}
 	});
 	var module = new $.fn.seedCore(name, $.seed[name]);

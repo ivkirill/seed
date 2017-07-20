@@ -41,6 +41,8 @@
 			
 			'reload' : false,
 
+			'dbtable' : null,
+
 			'merge' : true,
 			'fields' : null,
 
@@ -52,9 +54,10 @@
 
 			'required_status'  : true,
 			'random_length' : 8,
+			'random_array' : '0123456789abcdefghijklmnopqrstuvwxyz',
 
 			'tooltip' : 'seed',
-			'tooltip_side' : 'left',
+			'tooltip_side' : 'top',
 
 			'selector' : {
 				'auto' : '[data-seed="gform"], [data-seed="validate"]',
@@ -80,31 +83,34 @@
 			},
 
 			'func' : {
-//кастомная функция сбора данных из формы
+				//кастомная функция сбора данных из формы
 				'merge' : null,
 
-//callback-функция выполняющая после инициализации формы
+				//callback-функция выполняющая после инициализации формы
 				'ready' : null, 
 
-//callback-функция выполняющая после валидации, сбора данных из всех полей формы и ВМЕСТО ajax отправки формы и всех информационных сообщений.
+				//callback-функция если валидация не пройдена
+				'notvalid' : null, 
+
+				//callback-функция выполняющая после валидации, сбора данных из всех полей формы и ВМЕСТО ajax отправки формы и всех информационных сообщений.
 				'ajax_custom' : null,
 
-//callback-функция выполняющая перед сериализацей формы
+				//callback-функция выполняющая перед сериализацей формы
 				'ajax_preserialize' : null,
 
-//callback-функция выполняющая после сериализации формы и до оправки
+				//callback-функция выполняющая после сериализации формы и до оправки
 				'ajax_before_send' : null,
 
-//callback-функция выполняющая после сериализации формы и оправки, ВМЕСТО стандартной функции информационных сообщений.
+				//callback-функция выполняющая после сериализации формы и оправки, ВМЕСТО стандартной функции информационных сообщений.
 				'ajax_success' : null,
 
-//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об ошибке
+				//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об ошибке
 				'ajax_error':null,
 
-//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об удаче, но при этом в ответе data есть ошибка
+				//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об удаче, но при этом в ответе data есть ошибка
 				'ajax_success_error' : null,
 
-//callback-функция выполняющая после ajax отправки формы и после всех информационных сообщений.
+				//callback-функция выполняющая после ajax отправки формы и после всех информационных сообщений.
 				'ajax_success_callback' : null
 
 			},
@@ -197,6 +203,7 @@
 					if(typeof arguments[1] =='object' && arguments[1].novalidate) validate = false;
 				}
 				catch(e) {}
+
 				return self.validate(validate);
 			});
 			
@@ -208,6 +215,7 @@
 			
 			// обработка DOM элементов, эмулирующих работу формы
 			if( this.config.emulate === true ) {
+				
 				this.$form.find('[type="submit"], [data-type="submit"]').click(function() {
 					(self.config.validate == 'on') ? self.validate(true) : self._createFormData();;
 				});
@@ -253,8 +261,14 @@
 
 // создаем инпут для сбора полей функцей merge	
 			if( this.config.merge == true ) {
+				this.config.name_text = ( this.config.form_event == 'update' ) ? 'Text' : 'text';
+
+				if( this.config.dbtable !== null ) {
+					this.config.name_text = this.config.dbtable + '_txt_text';
+				}
+
 				$('<input>', {
-					'name' : ( this.config.form_event == 'update' ) ? 'Text' : 'text',
+					'name' :  this.config.name_text,
 					'type' : 'hidden'
 				}).appendTo( self.$form);
 			}
@@ -340,7 +354,7 @@
 							'data-tooltip-side': self.config.tooltip_side
 						}).appendTo( args.$el);
 
-						var $title = $('<span>').text(args.items[i].name || args.items[i].value).appendTo( $label)
+						var $title = $('<span>').html(args.items[i].name || args.items[i].value).appendTo( $label );
 
 						args.options[i] = $('<input type="'+args.datatype+'">').prependTo( $label).addClass('input-checkbox').attr({
 							'name': args.name,
@@ -486,6 +500,7 @@
 			args.$input.attr('id', 'gform-'+this._index+'-'+args.name);
 
 			if(args.cssclass) { args.$input.addClass(args.cssclass); }
+			if(self.config.cssclass.input) { args.$input.addClass(self.config.cssclass.input); }
 
 			if(args.autocomplete == 'off') { args.$input.attr('autocomplete','off'); }
 			if(args.autocomplete == 'on') { args.$input.attr('autocomplete','on'); }
@@ -501,6 +516,7 @@
 			if(args.readonly === true) { args.$input.attr('readonly','readonly'); }
 			if(args.required === true) { args.$input.attr('required','required'); }
 			if(args.nomerge === true) { args.$input.attr('data-merge','false'); }
+			if(args.merge === false) { args.$input.attr('data-merge','false'); }
 			if(args.multiple === true) { args.$input.attr('multiple','multiple'); }
 
 			if(args.accept && args.type == 'file') { args.$input.attr('accept', args.accept ); }
@@ -525,7 +541,19 @@
 			if(args.random === true && !args.items && !args.value) { args.$input.val( this._randomString() ); }
 			if(args.pattern && !args.items) { args.$input.data('pattern', args.pattern); }
 
-			if(args.name == 'update') { this.config.form_event = 'update'; }
+			if(typeof args.mask == 'string') {
+				try {
+					require('common.mask', function() {
+						args.$input.mask(args.mask, {placeholder:args.placeholder});
+					});
+				}
+				catch(e) {}
+			}
+
+			if( args.name == 'update' ) { this.config.form_event = 'update'; }
+			if( /[a-z0-9]+_[a-z]+_[a-z0-9]+/.test(args.name) ) {
+				this.config.dbtable = args.name.replace(/^([a-z0-9]+)_[a-z]+_[a-z0-9]+/, '$1');
+			}
 
 			if( args.tie ) {
 				var $src = args.$input.add(self.$form.find('[name="'+args.name+'"]:input')).on('change', function() {
@@ -602,8 +630,6 @@
 			// получим текущие элементы формы
 			this.$fields = this._getFields();
 			
-			var $field
-
 			// выполняем валидацию каждого поля и возвращаем логическое значение проверки
 			$.each( this.$fields.get().reverse(), function(j, obj) {
 
@@ -616,11 +642,21 @@
 			if (!valid && validation) {
 				this.$form.find('[type="submit"]').removeAttr('disabled');
 				this.valid = false;
+
+				if( self.config.func.notvalid ) {
+					(self.config.func.notvalid)(self);
+				}
+
 				return false;
 			}
 			else if(valid && this.config.validate == 'only') {
 				if(self.config.debug) { console.log('only'); }
 				self.valid = true;
+
+				if( self.config.func.notvalid ) {
+					(self.config.func.notvalid)(self);
+				}
+
 				return true;
 			}
 			else {
@@ -731,7 +767,8 @@
 				$status.addClass('fa-check');
 				obj.addClass('valid').removeClass('invalid');
 			}
-        
+
+       
 			return valid;
 		},
 
@@ -748,8 +785,18 @@
 			this.text = '';
 // собираем все данные в поле Text для письма
 
-			if( this.config.letter == 'html' ) { self.delimiter = '<br>'; }
-			if( this.config.letter == 'plain' ) { self.delimiter = '\n'; }
+			if( this.config.letter == 'html' ) {
+				self.delimiter = '<br>';
+				self.caption_open = '<h4>';
+				self.caption_close = '</h4>';				
+			}
+			if( this.config.letter == 'plain' ) {
+				self.delimiter = '\n';
+				self.caption_open = '+++';
+				self.caption_close = '+++';				
+			}
+			if( this.config.letter == 'json' ) { self.delimiter = ','; self.text = {}; }
+
 
 			$.each( $(self.$fields).filter(':enabled').not('input[name="from"], input[name="text"], input[name="Text"], [data-type="submit"], [type="reset"], [data-type="reset"], *[data-merge="false"], input[data-type="file"]'), function(j, obj) {
 				var $obj = $(obj);
@@ -758,42 +805,55 @@
 				var name = $obj.attr('name');
 				var title = $obj.attr('data-title') || '';
 				var type = $obj.attr('data-type');
-
 				var holder = $obj.parent();
 
-				if( ( type == 'radio' || type == 'checkbox' ) && $obj.attr('type') == 'hidden' ) {
-					self.text += title +': ' + self.delimiter;
+
+				if( self.config.letter != 'json' ) {
+					if( ( type == 'radio' || type == 'checkbox' ) && $obj.attr('type') == 'hidden' ) {
+						self.text += title +': ' + self.delimiter;
+					}
+					else if( ( type == 'radio' || type == 'checkbox' ) && $obj.prop('checked') ) {
+						self.text += '- ' + value + self.delimiter;
+					}
+					else if( ( type == 'radio' || type == 'checkbox' ) && !$obj.prop('checked') ) {
+						return;
+					}
+					else if( type == 'caption') {
+						self.text += self.delimiter + self.caption_open + title + self.caption_close + self.delimiter;
+					}
+					else {
+						self.text += title + ': ' + value + self.delimiter;
+					}
 				}
-				else if( ( type == 'radio' || type == 'checkbox' ) && $obj.prop('checked') ) {
-					self.text += '- ' + value + self.delimiter;
+
+				if( self.config.letter == 'json' ) {
+					self.text[name] = value;
 				}
-				else if( ( type == 'radio' || type == 'checkbox' ) && !$obj.prop('checked') ) {
-					return;
-				}
-				else if( type == 'caption') {
-					self.text += self.delimiter + '+++' + title + '+++' + self.delimiter;
-				}
-				else {
-					self.text += title + ': ' + value + self.delimiter;
-				}
+
 			});
 
-			this.$form.find('input[name="text"]:last, input[name="Text"]:last').val(this.text);
+			if( self.config.letter == 'json' ) {
+				// TODO конвертация object to string
+				return false;
+			}
+
+
+			this.$form.find('input[name="text"]:last, input[name="Text"]:last, input[name="'+ this.config.name_text +'"]:last').val(this.text);
 		},
 
 // валидация электронной почты
 		_validateEmail: function(email) {
-			return /^[^\s]+@([-a-z0-9_]+\.)+[a-z]{2,10}$/i.test(email); //
+			return /^[^\s]+@([-a-z0-9_]+\.)+[a-z\.]{2,10}$/i.test(email); //
 		},
 
 // валидация телефона
 		_validatePhone: function(phone) {
-			return /^[\+]?[0-9-\s]{10,13}$/i.test(phone); //////
+			return /^[\+]?[0-9-\s\)\(]{10,20}$/i.test(phone); //////
 		},
 
 // генерация рандомной строки
 		_randomString: function() {
-			var arr = '0123456789abcdefghijklmnopqrstuvwxyz', rnd='';
+			var arr = this.config.random_array, rnd='';
 			for(var i=0; i < this.config.random_length; i++) { rnd += arr.charAt(Math.floor(Math.random() * arr.length)); }
 			return rnd;
 		},
@@ -854,7 +914,7 @@
 			catch(e) {}
 
 			// лог для дебага
-			if(this.config.debug) { console.log(this.form_data); }
+			if(this.config.debug) { console.dir(this.form_data); }
 			
 			$.ajax({
 				url: this.config.url.post,
@@ -865,7 +925,7 @@
 				contentType: false,
 				context: this.config.context || this.$context || this.$el,
 				beforeSend: function() {
-					self.$form.find('input[type="submit"]').addClass('btn-loading');
+					self.$form.find('[type="submit"]').addClass('btn-loading');
 					
 					// если включена функция reload, то не показываем статусные сообщения
 					if( self.config.reload ) return;
@@ -887,12 +947,8 @@
 						console.error(self._name+': Страница недоступна!');
 					}
 				},
-       			error: function(data) {
-					console.error(self._name+': Произошла неизвестная ошибка!');
-					
-					console.log(data);
-
-					if(self.config.debug) { console.log(data); }
+	       		error: function(data) {
+					console.error(self._name+': Произошла неизвестная ошибка!', arguments);
 
 					// если задана функция обработки ошибки, запустим ее
 					if(self.config.func.ajax_error) {
@@ -900,7 +956,7 @@
 					}
 					else {
 						$(this).html('');
-						$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error') +'</span></div>').appendTo( $(this));
+						$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>Ошибка ответа сервера</span></div>').appendTo( $(this));
 					}
 
 					self.$form.find('input[type="submit"]').removeClass('btn-loading').removeAttr('disabled');
@@ -929,6 +985,12 @@
 								var ans = $(data);	
 								if( ans.find('var[error]').length ) error = true;
 							}
+							
+							// если тип запроса на сервер был "JSON" и находим ответ с ошибкой, то ошибка есть
+							if( self.config.dataType == 'json' ) {
+								var ans = data;	
+								if( data.error ) error = true;
+							}
 							if( error ) {
 								$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error', ans) +'</span></div>').appendTo( $(this));
 
@@ -944,7 +1006,7 @@
 								}
 							}
 							else {
-								$('<div class="h2 gform-status status success" data-time="'+ self._getTimeNow() +'"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success') +'</span></div>').appendTo( $(this));
+								$('<div class="h2 gform-status status success" data-time="'+ self._getTimeNow() +'"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success', ans) +'</span></div>').appendTo( $(this));
 								if( self.config.auth ) {
 									window.location.reload(true);
 								}
@@ -955,7 +1017,7 @@
 							(self.config.func.ajax_success_callback)(self, data);
 						}
 
-						self.$form.find('input[type="submit"]').removeClass('btn-loading').removeAttr('disabled');
+						self.$form.find('[type="submit"]').removeClass('btn-loading').removeAttr('disabled');
 					}
 					else {
 						console.log(self._name+': ajax вернул data, но не статус 200', data);
@@ -964,9 +1026,17 @@
 			});
 		},
 
-		//Функция формирования ответов и загловков при ajax отправке
+		//Функция формирования ответов и заголовков при ajax отправке
 		_ajaxHeader: function(status, data) {
-			return ( status == 'error' && data.length && data.find('var').attr('text') ) ? data.find('var').attr('text') : this.config.locale.interface[status + (( this.config.auth ) ? '_auth' : '')];
+			
+			//  если типа запрос JSON, то вернем данные, которые ответил JSON
+			if( this.config.dataType == 'json' && data ) {
+				if( data.text || data.message || data.error ) {
+					return data.text || data.message || data.error;
+				}
+			}
+			
+			return ( status == 'error' && data.length && data.find('var').attr('text') ) ? data.find('var').attr('text') : this.config.locale.interface[status + (( this.config.auth ) ? '_auth' : '')];	
 		},
 		
 		_getTimeNow: function() {

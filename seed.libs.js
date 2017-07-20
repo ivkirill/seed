@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * seed Config Libs
 * @version 2.0.0
 * @author Kirill Ivanov
@@ -22,6 +22,12 @@ seed.libs = {
 	},
 	"jquery.1.7.1" : {
 		"path" : "/js/jquery/jquery-1.7.1.js",
+		"callback" : function() {
+			return jQuery;
+		}
+	},
+	"jquery.1.7.2" : {
+		"path" : "/js/jquery/jquery-1.7.2.js",
 		"callback" : function() {
 			return jQuery;
 		}
@@ -56,6 +62,14 @@ seed.libs = {
 			return jQuery;
 		}
 	},
+	"jquery.3.2.1" : {
+		"path" : "/js/jquery/jquery-3.2.1.min.js",
+		"callback" : function() {
+			return jQuery;
+		}
+	},
+	
+
 
 // библиотеки seed
 	"seed.core" : {
@@ -106,7 +120,7 @@ seed.libs = {
 		"depents" : ["seed.core", "ui.draggable"]
 	},
 	"seed.page" : {
-		"path" : "/js/seed/libs/jquery.seed.page.js",
+		"path" : "/js/seed/libs/jquery.seed.page.js?2017-01-15",
 		"selector" : "[data-seed='page'], [role='list-infinity']",
 		"depents": ["seed.core", "common.cookie"]
 	},
@@ -151,6 +165,10 @@ seed.libs = {
 	},
 	"common.mousewheel" : {
 		"path" : "/js/jquery/jquery.mousewheel.js",
+		"depents": [seed.config.jquery]
+	},
+	"common.mask" : {
+		"path" : "/js/jquery/jquery.mask.js",
 		"depents": [seed.config.jquery]
 	},
 	"common.swipe" : {
@@ -230,6 +248,10 @@ seed.libs = {
 		"path" : "/js/jquery/ui/jquery.ui.slider.1.11.4.js",
 		"depents": [seed.config.jquery]
 	},
+	"ui.autocomplete" : {
+		"path" : "/js/jquery/ui/jquery.ui.autocomplete.1.12.1.js",
+		"depents": [seed.config.jquery]
+	},
 	"ui.touch" : {
 		"path" : "/js/jquery/ui/jquery.ui.touch.min.js",
 		"depents": [seed.config.jquery]
@@ -255,6 +277,11 @@ seed.libs = {
 	"high.charts" : {
 		"path" : "/js/highstock/highcharts.4.1.9.js"
 	},
+// библиотеки High Stock 
+// highcharts по умолчанию включён в highstock! Не грузить одновременно highstock и highcharts
+	"high.stock" : {
+		"path" : "/js/highstock/highstock.4.2.3.js"
+	},
 
 // Яндекс карты
 	"yandex.maps" : {
@@ -264,3 +291,6 @@ seed.libs = {
 		}
 	}
 };
+
+// Определяем список библиотек глобально
+seed.amd._libs(seed.libs);

@@ -1,9 +1,46 @@
-/* 
- * seed AMD Core
+﻿/* 
+ * seed amd Core
  * @version 2.1.0
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
+
+/*
+// тестируем фоновое логирование
+window.loging = function() {
+	console.log(arguments)
+};
+
+// разширяем console.log();
+(function() {
+	var exLog = console.log;
+	var exInfo = console.info;
+	
+	console.log = function(msg) {
+		exLog.apply(this, arguments);
+		
+		window.loging(arguments);
+	}
+	
+	console.info = function(msg) {
+		exInfo.apply(this, arguments);
+		window.loging(arguments);
+	}
+})();
+
+try {
+	var head = document.querySelector('head');
+	var log = document.createElement('meta');
+	head.insertBefore(log, head.firstChild);
+	
+	window.loging = function(msg) {
+		//console.log(msg, msg.toString());
+		log.innerText += Date.now() + ': ' + msg + '\n';
+	}
+	
+
+} catch(e) {}
+*/
 
 (function(window, document, undefined) {
 	'use strict';
@@ -17,6 +54,13 @@
 		};                                                                                      	
 	}
 
+	// Polyfill for "Date.now()"
+	if (!Date.now) {
+	  Date.now = function now() {
+		return new Date().getTime();
+	  };
+	}
+	
 	// Polyfill for "matches"
 	// For browsers that do not support Element.matches() or Element.matchesSelector(), but carry support for document.querySelectorAll()
 	if (!Element.prototype.matches) {
@@ -32,7 +76,7 @@
 			return i > -1;            
 		};
 	}
-
+	
 	if (!typeof Promise) {
 		return;
 	}
@@ -52,7 +96,7 @@
 		'selector' : {
 			'lazy' : {}
 		},
-		'AMD': {
+		'amd': {
 			'cache': true,
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
 			'path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
@@ -60,12 +104,51 @@
 		'locale': {}, // локализация библиотек ядра
 		'defaults' : {}
 	};
-
+	
 	if( seed.config.performance ) console.info('Start:', performance.now());
 
 	// Helpers
 	// вспомогательные методы
 	
+	// парсинг data-config- атрибутов в объект
+	seed._dataset = function(el) {
+		var config = {};
+		if(!el || el.nodeType != 1) return config;
+		
+		var attributes = el.attributes;
+		if( attributes ) {
+			[].forEach.call(attributes, function(attr) {
+				if (/^data-config-/.test(attr.name)) {
+
+					var key = attr.name.replace('data-config-','');
+					var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
+					if( value === 'false' ) value = false;
+					if( value === 'true' ) value = true;
+					
+					if (/-/.test(key)) {
+						var keys = key.split('-');
+						
+						if( !config[keys[0]] ) config[keys[0]] = {};
+
+						if( keys[2] ) {
+							if( !config[keys[0][keys[1]]] ) config[keys[0]][keys[1]] = {};
+							config[keys[0]][keys[1]][keys[2]] = value;
+						}
+						else {
+							config[keys[0]][keys[1]] = value;
+						}
+					}
+					else {
+						config[key] = value;
+					}
+
+				}
+			});
+		}
+		
+		return config;
+	};
+		
 	// расширяем свойства объекта
 	seed.extend = function(obj) {
 		obj = obj || {};
@@ -76,7 +159,12 @@
 		for (var i = 1; i < arguments.length; i++) {
 			if (!arguments[i]) continue;
 			for (var key in arguments[i]) {
-				if (arguments[i].hasOwnProperty(key)) obj[key] = arguments[i][key];
+				if (arguments[i].hasOwnProperty(key)) {
+					var value = arguments[i][key];
+					if( value === "true" ) value = true;
+					else if( value === "false" ) value = false;
+					obj[key] = value;
+				}
 			}
 		}
 		
@@ -110,8 +198,58 @@
 	
 	// биндим событие по domReady
 	seed.ready = function(func) {
-		if (document.readystate != 'loading') func();
-		else document.addEventListener('DOMContentLoaded', func);
+		//if (document.readystate != 'loading') func();
+		//else document.addEventListener('DOMContentLoaded', func);
+		
+		var readyBound = false;
+		var DOMReadyCallback = ( typeof func === "function" ) ? func : function() {};
+
+		// исполенение переданной функции после события, убиываем события
+		var DOMContentLoaded = function() {
+			if ( document.addEventListener ) document.removeEventListener( "DOMContentLoaded", DOMContentLoaded, false );
+			else document.detachEvent( "onreadystatechange", DOMContentLoaded );
+			DOMReady();
+		};
+
+		// Когда все готово
+		var DOMReady = function() {
+			// Проверяем DOM
+			if ( !seed.isReady ) {
+				// запоминаем состояние
+				seed.isReady = true;
+				// вызываем функции, которые определены 
+				DOMReadyCallback();
+			}
+		};
+
+		var bindReady = function() {
+			var toplevel = false;
+
+			// выходим при повторном запуске
+			if (readyBound) return;
+			readyBound = true;
+
+			// Запускаем если уже все определено
+			if ( document.readyState !== "loading" ) DOMReady();
+
+			// для Mozilla, Opera and webkit 
+			if ( document.addEventListener ) {
+				document.addEventListener( "DOMContentLoaded", DOMContentLoaded, false );
+				window.addEventListener( "load", DOMContentLoaded, false );
+			}
+			// для IE
+			else if ( document.attachEvent ) {
+				document.attachEvent( "onreadystatechange", DOMContentLoaded );
+				window.attachEvent( "onload", DOMContentLoaded );
+				// Если это iframe
+				try {
+					toplevel = window.frameElement == null;
+				} catch (e) {}
+			}
+		};
+
+		seed.isReady = false;
+		bindReady();
 	}
 	
 	// Загрузка файла по url
@@ -175,7 +313,7 @@
 					var newNodes = [];
 
 					nodes.forEach(function(node) {
-						if( node.nodeType === 1 ) {
+						if( node.nodeType === 1 && node.nodeName != 'JDIV') {
 							if( node.matches(selector) && !node.matches('[data-config-lazy="false"]') ) newNodes.push(node);
 							
 							var childs = node.querySelectorAll(selector);
@@ -231,7 +369,20 @@
 	
 	// переопредляем конфиг внешними переменными
 	seed.globals = function(obj) {
-		return seed.config = seed.extend(seed.config, obj);
+		var config = seed.config;
+		
+		// читаем конфиг из data- атрибутов файла script, подключемого для seed.js
+		if( obj === 'dataset' ) {
+			var scripts = document.querySelectorAll('script');
+			scripts.forEach(function(el) {
+				if( /seed\.js$/.test(el.src) ) config = seed.extend(seed.config, seed._dataset( el ) );
+			});
+		}
+		else {
+			config = seed.extend(seed.config, obj);
+		}
+		
+		return seed.config = config;
 	}
 	
 	// текущее состоянии загрузки
@@ -243,42 +394,42 @@
 	// инициалиация ядра Seed
 	seed.init = function() {
 		seed.core = {};
-
 		if (seed.config.debug) console.info('%cINIT', 'background-color: #409f00; font-weight: bold; padding: 2px 10px; color:#fff; display:block; width: 100%');
 		
-		var corelibs = new Promise(function(resolve, reject) {
-			// определяем модуль с основными библиотеками
-			if( seed.config.AMD.path ) {
-				seed.AMD._include(seed.config.AMD.path).then(function(source) {
-					// создаем функцию для исполнения внешнего в нашей области видимости
-					(seed.AMD._exec({source: source}))();
-
-					// определяем библиотеки
-					seed.AMD._libs(seed.libs);
-					resolve();
-				});
-			}
-			else {
-				// библиотек нет, грузим модули
-				resolve();
-			}
-		});
+		// обновляем глобальный конфиг из dataset для основного включения скрипта (точки входа)
+		seed.globals('dataset');
 		
-		corelibs.then(function(resolve) {
+		// определяем модуль с основными библиотеками
+		if( seed.config.amd.path ) {
+			seed.amd._include(seed.config.amd.path).then(function() {
+				// создаем функцию для исполнения внешнего в нашей области видимости
+				//(seed.amd._exec({source: source}))();
+
+				// определяем библиотеки
+				seed.amd._libs(seed.libs);
+				load();
+			});
+		}
+		else {
+			// библиотек нет, грузим модули
+			load();
+		}
+
+		function load() {
 			seed.ready(function() {
 				seed.state = 'ready';
-				seed.AMD._init();
-			
+				seed.amd._init();
+
 				// запускаем наблюдатель
 				if (seed.config.lazy) seed.observe();
 			})
-		});
+		};
 		
 		return seed;
 	}	
 	
-	// AMD функционал
-	seed.AMD = {
+	// amd функционал
+	seed.amd = {
 		modules : [], // модули, которые были определены
 		defined : [], // ключи модулей (имена), которые были определены
 		required : [], // ключи модулей (имена), которые были запрошены
@@ -286,9 +437,9 @@
 		pending : {} // массив промисов ожидающих загрузки модулей
 	};
 	 	
-	// AMD. Запрос модуля
+	// amd. Запрос модуля
 	// Принимает имя модуля, callback-функцию
-	seed.AMD.require = function(depents, callback) {
+	seed.amd.require = function(depents, callback) {
 		if (seed.config.debug) console.log('%cREQUIRE:', 'color: #3e3;', 'запрашиваем модуль', depents);
 		
 		// создаем объект конфигурации модуля
@@ -303,20 +454,20 @@
 
 		// определяем callback-функцию
 		config.callback = ( seed.isFunction(arguments[1]) ) ? arguments[1] : function() { };
-		var module = seed.AMD.define('seed'+Date.now(), config.depents, config.callback, { global : true });
+		var module = seed.amd.define('seed'+Date.now(), config.depents, config.callback, { global : true });
 		
-		return (config.depents.length === 1) ? seed.AMD._restore(config.depents) : module;
+		return (config.depents.length === 1) ? seed.amd._restore(config.depents) : module;
 	}
 	
-	// AMD. Определение модуля
+	// amd. Определение модуля
 	// Принимает все аргументы, при необходимости заполняем дефолтными значениями. Далее передаем в функцию обновления
 	// Возвращает ссылку на модуль
-	seed.AMD.define = function(name, depents, callback, data) {
+	seed.amd.define = function(name, depents, callback, data) {
 		if (seed.config.debug) console.log('%cDEFINE:', 'color: #090;', 'определяем модуль', name);
 		
 		//Если первый полученный аргумент Объект и второй функция или не передан, то значит мы получили конфиг и обработаем его через специальную функцию.
 		if (seed.isObject(arguments[0])) {
-			seed.AMD._libs(arguments[0], arguments[1]);
+			seed.amd._libs(arguments[0], arguments[1]);
 			return false;
 		}
 		//Если первый аргумент не является строкой, то сообщаем об ошибке и возвращаем false
@@ -370,13 +521,13 @@
 			
 			var module; 
 			// находим модуль, если такого модуля нет - создаем новый пустой
-			if( seed.AMD.modules[config.name] ) {
-				module = seed.AMD.modules[config.name]
+			if( seed.amd.modules[config.name] ) {
+				module = seed.amd.modules[config.name]
 				module.data.require = true;
 			}
 			// модуль уже был определен ранее, и значит он теперь вызывается, передаем ставим require = true;
 			else {
-				module = seed.AMD.modules[config.name] = {
+				module = seed.amd.modules[config.name] = {
 					name: config.name,
 					depents: config.depents,
 					callback: config.callback,
@@ -388,22 +539,20 @@
 			}
 			
 			// добавляем имя модуля в массив определенных
-			seed.AMD.defined.push(module.name);
-			module = seed.AMD._update(module, config);
+			seed.amd.defined.push(module.name);
+			module = seed.amd._update(module, config);
 			
 			// если в конфиге модуля есть определенный селектор и включена функция lazy
-			if(module.data.selector && seed.config.lazy === true) seed.AMD._lazyReady(module.name, module.data.selector);
+			if(module.data.selector && seed.config.lazy === true) seed.amd._lazyReady(module.name, module.data.selector);
 			
-			
-			
-			return (seed.state == 'ready') ? (( config.data.plugin !== true ) ? seed.AMD._pending(module) : module) : module;
+			return (seed.state == 'ready') ? (( config.data.plugin !== true ) ? seed.amd._pending(module) : module) : module;
 		}
 	}
 	
-	// AMD. Обновление конфига модуля
+	// amd. Обновление конфига модуля
 	// Принимает модуль и новый конфиг
 	// Возвращает модуль
-	seed.AMD._update = function(module, config) {
+	seed.amd._update = function(module, config) {
 		if( !module ) return Error('Модуль не передан');
 		if (seed.config.debug) console.log('%c_UPDATE:', 'color:#FDB950', 'обновляем конфиг для модуля', module.name);
 
@@ -425,20 +574,20 @@
 		return module;
 	}
 
-	// AMD. Ожидание модуля
+	// amd. Ожидание модуля
 	// Принимает модуль
 	// Возвращает обещание, старое или новое, в зависимости от того первый это вызов модуля или нет
-	seed.AMD._pending = function(module) {
-		var promise = ( seed.AMD.pending[module.name] ) ? seed.AMD.pending[module.name] : (seed.AMD.pending[module.name] = seed.AMD._call(module));
+	seed.amd._pending = function(module) {
+		var promise = ( seed.amd.pending[module.name] ) ? seed.amd.pending[module.name] : (seed.amd.pending[module.name] = seed.amd._call(module));
 		if (seed.config.debug) console.log('_pending', module.name, module, promise);
 		return promise;
 	}
 	
-	// AMD. Вызов модуля
+	// amd. Вызов модуля
 	// Принимает модуль
 	// Определяет зависимости, вызывает цепочку или/и
 	// Возвращает обещание
-	seed.AMD._call = function(module) {
+	seed.amd._call = function(module) {
 		if (seed.config.debug) console.info('%c_call:', 'color: #840000; font-weight: bold', 'вызов модуля', module.name, 'с зависимостями', module.depents);
 
 		return new Promise(function(resolve, reject) {
@@ -456,22 +605,26 @@
 				*/
 				var check = !module.depents.some(function(depent) {
 					// если зависимость строка, считаем это именем и проверяем определен ли такой модуль
-					return !((typeof depent === 'string') ? seed.AMD.modules[depent] : depent); 
+					return !((typeof depent === 'string') ? seed.amd.modules[depent] : depent); 
 				});
 				
 				if (check === true) {
-					seed.AMD._chain(module).then(function() {
-						seed.AMD._get(module).then(function(module) {
+					seed.amd._chain(module).then(function() {
+						seed.amd._get(module).then(function(module) {
 							resolve(module);
 							if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 							if( seed.config.performance ) console.info('Loaded:', performance.now());
 						}, function(reject) {
-							console.error('Неудалось загрузить модуль', module, reject);
+							console.error('Неудалось загрузить модуль');
+							console.error(module);
+							console.error(reject);
 							reject(module);
 						});
 					}, function(module) {
 						if (seed.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
 						resolve(module);
+					}).catch(function(e) {
+						console.error(e);
 					});
 				}
 				else {
@@ -483,13 +636,15 @@
 			// если модуль необходим и не имеет зависимостей
 			else if (module.data.inited === false && module.data.require === true) {
 				if (seed.config.debug) console.log('Модуль ', module.name, 'необходим. Зависимостей нет');
-				seed.AMD._get(module).then(function(module) {
+				seed.amd._get(module).then(function(module) {
 					resolve(module);
 					if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 					if( seed.config.performance ) console.info('Loaded:', performance.now());
 				}, function(reject) {
 					console.error('Неудалось загрузить модуль', module, reject);
 					reject(module);
+				}).catch(function(e) {
+					console.info('Поймана ошибка: ', e);
 				});
 			}
 
@@ -502,23 +657,23 @@
 		});
 	}
 
-	// AMD. Вызов цепочки
+	// amd. Вызов цепочки
 	// Принимает модуль, определяет его зависимости
 	// Возвращает обещание
-	seed.AMD._chain = function(module) {
+	seed.amd._chain = function(module) {
 		if (seed.config.debug) console.log(' Зависимости модуля', module.name, 'прошли проверку');
 
 		// создаем обещаения для всего списка зависимостей модуля
 		return Promise.all(
 			module.depents.map(function(depent) {
 				if( typeof depent === 'string' ) {
-					if (seed.AMD.modules[depent]) {
+					if (seed.amd.modules[depent]) {
 						if (seed.config.debug) console.log(' Зависимость модуля', module.name + '. Модуль', depent, 'необходим для загрузки');
 
 						// обновим модуль зависимости, передав новый конфиг если требуется
-						if( seed.AMD.modules[depent].data.require !== true ) seed.AMD._update( seed.AMD.modules[depent], { data : { require : true } })
+						if( seed.amd.modules[depent].data.require !== true ) seed.amd._update( seed.amd.modules[depent], { data : { require : true } })
 						
-						return seed.AMD._pending(seed.AMD.modules[depent]);
+						return seed.amd._pending(seed.amd.modules[depent]);
 					}
 					// если такой модуль не был определен вообще 
 					else {
@@ -536,8 +691,8 @@
 		);
 	}
 	
-	// AMD. Определение списка библиотек
-	seed.AMD._libs = function(config) {
+	// amd. Определение списка библиотек
+	seed.amd._libs = function(config) {
 		if (seed.config.debug) console.log('%c_libs', 'color: #00f; font-weight: bold', 'определяем конфиг seed');
 		
 		// поочередно определяем переданные в объекте модули
@@ -548,8 +703,8 @@
 				delete data.callback;
 				
 				// если модуль уже определен в системе, обновим его новым данными
-				if( seed.AMD.modules[name] ) {
-					seed.AMD._update(seed.AMD.modules[name], {
+				if( seed.amd.modules[name] ) {
+					seed.amd._update(seed.amd.modules[name], {
 						depents : data.depents,
 						callback : callback,
 						data : seed.extend(data, {plugin : true})
@@ -558,16 +713,16 @@
 					
 				// если модуль не определен, то определим
 				else {
-					seed.AMD.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
+					seed.amd.define(name, data.depents, callback, seed.extend(data, {plugin : true}));
 				}
 			}
 		}
 	};
 
-	// AMD. Получение библиотеки по url
+	// amd. Получение библиотеки по url
 	// Принимает модуль и адрес загрузки
 	// Возвращает модуль
-	seed.AMD._get = function(module, url) {
+	seed.amd._get = function(module, url) {
 		if( !module ) return Error('Модуль не передан');
 		if (seed.config.debug) console.log('%c_GET', 'color: #00f; font-weight: bold', module.name, module);
 	
@@ -577,13 +732,13 @@
 			
             // Если url модуля есть, то будем его подгружать
             if (url) {
-			seed.AMD._include(url).then(function(source) {
+			seed.amd._include(url).then(function(source) {
 				if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
 				// обновим модуль
-				seed.AMD._update(module, { source: source });
+				seed.amd._update(module, { source: source });
 
 				// вызываем _restore метод
-				resolve(seed.AMD._callback(module));
+				resolve(seed.amd._callback(module));
 			}, function(error) {
 				console.error("Ошибка!", error);
 				// модуль не загружен
@@ -593,33 +748,39 @@
 
             // Если url нет
             else {
-				resolve(seed.AMD._callback(module));
+				resolve(seed.amd._callback(module));
             }
         });
 	}
 	
-	// AMD. Прокидывание переменных из callback-функцию в зависимые модули
+	// amd. Прокидывание переменных из callback-функцию в зависимые модули
 	// Принимает модуль
 	// Возвращает модуль
-	seed.AMD._callback = function(module) {
+	seed.amd._callback = function(module) {
 		if (seed.config.debug) console.log('   _callback', module.name, module);
 		
 		// сохраним хранилище для текущего модуля
-		var storage = seed.AMD._storage(module);
+		var storage = seed.amd._storage(module);
 		var storage_array = Object.keys(storage).map(function (key) {return storage[key]});
 
-		storage[module.name] = module.callback.apply(storage, storage_array);
+		var storage_apply = Object.keys(storage).map(function (key) {
+			return (key != 'items' && key != 'selector' && storage[key] !== undefined ) ? storage[key] : null;
+		}).filter(function (key) {
+			return key !== null;
+		});
+
+		storage[module.name] = module.callback.apply(storage, storage_apply);
 		
-		seed.AMD._save(module, storage[module.name]);
+		seed.amd._save(module, storage[module.name]);
 		
 		// обновим конфиг модуля
-		return seed.AMD._update(module, {values : storage, value: storage[module.name]});
+		return seed.amd._update(module, {values : storage, value: storage[module.name]});
 	}
 	
-	// AMD. Возращаем из хранилища все данные по родительским модуялм
+	// amd. Возращаем из хранилища все данные по родительским модуялм
 	// Принимает модуль
 	// Возвращает обьект
-	seed.AMD._storage = function(module) {
+	seed.amd._storage = function(module) {
 		if (seed.config.debug) console.log(' _storage', module.name, module.depents);
 		var storage = {};
 		
@@ -627,7 +788,7 @@
 			module.depents.filter(function(value) {
 				return (typeof value === 'string');
 			}).forEach(function(module) {
-				storage = seed.extend(storage, seed.AMD.modules[module].values);
+				storage = seed.extend(storage, seed.amd.modules[module].values);
 			});
 			
 			if( module.data.selector ) {
@@ -639,83 +800,96 @@
 		return storage;
 	}
 	
-	// AMD. Сохраняет значение, которое вернула функция модуля
+	// amd. Сохраняет значение, которое вернула функция модуля
 	// Принимает модуль и значение
-	seed.AMD._save = function(module, value) {
-		seed.AMD.storage[module.name] = (value) ? value : null;
+	seed.amd._save = function(module, value) {
+		seed.amd.storage[module.name] = (value) ? value : null;
 	}
 	
-	// AMD. Сохраняет значение, которое вернула функция модуля
+	// amd. Сохраняет значение, которое вернула функция модуля
 	// Принимает массив зависимостей
 	// Возвращает либо одно значение, либо обьект значений
-	seed.AMD._restore = function(depents) {
+	seed.amd._restore = function(depents) {
 		return new Promise(function(resolve, reject) {
 			if (!seed.isArray(depents) || depents.length !== 1) resolve(false);
 			
 			if( depents.length === 1 ) {
-				var value = seed.AMD.storage[depents[0]];
+				var value = seed.amd.storage[depents[0]];
 				if( value !== undefined ) resolve(value);
 			}
 		});
 	}
 	
-	// AMD. Оборачиваем внешний код
+	// amd. Оборачиваем внешний код
 	// Принимает исходный код
 	// Создает анонимную функцию, загрженный код помещается в тело функции, ниже добавляется тело callback-функции модуля
 	// Возвращает анонимную функцию
-	seed.AMD._exec = function(module) {
+	seed.amd._exec = function(module) {
 		if (seed.config.debug) console.log(' _exec', module.name, module.depents);
-
+		
 		var func = (module.callback || '').toString();
 		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
+		console.log( module );
+		
 		return new Function('args','return (function(args) { seed.ready(function() {'+ (module.source || '') + '\n' + callback + '}) })(args)');
 	}
 
-	// AMD. Создает script и добавляет его в шапку
+	// amd. Создает script и добавляет его в шапку
 	// Принимает исходный код
 	// Создает тег script, загрженный код помещается в тег
 	// Возвращает объект DOM
-	seed.AMD._include = function(url, module) {
+	seed.amd._include = function(url, module) {
 		if (seed.config.debug) console.log(' _include', url);
 		
 		return new Promise(function(resolve, reject) {		
 			var n = document.getElementsByTagName("head")[0];
 			var s = document.createElement('script');
+			var d = false;
 			
 			s.type = 'text/javascript';
 			s.defer = 'defer';
-			s.src = url;
+			s.src = url + ((!seed.config.amd.cache ) ? ('?' + Date.now()) : '');
 			
-			if( seed.config.AMD.charset ) s.charset = seed.config.AMD.charset;
+			if( seed.config.amd.charset ) s.charset = seed.config.amd.charset;
+
+			s.onload = s.onreadystatechange = function(){
+				if ( !d && (!this.readyState || this.readyState == "loaded" || this.readyState == "complete") ) {
+					d = true;
+				   
+					if (seed.config.debug) console.info('Модуль ' + url + ' загружен');
+
+					// IE memory leak
+					//s.onload = s.onreadystatechange = null;
+					//n.removeChild( s );
+					
+					resolve();
+				}
+			};			
 			
 			n.appendChild(s);
-			
-			s.onload = function() {
-				if (seed.config.debug) console.info('Модуль ' + url + ' загружен');
-				resolve();
-			}
 		});
 	}
 	
-	seed.AMD._lazyReady = function(module, selector) {
+	seed.amd._lazyReady = function(module, selector) {
+
 		seed.config.selector.lazy[selector] = function(selector) {
-			if( document.querySelector(selector) ) seed.AMD.modules[module].data.require = true;
-			if( seed.AMD.modules[module].data.require === true ) return seed.AMD._pending( seed.AMD.modules[module] );
+			if( document.querySelector(selector) ) seed.amd.modules[module].data.require = true;
+			if( seed.amd.modules[module].data.require === true ) return seed.amd._pending( seed.amd.modules[module] );
 		};
 	}
 	
-	// AMD. Вызов всех определенных модулей
+	// amd. Вызов всех определенных модулей
 	/* Инициализируем все модули, которые были определены ранее */
-	seed.AMD._init = function() {
+	seed.amd._init = function() {
 		if (seed.config.debug) console.info('%c_INIT', 'color: #F00; font-weight: bold', 'Запуск общей инициалзиации определенных модулей');
-		
-		return Promise.all(
-			seed.AMD.defined.map(function(module) {
-				var selector = seed.AMD.modules[module].data.selector;
 
+		return Promise.all(
+			seed.amd.defined.map(function(module) {
+				var selector = seed.amd.modules[module].data.selector;
+				
 				// если в DOM находятся селекторы зависимостей библиотек, то ставим модули нужными
-				if( document.querySelector(selector) ) seed.AMD.modules[module].data.require = true;
-				if( seed.AMD.modules[module].data.require === true ) return seed.AMD._pending( seed.AMD.modules[module] );
+				if( document.querySelector(selector) ) seed.amd.modules[module].data.require = true;
+				if( seed.amd.modules[module].data.require === true ) return seed.amd._pending( seed.amd.modules[module] );
 			})
 		).then(function(resolve) {
 			if (seed.config.debug) console.info('%c_INIT', 'color: #F00; font-weight: bold', 'Все модули проиницилизированы', resolve);
@@ -726,8 +900,8 @@
 	}
 
 	// ярлыки
-	if (!window.define) window.define = seed.AMD.define;
-	if (!window.require) window.require = seed.AMD.require;
+	if (!window.define) window.define = seed.amd.define;
+	if (!window.require) window.require = seed.amd.require;
 
 	return seed.init();
 })(window, document);

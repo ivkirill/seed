@@ -80,7 +80,7 @@
 
 			this.id = 'tooltip-' + Date.now();
 
-			this.$tip = $('<div>',{'class':'tooltip '+this.config.cssclass.tooltip, 'role':'tooltip'}).css(this.css).appendTo( $('body'));
+			this.$tip = $('<div>',{'class':'tooltip '+this.config.cssclass.tooltip, 'role':'tooltip'}).css(this.css).appendTo( $('body') );
 			this.$arrow = $('<div>',{'class':'tooltip-arrow'}).prependTo( this.$tip);
 			this.$inner = $('<div>',{'class':'tooltip-inner'}).appendTo( this.$tip);
 
@@ -131,7 +131,7 @@
 		_getContent: function( callback ) {
 			var self = this;
 			if( this.type == 'image') {
-				this.$img = $('<img>',{'src': this.image}).load(function() {
+				this.$img = $('<img>',{'src': this.image}).on('load', function() {
 					self.$img.attr({'width':parseInt(this.naturalWidth), 'height':parseInt(this.naturalHeight)});
 					self.$tip.addClass('image');
 					self.$inner.attr({'width':parseInt(this.naturalWidth), 'height':parseInt(this.naturalHeight)});
