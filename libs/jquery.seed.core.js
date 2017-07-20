@@ -63,7 +63,7 @@
 					'title': 'не задан title'
 				}
 			},
-			'touch' : 'ontouchstart' in document.documentElement
+			'touch' : ( 'ontouchstart' in document.documentElement && navigator.platform != 'Win32' )
 		};
 		
 		this._name = name;
@@ -138,23 +138,43 @@
 				}
 			}
 
-			// добавляем метод к методам jQuery 
-			$.fn.requestFullScreen = function() {
+			// добавляем метод к методам 
+			core.fn.requestFullScreen = function() {
 				return this.each(function() {
 					if (fullScreenApi.supportsFullScreen) fullScreenApi.requestFullScreen(this);
 				});
 			};
-			$.fn.cancelFullScreen = function() {
+			core.fn.cancelFullScreen = function() {
 				return this.each(function() {
 					if (fullScreenApi.supportsFullScreen) fullScreenApi.cancelFullScreen(this);
 				});
 			};
+
+// добавляем метод к методам jQuery 
+			if (typeof jQuery != 'undefined') {
+				jQuery.fn.requestFullScreen = function() {
+					return this.each(function() {
+						if (fullScreenApi.supportsFullScreen) {
+							fullScreenApi.requestFullScreen(this);
+						}
+					});
+				};
+				jQuery.fn.cancelFullScreen = function() {
+					return this.each(function() {
+						if (fullScreenApi.supportsFullScreen) {
+							fullScreenApi.cancelFullScreen(this);
+						}
+					});
+				};
+			}
+
  
 			// экспортируем метод в глобальное пространство
 			window.fullScreenApi = fullScreenApi;
 			return fullScreenApi;
 		},
 
+		/* перенес в seed.js
 		// парсинг data-config- атрибутов в объект
 		_dataset: function(el) {
 			var config = {};
@@ -164,6 +184,7 @@
 			if( attributes ) {
 				[].forEach.call(attributes, function(attr) {
 					if (/^data-config-/.test(attr.name)) {
+
 						var key = attr.name.replace('data-config-','');
 						var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
 						if( value === 'false' ) value = false;
@@ -172,16 +193,26 @@
 						if (/-/.test(key)) {
 							var keys = key.split('-')
 							if( !config[keys[0]] ) config[keys[0]] = {};
-							config[keys[0]][keys[1]] = value;
+
+							if( keys[2] ) {
+								if( !config[keys[0][keys[1]]] ) config[keys[0]][keys[1]] = {};
+								config[keys[0]][keys[1]][keys[2]] = value;
+							}
+							else {
+								config[keys[0]][keys[1]] = value;
+							}
 						}
 						else {
 							config[key] = value;
 						}
+
 					}
 				});
 			}
+
 			return config;
 		},
+		*/
 		
 		_init: function() {
 			var core = this;
@@ -225,8 +256,9 @@
 					this.build();
 
 					// если элемент был последний в списке, вызовем callback-функцию инициализации библиотеки, если она определена
-					if( this._$list.length == this._index && $.isFunction(this.config.func.ready) ) {
+					if( ( this._$list.length == this._index || this._name == 'seedGallery') && $.isFunction(this.config.func.ready) ) {
 						(self.config.func.ready)(self);
+
 					}
 					
 					// создаем обсервер для ленивого запуска библиотеки при необходимости
@@ -251,10 +283,11 @@
 					*/
 					
 					/*
-						console.log('CORE DEFAULTS', core._defaults);
-						console.log('LIB DEFAULTS', this.defaults);
-						console.log('GLOBAL LIB OPTIONS', seed.config.libs);
-						console.log('LIB OPTIONS', options);
+						console.log('CORE DEFAULTS', this._name, core._defaults);
+						console.log('LIB DEFAULTS', this._name,this.defaults);
+						console.log('GLOBAL LIB OPTIONS', this._name, seed.config.libs);
+						console.log('LIB OPTIONS', this._name,options);
+					}
 					*/
 					
 					// создает объект конфига, объединяе в него конфиг ядра и конфиг библиотеки
@@ -264,18 +297,18 @@
 					this.config = $.extend(true, this.config, seed.config.defaults);					
 
 					 // добавляем в конфиг глобально определенную локализацию
-					if( seed.config.locale[self._name] ) {
-						this.config.locale = $.extend(true, this.config.locale, seed.config.locale[self._name]);
+					if( seed.config.locale[this._name] ) {
+						this.config.locale = $.extend(true, this.config.locale, seed.config.locale[this._name]);
 					}
+
+					this.config.selector.current = this._$list.selector;
 					
 					// добавляем локальные опции вызова
 					this.config = $.extend(true, {}, this.config, options);
 
 					// добавляем data-config элемента
-					this.config = $.extend(true, {}, this.config, this._core._dataset( this.el ));
+					this.config = $.extend(true, {}, this.config, seed._dataset( this.el ));
 					
-					this.config.selector.current = this._$list.selector;
-
 					// проверяем поддержку сторонних API
 					this.config.fullscreen = this.$el.attr('data-fullscreen') || this.config.fullscreen;
 					
@@ -285,9 +318,37 @@
 						// если браузер не поддерживает API отключим эту настройку
 						if( !window.fullScreenApi.supportsFullScreen ) this.config.fullscreen = false;
 					}
+
+					if( this.config.touch ) {
+						this.config = this._events( this.config );
+					}
 					
 					return this;
 				},
+
+				// проверим доступные евенты
+				_events: function(config) {
+					var self = this;
+					var object = config;
+
+					for (var key in object.event) {
+						object.event[key] = self._touch(object.event[key]);
+					}
+
+					return object;
+				},
+
+				// заменяем стандарные евенты на touch 
+				_touch: function(param) {
+					if( !param || typeof param != 'string') { return true; }
+
+					param = param.replace('mouseenter.seed', 'touchstart.seed')
+							.replace('mouseleave.seed', 'touchend.seed')
+							.replace('hover.seed', 'touchend.seed')
+							//.replace('click.seed', 'touchend.seed')
+					return param;
+				},
+
 				
 				// метод получения значения атрибута
 				_getAttr: function(attr) {
@@ -392,7 +453,7 @@
 					return (typeof e == 'number') ? data : false;
 				}
 
-				// если включена опция обработки динамечески созданных элементов
+				// если включена опция обработки динамически созданных элементов
 				if( evented && typeof setting != 'string' ) {
  					// создадим дополнительный индефикатор для namepace события, чтобы при вывозе одной и тоже библиотеки несколько раз, не было накладки одинаковых событий друг на друга
 					$('body').off(defaults.event.on+uniq +' '+ defaults.event.__on+uniq, this.selector).on(defaults.event.on+uniq, this.selector, { option:setting }, init);

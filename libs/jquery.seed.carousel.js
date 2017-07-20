@@ -40,6 +40,8 @@
 
 			'progress' : false,
 			'progressbar': 'line',
+			
+			'preload' : 0,
 
 			'force' : false,
 			'time' : 5000,
@@ -56,11 +58,12 @@
 
 			'module' : {
 				'main' : null,
-				'func': false
+				'func': null
 			},
 
 			'url': {
-				'ajax' : window.location.href
+				'ajax' : window.location.href,
+				'tial' : null
 			},
 			'selector': {
 				'auto' : '[data-seed="carousel"], [role="carousel"]',
@@ -101,9 +104,7 @@
 			if( this.$el.attr('data-carousel-width') ) { this.config.width = this.$el.attr('data-carousel-width') * 1; }
 			if( this.$el.attr('data-carousel-height') ) { this.config.height = this.$el.attr('data-carousel-height') * 1; }
 			if( this.$el.attr('data-carousel-group') ) { this.config.group = this.$el.attr('data-carousel-group') * 1; }
-
 			if( this.$el.attr('data-carousel-cycle') ) { this.config.cycle = this.$el.attr('data-carousel-cycle'); }
-
 			if( this.$el.attr('data-carousel-offset') ) { this.config.offset = this.$el.attr('data-carousel-offset') * 1; }
 			if( this.$el.attr('data-carousel-animation') ) { this.config.animation = this.$el.attr('data-carousel-animation'); }
 			if( this.$el.attr('data-carousel-animation-time') ) { this.config.animation_time = this.$el.attr('data-carousel-animation-time') * 1; }
@@ -116,49 +117,50 @@
 
 			if( this.config.hover_stop ) { this.$el.addClass('hover-stop'); }
 
-/* найдем все слайды */
+			/* найдем все слайды */
 			this.$items = this.$el.find(this.config.selector.items);
 
-/* создаем блок слайдов и переносим в него все слайды */
-			this.$box = $('<div>',{'class':'carousel-box'}).appendTo(this.$el, {'dymanic':false}).append(this.$items);
+			/* создаем блок слайдов и переносим в него все слайды */
+			this.$box = $('<div>',{'class':'carousel-box'}).appendTo(this.$el ).append(this.$items);
 
-/* создаем рабочую область и переносим в нее блок слайдов */
-			this.$area = $('<div>',{'class':'carousel-area'}).appendTo(this.$el, {'dymanic':false}).append(this.$box);
+			/* создаем рабочую область и переносим в нее блок слайдов */
+			this.$area = $('<div>',{'class':'carousel-area'}).appendTo(this.$el ).append(this.$box);
 
-/* найдем полную ширину */
+			/* найдем полную ширину */
 			this._setWidth( this._getWidth() ).setHeight();
 
-/* если включен ajax, создаем нужные переменные */
+			/* если включен ajax, создаем нужные переменные */
 			if( this.config.ajax) { this._ajax(); }
 
 			if( this.config.animation != 'slide' && this.config.animation != 'fade' ) { this.config.group = 1; }
 
-/* сгруппируем слайды */
+			/* сгруппируем слайды */
 			this._grouping( this.$items, 0 );
 
 			this.$el.addClass('carousel-groups-'+this.$groups.length + ' carousel-items-'+ this.$items.length);
 
 			if( this.config.progressbar == 'line' ) {
-				this.$bar = $('<div>',{'class':'carousel-bar'}).css({'animation-duration' : this.config.time/1000 + 's'}).appendTo( this.$el, {'dymanic':false});
+				this.$bar = $('<div>',{'class':'carousel-bar'}).css({'animation-duration' : this.config.time/1000 + 's'}).appendTo( this.$el );
 			}
 
-			this.$nav = $('<div>',{'class':'carousel-navbar'}).appendTo( this.$el, {'dymanic':false});
+			// найдем navbar или создадим новый
+			this.$nav = this.$el.find('.carousel-navbar').length ? this.$el.find('.carousel-navbar') : $('<div>',{'class':'carousel-navbar'}).appendTo( this.$el );
 
-			this.$status = $('<span>',{'class':'carousel-status'}).appendTo( this.$nav, {'dymanic':false}).append();
-			this.$total = $('<span>',{'class':'total'}).text( this.total_slides ).appendTo( this.$status, {'dymanic':false});
+			this.$status = $('<span>',{'class':'carousel-status'}).appendTo( this.$nav ).append();
+			this.$total = $('<span>',{'class':'total'}).text( this.total_slides ).appendTo( this.$status );
 
-			this.$pages = $('<span>',{'class':'carousel-pages'}).prependTo( this.$nav, {'dymanic':false});
+			this.$pages = $('<span>',{'class':'carousel-pages'}).prependTo( this.$nav );
 				
-/* создадим элементы переключения групп слайдов */
+			/* создадим элементы переключения групп слайдов */
 			this._buttons();
 
 			this.$next = $('<button>',{'class':'carousel-navbutton carousel-next'})
 				.html('<span>'+ this.config.locale.interface.next +'</span>')
-				.appendTo( this.$nav, {'dymanic':false});
+				.appendTo( this.$nav );
 
 			this.$prev = $('<button>',{'class':'carousel-navbutton carousel-prev'})
 				.html('<span>'+ this.config.locale.interface.prev +'</span>')
-				.prependTo( this.$nav, {'dymanic':false});
+				.prependTo( this.$nav );
 
 			this.$groups.first().show().find('.carousel-caption, .carousel-text').show();
 
@@ -184,7 +186,7 @@
 				self._setWidth( self._getWidth() ).setHeight();
 			});
 
-// бинды для элемента при наведении если элементов больше 1 и есть условие остановки
+			// бинды для элемента при наведении если элементов больше 1 и есть условие остановки
 			if( this.config.hover_stop && self.$items.length > 1 ) {
 				this.$el.on({
 					'mouseenter' : function() { self.$el.addClass('hovered'); self._pause(); },
@@ -192,30 +194,19 @@
 				});
 			}
 
-// банды кнопок Вперед и Назад
+			// банды кнопок Вперед и Назад
 			this.$next.on('click touchend', function() { self._page('next'); return false; });
 			this.$prev.on('click touchend', function() { self._page('prev'); return false; });
-
-// бинд свайпа для основного элемента карусели
-			if( jQuery.event.special.swipe ) {
-console.log('swipe');
-				this.$el.on({
-					'swipeLeft' : function() {
-					}
-				});
-			}
-
-
 		},
 
-/* создание кнопок навигации по группам */
+		/* создание кнопок навигации по группам */
 		_buttons: function() {
 			var self = this;
 			this.$groups.each(function(i) {
 				i++;
 				if( self.$pages.find('i[data-group="'+i+'"]').length ) { return; }
 
-				var $button = $('<i>',{'data-group':i, name: $(this).attr('data-name')}).addClass((i==1) ? 'active':'').appendTo( self.$pages, {'dymanic':false});
+				var $button = $('<i>',{'data-group':i, name: $(this).attr('data-name')}).addClass((i==1) ? 'active':'').appendTo( self.$pages );
 
 				$button.on('click touchend',function(e) {
 					if( !$(this).hasClass('active') ) { self._page(i); }
@@ -225,22 +216,22 @@ console.log('swipe');
 		
 
 				if( $(this).find(self.config.selector.caption).length ) {
-					$(this).find(self.config.selector.caption).appendTo($button, {'dymanic':false});
+					$(this).find(self.config.selector.caption).appendTo($button );
 				}
 				else {
-					$('<span>', {'class':'num'}).text(i).appendTo($button, {'dymanic':false});
+					$('<span>', {'class':'num'}).text(i).appendTo($button );
 				}
 			
 				if(self.config.progressbar == 'in-button') {
-					$('<span>',{'class':'ani circle left'}).css({'animation-duration' : self.config.time/1000 + 's'}).appendTo($button, {'dymanic':false});
-					$('<span>',{'class':'ani circle right'}).css({'animation-duration' : self.config.time/1000 + 's'}).appendTo($button, {'dymanic':false});
-					$('<span>',{'class':'ani mask'}).css({'animation-duration' : self.config.time/1000 + 's'}).appendTo($button, {'dymanic':false});
+					$('<span>',{'class':'ani circle left'}).css({'animation-duration' : self.config.time/1000 + 's'}).appendTo($button );
+					$('<span>',{'class':'ani circle right'}).css({'animation-duration' : self.config.time/1000 + 's'}).appendTo($button );
+					$('<span>',{'class':'ani mask'}).css({'animation-duration' : self.config.time/1000 + 's'}).appendTo($button );
 				}
 			});
 			return this;
 		},
 
-/* Группировка слайдов по блокам */
+		/* Группировка слайдов по блокам */
 		_grouping: function( $items ) {
 			var count = 0;
 			var group = this.group_count;
@@ -251,9 +242,10 @@ console.log('swipe');
 				i++;
 				var $el = $(this);
 				$el.attr('data-num', i);
+				var time = $el.attr('data-config-time') || self.config.time;
 
 				if(count == 0) {
-					$block = $('<div>',{'class':'carousel-group carousel-group-'+group, 'data-group':group}).appendTo( self.$box, {'dymanic':false});
+					$block = $('<div>',{'class':'carousel-group carousel-group-'+group, 'data-group':group, 'data-config-time': time}).appendTo( self.$box );
 
 					var addwidth = 
 						parseInt( $block.css('padding-left') ) + 
@@ -268,7 +260,7 @@ console.log('swipe');
 					group++;
 				}
 
-				$el.appendTo($block, {'dymanic':false});
+				$el.appendTo($block );
 				count++;
 				if(count == self.config.group) { count = 0; }
 			});
@@ -325,7 +317,12 @@ console.log('swipe');
 			if( this.config.autoplay ) {
 				this.timer = null;
 				this.timerStart = new Date();
-				this.countdown = this.config.time;
+				this.countdown = this.$groups.filter('[data-group="'+this.active+'"]').attr('data-config-time') || this.config.time;
+
+				if( this.config.progressbar == 'line' ) {
+					this.$bar.css({'animation-duration' : this.countdown/1000 + 's'});
+				}
+
 
 				if( this.config.progress && this.config.progressbar == 'line' ) { this.$bar.addClass('run'); }
 				if( !this.$el.hasClass('hovered') ) { this.timer = setTimeout(function() { self._page('next') }, self.countdown); }
@@ -387,7 +384,7 @@ console.log('swipe');
 						if( this.total_slides > this.$groups.length * this.config.group ) {
 							if ( this.active < this.total_pages && this.config.cycle == true ) {
 								this.active++;
-								if( this.active < this.$groups.length ) {
+								if( this.active <= this.$groups.length - this.config.preload ) {
 									this._step(i);
 								}
 								else {
@@ -425,7 +422,6 @@ console.log('swipe');
 
 			if(i == 'next') { self.$next.addClass('loading'); }
 			if(i == 'prev') { self.$prev.addClass('loading'); }
-
 
 			if(this.config.progress && this.config.progressbar == 'line') {
 				this.$bar.removeClass('run');
@@ -482,12 +478,11 @@ console.log('swipe');
 			var qs = {};
 			qs['show'] = this.module;
 			qs['mime'] = 'txt';
-			qs['first'+this.module_function] = this.current * this.config.group;
-
+			qs['first'+this.module_function] = (this.current + this.config.preload) * this.config.group;
 
 			$.ajax({
 				url: self.config.url.ajax,
-				data: $.param(qs),
+				data: $.param(qs) + ((self.config.url.tail) ? self.config.url.tail : ''),
 				cache: false,
 				beforeSend: function() {
 					self.blocked = true;
@@ -506,9 +501,11 @@ console.log('swipe');
 				},
 				success: function(data, textStatus, jqXHR) {
 					if( jqXHR.status == 200 ) {
-						var $html = $(data).find(self.config.selector.current || self._$list.selector).find(self.config.selector.items);
+						var $html = $('<div>').html(data).find(self.config.selector.current || self._$list.selector).find(self.config.selector.items);
+
 						if($html.length) { self._grouping($html)._buttons()._step(step); }
 						else { self._step(step); }
+						
 						self.unblock();
 					}
 				},
@@ -528,6 +525,8 @@ console.log('swipe');
 		_animate: function() {
 			if( !this.config.width ) { this.config.width = this.$el.width(); }
 
+			this.$el.addClass('animation-progress');
+
 			this.anim = {};
 			this.anim.$active = this.$groups.filter('[data-group="'+this.active+'"]');
 			this.anim.$current = this.$groups.filter('[data-group="'+this.current+'"]');
@@ -536,6 +535,8 @@ console.log('swipe');
 		},
 
 		_finish: function(callback) {
+			this.$el.removeClass('animation-progress');
+
 			this.anim.$current.hide();
 			this.anim.$active.show();
 			this.anim.$active.find('.carousel-caption, carousel-text').fadeIn( this.anim.time/10 );
@@ -546,6 +547,8 @@ console.log('swipe');
 
 		_callback: function() {
 			var self = this;
+			
+			// кастомная callback функция после открытия слайда
 			if( $.isFunction(self.config.func.open) ) {
 				( self.config.func.open )(self);
 				if( self.config.debug ) { console.info(self._name+': func.open inited!'); }
@@ -558,7 +561,7 @@ console.log('swipe');
 			self.progress = false;
 		},
 
-/* Анимации переходов между группами слайдов */
+		/* Анимации переходов между группами слайдов */
 		animation: {
 				fade : function(self, callback) {
 					self.$groups.fadeOut( self.config.animation_time ).removeClass('active');
@@ -596,17 +599,17 @@ console.log('swipe');
 							if( self.config.cycle == true ) {
 
 								$clone.remove();
-//								$active.prependTo( self.$box, {'dymanic':false});
+//								$active.prependTo( self.$box );
 								self.$groups = self.$box.find('.carousel-group');
 
-/* Создадим 2 списка: до активной группы и после активной группы */
+								/* Создадим 2 списка: до активной группы и после активной группы */
 								var list1 = []; var list2 = [];
 								self.$groups.not('[data-group="'+self.active+'"]').each(function(i, el) {
 									( $(el).data('group') > self.active ) ? list1.push($(el)) : list2.push($(el));
 								});
-/* Отсортируем сначала список групп, который идет после активной группы */
+								/* Отсортируем сначала список групп, который идет после активной группы */
 								self.$box.append(list1.sort(function(a, b) { return $(a).data('group') > $(b).data('group') ? 1 : -1; }));
-/* Отсортируем список групп, который идет ДО активной группы */
+								/* Отсортируем список групп, который идет ДО активной группы */
 								self.$box.append(list2.sort(function(a, b) { return $(a).data('group') > $(b).data('group') ? 1 : -1; }));
 							}
 
@@ -624,21 +627,21 @@ console.log('swipe');
 
 						if( self.config.cycle == true ) {
 
-							$active.insertAfter($current, {'dymanic':false});
-							var $clone = $current.clone().addClass('clone').prependTo( self.$box, {'dymanic':false});
+							$active.insertAfter($current );
+							var $clone = $current.clone().addClass('clone').prependTo( self.$box );
 
-/* Создадим 2 списка: до активной группы и после активной группы */
+							/* Создадим 2 списка: до активной группы и после активной группы */
 							var list1 = []; var list2 = [];
 							self.$groups.not('[data-group="'+self.active+'"]').each(function(i, el) {
 								( $(el).data('group') > self.active ) ? list1.push($(el)) : list2.push($(el));
 							});
 
-/* Отсортируем сначала список групп, который идет после активной группы */
+							/* Отсортируем сначала список групп, который идет после активной группы */
 							self.$box.append(list1.sort(function(a, b) { return $(a).data('group') > $(b).data('group') ? 1 : -1; }));
-/* Отсортируем список групп, который идет ДО активной группы */
+							/* Отсортируем список групп, который идет ДО активной группы */
 							self.$box.append(list2.sort(function(a, b) { return $(a).data('group') > $(b).data('group') ? 1 : -1; }));
 
-							var $clone_previous = $previous.clone().prependTo( self.$box, {'dymanic':false});
+							var $clone_previous = $previous.clone().prependTo( self.$box );
 							
 							self.$box.css('left','-'+width2+'px');
 							delta = parseInt(width) + parseInt(width2);
@@ -654,7 +657,7 @@ console.log('swipe');
 							if( self.config.cycle == true ) {
 								$clone.remove();
 								$clone_previous.remove();
-								$current.appendTo( self.$box, {'dymanic':false});
+								$current.appendTo( self.$box );
 
 								self.$groups = self.$box.find('.carousel-group');
 								self.$box.css('left', 0+'px');
@@ -679,7 +682,7 @@ console.log('swipe');
         
 						self.anim.delta = Math.round(self.box_height/100)*30;
 
-						self.anim.$clone = self.anim.$active.clone().addClass('cloned').show().appendTo( self.$box, {'dymanic':false});
+						self.anim.$clone = self.anim.$active.clone().addClass('cloned').show().appendTo( self.$box );
 
 						self.anim.$clone.css({ left: self.anim.left, top:self.anim.top, width:self.box_width, height:self.box_height - self.anim.delta, opacity:0 })
 
@@ -783,7 +786,7 @@ console.log('swipe');
 						self.anim.delay = 100 * i;
 
 						self.anim.$clone = $('<div class="cloned"></div>').insertAfter( current );
-						clone.clone().appendTo( self.anim.$clone, {'dymanic':false});
+						clone.clone().appendTo( self.anim.$clone );
 
 						self.anim.$clone.css({left: _ileft, top:_itop, width:self.box_width, height:self.box_height});
 

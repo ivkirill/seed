@@ -43,7 +43,8 @@
 				'list' : '[role="filtering"]',
 				'items' : '> *',
 				'dependence' : '[role="toolbar"]',
-				'total' : '[role="total"]:first',
+				'pages' : '[role="pages"]',
+				'total' : '[role="total"]:first'
 			},
 			'event' : {
 				'__on' : 'dynamic.seed.filter',
@@ -56,6 +57,8 @@
 			'func' : {
 //callback-функция выполняющая после инициализации фильтра
 				'ready' : null, 
+//callback-функция выполняющая после парсинга QS параметров
+				'after_parse' : null,
 //callback-функция выполняющая перед сериализацей формы
 				'preserialize' : null,
 //callback-функция выполняющая после сериализации формы и до оправки
@@ -65,7 +68,8 @@
 //callback-функция выполняющая вместо сабмита фильтра
 				'submit' : null,
 //callback-функция выполняющая после сериализации формы, оправки и при получение ответа об ошибке
-				'error':null
+				'error' : null,
+				'slide' : null
 			},
 			'locale' : {
 				'error' : {
@@ -106,12 +110,13 @@
 
 // найдем количество и выведем его
 			this.total = this.$el.attr('data-total') || $(this.config.selector.list).attr('data-total');
+
 			if( this.total ) {
 				this.$el.find( self.config.selector.total ).text( this.total );
 			}
 
 // если нет строки запроса и нет элементов, то отключаем фильтр
-			if( !$(this.config.selector.list).find(this.config.selector.items).length && !window.location.search.length && this.config.hide ) {
+			if( !$(this.config.selector.list).find(this.config.selector.items).length && !window.location.search.length && this.config.hide && this.config.ajax != 'static' ) {
 				this.$el.hide();
 				return false;
 			}
@@ -131,7 +136,7 @@
 			this.$sliders = $('.range-slider, [role="range"]');
 
 			if( this.$sliders.length ) {
-				$.require('ui.slider', function() {
+				require('ui.slider', function() {
 					self.uiSliderInit().bind().parseQS();
 				})
 			}
@@ -144,7 +149,7 @@
 		bind: function() {
 			var self = this;
 
-			this.$el.on('click touchend', 'input[type="checkbox"]:not(.independent, [readonly])', function() {
+			this.$el.on('click', 'input[type="checkbox"]:not(.independent, [readonly])', function() {
 				var $input = $(this);
 				( !$input.attr('checked') ) ? $input.attr('checked', 'checked') : $input.removeAttr('checked');
 				self.update();
@@ -152,12 +157,12 @@
 			});
 
 // обрабатываем элементы type="radio"
-			this.$el.on('click touchend', 'input[type="radio"]:not(.independent, [readonly])', function() {
+			this.$el.on('click', 'input[type="radio"]:not(.independent, [readonly])', function() {
 				self.update();
 //				return false;
 			});
 
-			this.$el.on('click touchend', 'input[type="button"]', function() {
+			this.$el.on('click', 'input[type="button"]', function() {
 				self.update();
 				return false;
 			});
@@ -191,16 +196,19 @@
 
 //			if(this.config.module.func == 'product') {
 				this.$el.on('keyup.seed.filter', 'input[data-seed="select"]', function(e) {
-					if(e.keyCode == 13) self.update();
+					if(e.keyCode == 13) {
+						self.update();
+					}
 				});
-
+/*
 				this.$el.on('input', 'input[data-seed="select"]', function(e) {
-					$(this).val( $(this).val().trim() );
+					$(this).val( $(this).val().replace(/^\s/,'') );
 				});
 
 				this.$el.on('enter.seed.select', 'input[data-seed="select"]', function(e) {
 					self.update();
 				});
+*/
 //			}
 
 			this.$el.on('submit', function() {
@@ -208,7 +216,7 @@
 					(self.config.func.submit)(self);
 				}
 				else {
-					self.submit();
+					self.update();
 				}
 				return false;
 			});
@@ -305,14 +313,20 @@
 					max: parseInt(values.input_max),
 					step: parseInt(values.step),
 					slide: function( event, ui ) {
-						self.$el.find('input[name^=gt][for="'+label+'"], input[name^=min][for="'+label+'"]').val(ui.values[0]);
-						self.$el.find('input[name^=lt][for="'+label+'"], input[name^=max][for="'+label+'"]').val(ui.values[1]);
+						self.$el.find('input[name^=gt][for="'+label+'"], input[name^=min][for="'+label+'"]').val(ui.values[0]).attr('data-current', ui.values[0]);
+						self.$el.find('input[name^=lt][for="'+label+'"], input[name^=max][for="'+label+'"]').val(ui.values[1]).attr('data-current', ui.values[1]);
+
+						self.$el.find('.label[name^=gt][for="'+label+'"], .label[name^=min][for="'+label+'"]').text(ui.values[0]);
+						self.$el.find('.label[name^=lt][for="'+label+'"], .label[name^=max][for="'+label+'"]').text(ui.values[1]);
+
+						if( self.config.func.slide ) {
+							(self.config.func.slide)(self, $slider, values, ui);
+						}
 					},
 					stop : function() {
 						self.update();
 					},
 					create: function( event, ui ) {
-
 					}
 				});
 			});
@@ -321,13 +335,37 @@
 		},
 
 		update: function() {
+			var self = this;
+
+			if(this.config.module.func == 'product') {
+				if( this.$el.find('input[name="product_chr_string"]').length ) {
+					this.$el.find('input[name="product_chr_string"]').val( this.$el.find('input[name="product_chr_string"]').val().replace(/\.$/,'').trim() );
+				}
+			}
+
+			if( this.config.func.preserialize ) { (this.config.func.preserialize)(self); }
+
+			this.readonly = this.$el.find(':input[readonly]').attr('disabled', 'disabled');
+
+			this.query = this.$el.serialize().replace(/[a-z0-9\._]+=&/g,'').replace(/[a-z0-9\._]+=$/,'').replace(/(\&re.+?=)/g,'&$1').replace(/\&\s/g,'&').replace(/\s\&/g,'&').replace(/&$/g,'');
+
+			this.pagequery = (/\?/.test(window.location.search) && /\/first/.test(window.location.search) ) ? ( window.location.search.replace(/.*first([a-zA-Z]+).*/,'first$1'+'=0')) : (this.config.url.current.replace(/\?.*/,'') + '?first'+this.config.module.func+'=0');
+			this.submitUrl = this.pagequery + ((this.query.length) ? ( '&'+this.query ) : '');
+
 			if( this.config.ajax == 'custom' ) {
 				if( this.config.func.custom ) {
 					(this.config.func.custom)(this);
 				}
 			}
-			else if( this.config.ajax == true ) {
+			else if( this.config.ajax === true ) {
 				this.submit();
+			}
+			else if( this.config.ajax === 'static' ) {
+				window.history.pushState({}, 'page', this.submitUrl);
+
+				if( self.config.func.success ) {
+					(self.config.func.success)(self);
+				}
 			}
 		},
 
@@ -345,34 +383,25 @@
 
 		submit: function() {
 		        var self = this;
+			// очищаем таймер, чтобы не вызывать обновление второй раз
+			clearTimeout(self.timer);
+
 			if (this.blocked) { return false; }
 
-			if(this.config.module.func == 'product') {
-				if( this.$el.find('input[name="product_chr_string"]').length ) {
-					this.$el.find('input[name="product_chr_string"]').val( this.$el.find('input[name="product_chr_string"]').val().replace(/\.$/,'').trim() );
-				}
-			}
-
-			if( this.config.func.preserialize ) { (this.config.func.preserialize)(self); }
-
-			this.readonly = this.$el.find(':input[readonly]').attr('disabled', 'disabled');
-
-			this.query = this.$el.serialize().replace(/[a-z0-9\._]+=&/g,'').replace(/[a-z0-9\._]+=$/,'').replace(/&$/,'').replace(/(\&re.+?=)/g,'&$1').replace(/\&\s/g,'&').replace(/\s\&/g,'&');
 //создаем оверлэй                                                                                                                          
 			this.overlay(true);
-			
-			this.pagequery = (/\?/.test(window.location.search) && /\/first/.test(window.location.search) ) ? ( window.location.search.replace(/.*first([a-zA-Z]+).*/,'first$1'+'=0')) : (this.config.url.current.replace(/\?.*/,'') + '?first'+this.config.module.func+'=0');
-			this.submitUrl = this.pagequery+'&'+this.query;
 
-			if(window.history.pushState && this.config.ajax) {
+			if(window.history.pushState && this.config.ajax === true) {
 				window.history.pushState({}, 'page', this.submitUrl);
 
 				var qs = {};
 				qs['mime'] = 'txt';
 				qs['show'] = this.config.module.main;
 
+
+
 				$.ajax({
-					url: this.submitUrl,
+					url: self.submitUrl,
 					data: $.param(qs),
 					cache: false,
 					beforeSend: function() {
@@ -392,30 +421,59 @@
 						}
 					},
 					success: function(data, textStatus, jqXHR) {
-						if( jqXHR.status == 200 ) {
-// проверим используется ли библиотека seedPage для фильтруемого списка
-							try {
-								self.seedPage = ( typeof $(self.config.selector.list).filter(':first').data('seed.page') == 'object' ) ? $(self.config.selector.list).filter(':first').data('seed.page').options : false;
-							}
-							catch(e) {
+						// очищаем таймер, чтобы не вызывать обновление второй раз
+						clearTimeout(self.timer);
 
+						if( jqXHR.status == 200 ) {
+							// проверим используется ли библиотека seedPage для фильтруемого списка
+							// проверка для версии Seed 1
+							try {
+								self.seedPage1 = ( typeof $(self.config.selector.list).filter(':first').data('seed.page') == 'object' ) ? $(self.config.selector.list).filter(':first').data('seed.page').options : false;
 							}
-	
+							catch(e) {}
+
+							// убиваем seed.page
+							if( $.type(seed) !== 'function' ) {
+								if( seed.isFunction(seed.seedPage) ) {
+									self.seedPage = $('[data-seed="page"]');
+									var SP = self.seedPage.data('seed.page')
+									if(SP) SP.destroy();
+								}
+							}
+
 
 							self.$answer = $('<div>').html(data);
 
 							var $block = self.$answer.find(self.config.selector.list);
 							self.total = self.$answer.find(self.config.selector.list).attr('data-total') || self.$answer.find(self.config.selector.auto).attr('data-total') || self.total;
 
-
-							if(self.seedPage) { $(self.config.selector.list).filter(':first').seedPage('destroy'); }
+							if(self.seedPage1) $(self.config.selector.list).filter(':first').seedPage('destroy');
 
 							$(self.config.selector.list).replaceWith($block);
 
-							if(self.seedPage) { $(self.config.selector.list).seedPage( $.extend({}, self.seedPage, {url:{current:window.location.href}}) ) }
+							if(self.seedPage1) $(self.config.selector.list).seedPage( $.extend({}, self.seedPage, {url:{current:window.location.href}}) );
 
+							// если не включен seed.lazy и включен seed.page
+							if( $.type(seed) !== 'function' ) {
+								if( seed.isFunction(seed.seedPage) && seed.config.lazy == false ) {
+									self.seedPage = $('[data-seed="page"]').seedPage({
+										'url' : {
+											'current' : window.location.href
+										}
+									});
+								}
+							}
+
+
+							// найдем список страниц, если он определен для выборки, заменим его на новый
+							var $pages = self.$answer.find(self.config.selector.pages);
+							if( $pages.length ) {
+								$('body').find(self.config.selector.pages).replaceWith($pages);
+							}
 	        	
-							if( self.config.dependence == 'true' || self.config.dependence === true) { self.dependence(); }
+							if( self.config.dependence == 'true' || self.config.dependence === true) {
+								self.dependence();
+							}
 
 							if( self.config.func.success ) {
 								(self.config.func.success)(self);
@@ -424,7 +482,6 @@
 							self.reinit();
 
 							$( self.config.selector.total ).text( self.total );
-
 
 							self.emptyListing();
 							self.unblock();
@@ -447,9 +504,9 @@
 			}
 		},
 
-// разброликровка функционала
+// разблокировка функционала
 		unblock: function() {
-			this.readonly.removeAttr('disabled');
+			if( this.readonly) this.readonly.removeAttr('disabled');
 
 			this.blocked = false;
 			this.overlay(false);
@@ -457,8 +514,14 @@
 
 // обрабатываем пустой ответ фильтра
 		emptyListing: function() {
+			if( this.empty_title ) {
+				if( this.empty_title.length ) {
+					this.empty_title.remove();
+				}
+			}
+
 			if( !$(this.config.selector.list).find(this.config.selector.items).length ) {
-				$('<h3>',{'class':'none'}).text(this.config.locale.interface.empty).appendTo( $(this.config.selector.list), {'dymanic':false});
+				this.empty_title = $('<h3>',{'class':'none'}).text(this.config.locale.interface.empty).appendTo( $(this.config.selector.list), {'dymanic':false});
 			}
 		},
 
@@ -470,12 +533,6 @@
 				$(this).html( $($dependences[i]).html() );
 			});
 
-// хак для динамической обработки библиотекой select
-/*
-			this.$el.find('[data-seed="select"]').each(function() {
-				$(this).insertBefore( $(this) );
-			});
-*/
 			this.toolbarsInit();
 			this.uiSliderInit().parseQS();
 		},
@@ -484,7 +541,7 @@
 		parseQS: function() {
 			var self = this;
 
-			var query = window.location.search;
+			var query = window.location.search || this.config.url.current;
 			if (query) {
 				query = decodeURIComponent(query);
 				query = query.replace(/\+/gi,' ').replace(/%2F/gi,'/').replace(/%2C/gi,',').replace(/%2B/gi,'+').replace(/^\?/gi,'');
@@ -512,6 +569,11 @@
 				});
 				this.emptyListing();
 			}
+
+			if( self.config.func.after_parse ) {
+				(self.config.func.after_parse)(self);
+			}
+
 			return this;
 		},
 

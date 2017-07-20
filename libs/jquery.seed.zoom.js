@@ -162,7 +162,7 @@
 			}
 
 // создаем исходное изображение внутри окна зума
-			this.$image = $('<img>', {'class':'zoom-image', 'src': this.config.image}).css('display','none').load(function() {
+			this.$image = $('<img>', {'class':'zoom-image', 'src': this.config.image}).css('display','none').on('load', function() {
 				self.config.naturalWidth = parseInt(this.naturalWidth);
 				self.config.naturalHeight = parseInt(this.naturalHeight);
 	

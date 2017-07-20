@@ -27,12 +27,15 @@
 			'evented': false,
 
 			'type' : 'mixed',
-//			'time_hide' : 10000,
+			'time' : null,
 
 			'ajax' : false,
 			'side' : 'left',
 			'height': '400',
+
 			'search': false,
+			'unlisted' : false,
+			'proxy' : false,
 
 			'selector': {
 				'auto' : '[data-seed="select"]'
@@ -121,13 +124,13 @@
 				this.$holder.addClass( this.config.cssclass.holder );
 				this.$wrap = $('<div>', { 'class': 'select-wrap ' + this.config.cssclass.select }).appendTo( this.$holder, {'dynamic':false});
 				this.$caption = $('<span>', { 'class' : 'select-title' }).appendTo( this.$wrap, {'dynamic':false} );
-				this.$caption.html( this.$el.find('option:first').html() );
+				this.$caption.html( this.$el.find('option:first').html() ).attr('data-text', this.$el.find('option:first').attr('data-text') );
 				this.$caret = $('<i>').addClass('caret').appendTo( this.$wrap, {'dynamic':false} );
 				this._options();
 
 // если в селекте всего один элемент, то выберем его
 				if( this.$el.find('option:not(:disabled)').length == 1 ) {
-					this.$menu.find('li:first a').click();
+					this.$menu.find('li:first a').trigger('click', false);
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!					this.$menu.find('li:first a').click();
 				}
 			}
@@ -148,7 +151,7 @@
 					self.$menu.find('a[value="'+ option.val() +'"]');
 				});
 
-				$(this.$holder, this.$wrap, this.$caption, this.$caret).on('click touchend', function(e) {
+				$(this.$holder, this.$wrap, this.$caption, this.$caret).on('click', function(e) {
 					if (self.$holder.is(e.target) || self.$wrap.is(e.target) || self.$caption.is(e.target) || self.$caret.is(e.target) ) {
 						var toggler = ( !self.$drop.is(':visible') ) ? true : false;
 						if(toggler) {
@@ -170,7 +173,7 @@
 				});
 			}
 			else {
-				this.$holder.on('click touchend', function(e) {
+				this.$holder.on('click', function(e) {
 					var toggler = ( !self.$drop.is(':visible') && self.$menu.is(':empty') ) ? false : true;
 					(toggler) ? self.show() : self.hide();
 					return false;
@@ -178,11 +181,19 @@
 			}
 
 			this.$input.on({
+				'enter.seed.select' : function(e) {
+					self.$input.parents('form:first').submit();
+				},
 				'keyup.seed.select' : function(e) {
 					clearTimeout(self.timer);
 
+					if( self.config.time > 0) {
+						clearTimeout(self.close_timer);
+					}
+
+
 					self.string = $(this).val();
-//console.log(self.config.url)
+//console.log(self.string)
 //удаляем пробелы
 					if( /^\s/g.test(self.string) ) {
 						$(this).val( $(this).val().replace(/^\s/,'') );
@@ -191,7 +202,6 @@
 
 //Биндим клавиши: вверх, вниз, enter 
 					if(e.keyCode == 40 || e.keyCode == 38 || e.keyCode == 13) {
-
 						var $active = self.$menu.find('>*.active:first');
 
 						if( $active.length && e.keyCode == 13) {
@@ -206,7 +216,11 @@
 
 							//return false;
 						}
+						else if( !$active.length && e.keyCode == 13 && self.config.unlisted ) {
+							self.$input.trigger('enter.seed.select');
+						}
 						else if( !$active.length) {
+
 							$active = self.$menu.find('.hover:first');
 							if( !$active.length ) $active = self.$menu.find('>*:first, >*:first a')
 							$active.addClass('active')
@@ -215,6 +229,7 @@
 						}
 						else {
 							self.show();
+
 							self.$menu.find('*').removeClass('active');//.off('mouseenter mouseleave');
         
 							if(e.keyCode == 40) {
@@ -234,9 +249,10 @@
 
 							self.scroll();
 						}
-						self.$input.val( $active.attr('data-value').replace(/<(|\/)b>/gi,'') ); 
+
+						if( $active.length ) self.$input.val( $active.attr('data-value').replace(/<(|\/)b>/gi,'') ); 
 					
-						return false;
+						if( !self.config.proxy ) return false;
 					}       	
 
 					if( self.config.ajax && self.string.length > 1 ) {
@@ -300,7 +316,7 @@
 				}
 			})
 
-			this.$menu.on('click touchend', '> *', function() {
+			this.$menu.on('click', '> *', function() {
 				self.$menu.find('*').removeClass('active');
 
 				$(this).addClass('active')
@@ -370,7 +386,7 @@
 					$li.attr('data-tooltip-side', $(obj).attr('data-tooltip-side'));
 				}
 				            
-				var $a = $('<a>', {'data-value': $option.val(), 'data-tie': $option.data('tie') }).html( $option.text() ).appendTo( $li, {'dynamic':false});
+				var $a = $('<a>', {'data-value': $option.val(), 'data-text': $option.attr('data-text'), 'data-tie': $option.data('tie') }).html( $option.text() ).appendTo( $li, {'dynamic':false});
 
 				if( $(obj).attr('selected') ) {
 					$li.addClass('active');
@@ -379,13 +395,15 @@
 
 				elements.push($option, $li, $a);
 
-				$a.on('click', function(e) {
+				$a.on('click', function(e, cancel) {
 					self.$caption.html( this.innerHTML );
+					self.$caption.attr('data-text', $(this).attr('data-text'));
 					self.hide();
 
 					self.$el.find('option').prop('selected', false).removeAttr('selected');
 					self.$el.find('option[data-tie="'+i+'"]').prop('selected', true);
-					self.$el.change();
+					if(cancel) self.$el.change();
+
 					self.$menu.find('.active').removeClass('active');
 					$li.addClass('active');
 
@@ -395,7 +413,7 @@
 						(self.config.func.change)($option, self, obj);
 					}
 
-					return false;
+					e.preventDefault();
 				});
 			});
 
@@ -499,6 +517,8 @@
 
 //Функция отображения списка подсказок
 		show: function() {
+			var self = this;
+
 			this.$drop.removeClass('off').addClass('on effect effect-drop').css('display','block');
 
 			if( this.element == 'select' ) {
@@ -507,7 +527,12 @@
 			if( this.config.search ) {
 				this.$input.focus();
 			}
-//			self.timer = setTimeout(function() { self.hide() }, settings.time_hide);
+
+			if( this.config.time > 0) {
+				self.close_timer = setTimeout(function() {
+					self.hide();
+				}, self.config.time);
+			}
 		},
 //Функция скрытия списка подсказок
 		hide: function() {
@@ -516,6 +541,11 @@
 			if( this.element == 'select' ) {
 				this.$caret.removeClass('on');
 			}
+
+			if( this.close_timer ) {
+				clearTimeout(this.close_timer);
+			}
+
 			return false;
 		}
 	});

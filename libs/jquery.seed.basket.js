@@ -1,7 +1,7 @@
 /* 
 * Seed Framework
 * SeedBasket 
-* ver. 1.1
+* ver. 1.5
 * Kirill Ivanov
 * create: 2015.06.26
 */
@@ -18,7 +18,7 @@
 	var name = 'seedBasket';
 
 	$.seed[name] = {};
-	$.seed[name].VERSION = '1.1';
+	$.seed[name].VERSION = '1.5';
 	$.seed[name]._inited = [];
 	
 
@@ -50,6 +50,7 @@
 				'bind' : null, // функция дополнительных биндов для корзины
 				'items' : null,
 				'status': null,
+				'update': null,
 				'info': null
 			},
 			'locale' : {
@@ -73,9 +74,9 @@
 		build: function() {
 			var self = this;
 
-			this.config.module.basket = this.$el.attr('data-module-basket') || this.config.module.basket || this._error(this.config.module.basket, 'module.basket');
+			this.config.module.basket = this.config.module.basket ||this.$el.attr('data-module-basket') || this._error(this.config.module.basket, 'module.basket');
 			this.config.module.status = this.config.module.status || $(this.config.selector.status).attr('data-module-status')*1 || this._error(this.config.module.status, 'module.status');
-			this.config.module.items = this.config.module.items || $(this.config.selector.items).attr('data-config-module-items')*1 || $(this.config.selector.items).attr('data-module-items')*1 || this._error(this.config.module.items, 'module.items');
+			this.config.module.items = this.config.module.items || $(this.config.selector.items).attr('data-config-module-items')*1 || $(this.config.selector.items).attr('data-module-items')*1 || '';
 
 			this.config.url.basket = this.$el.attr('data-basket-url') || this.config.url.basket || this.config.url.current;
 
@@ -93,7 +94,8 @@
 			var self = this;
 
 // биндим кнопки удаления
-			this.$button_remove = this.$el.on('click touchend', '[name="remove"]', function(e) {
+			this.$button_remove = this.$el.on('click', '[name="remove"]', function(e) {
+				e.preventDefault();
 				$(this).parents('[data-item]:first').addClass('bg-warning');
 
 				if (confirm(self.config.locale.interface.confirm_remove)) {
@@ -107,7 +109,7 @@
 
 // если определена общая кнопка удаления, биндим ее
 			if( $(this.config.selector.clear).length ) {
-				$('body').on('click touchend', this.config.selector.clear, function() {
+				$('body').on('click', this.config.selector.clear, function() {
 					$(self.config.selector.item).addClass('bg-warning');
 
 					if (confirm(self.config.locale.interface.confirm_clear)) {
@@ -160,7 +162,6 @@
 			self.formdata = null;
 			self.formdata = new FormData( this.$form.get(0) );
 			self.formdata.append('encoding', 'utf-8'); // FormData работает только в utf-8, сервер может не знать 
-			self.formdata.append('from', window.location.href);
 			self.formdata.append('mime', 'json');
 			self.formdata.append('rand', Math.random());
 
@@ -185,6 +186,7 @@
 			if( self.json.length > 0 ) {
 				var json_data = JSON.stringify(self.json);
 				self.formdata.append('json_data', json_data);
+				self.formdata.append('from', window.location.href);
 				self.formdata.append('update', self.config.module.items);
 				self.formdata.append('show', self.config.module.items);
 
@@ -228,6 +230,9 @@
 					}
 				});
 			}
+
+			// запускаем кастомную функцию обновления
+			if( $.isFunction(self.config.func.update) ) { (self.config.func.update)(self, type); }
 
 			self.remove = false;
 			return false;

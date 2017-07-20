@@ -91,6 +91,8 @@
 								$('.tooltip').remove();
 								modal.ui.updated = false;
 								modal.ui.reload(modal.ui.options);
+								console.log(modal);
+								
 								$(modal.ui.options.selector.item).removeClass('bg-warning warning');
 								modal.close();
 							}
@@ -138,23 +140,30 @@
 			// проверяем есть ли нужные ID
 			if(!this.config.module.main) this._error(this.config.module.main, 'module.main');
 			if(!this.config.module.page) this._error(this.config.module.page, 'module.page');
-	
+
+			this.activate();
+			
+			this.bind();
+		},
+		
+		// активируем формы, если они уже загружены DOM
+		activate: function() {
+			var self = this;			
+			
 			// проинициализируем форму добавления если она сейчас на странице
 			if( $(this.config.selector.addform).length ) {
-				$(this.config.selector.addform).each(function() {
+				$(this.config.selector.addform + ':not(.activated)').each(function() {
 					self.gform( $(this) );	
 				});
 			}
 
 			// проинициализируем форму редактирования если она сейчас на странице
 			if( $(this.config.selector.editform).length ) {
-				$(this.config.selector.editform).each(function() {
+				$(this.config.selector.editform + ':not(.activated)').each(function() {
 					self.gform( $(this) );	
 				});
-			}
-			
-			this.bind();
-		},
+			}			
+		},		
 
 		// создание элемента
 		add: function(obj) {
@@ -262,7 +271,12 @@
 		// создаем форму для отправки
 		gform: function(obj, options, modal) {
 			var self = this;
-		
+			
+			// если уже активирована
+			if( obj.hasClass('activated') ) {
+				return;
+			}
+
 			// обновим конфиг seed.ui для текущего запуска от формы
 			var options = $.extend(true, {}, options, $.extend(true, {}, this.config, seed.core.fn._dataset(obj.get(0))));
 			
@@ -297,12 +311,15 @@
 							}
 						}
 						
+						if( self.updated === true ) self.reload(options);
+						
 //						console.log( self.name, config.url, self.config.url, seed.core.fn._dataset(obj) );
-											
-						if( $.isFunction(options.func.reload) ) options.func.reload.call(self, options);
+//						if( $.isFunction(options.func.reload) ) options.func.reload.call(self, options);
 					}
 				}
-			});		
+			});	
+
+			obj.addClass('activated');
 		},
 		
 		// удаление элемента
@@ -333,7 +350,7 @@
 						modal.ui.options = options;
 						modal.ui.formData = new FormData();
 						modal.ui.formData.append('from', window.location.href);
-						modal.ui.formData.append('mime', 'txt');
+						modal.ui.formData.append('mime', 'json');
 						modal.ui.formData.append('show', self.config.module.main);
 						modal.ui.formData.append('update', self.config.module.main);
 						modal.ui.formData.append('action', 'remove');
@@ -364,7 +381,10 @@
 		// перегрузить список в основном контейнере
 		reload: function (options) {
 			var self = this;
-
+			
+			// если не передан объект функций, создаем его пустым, чтобы не было ошибок
+			if( !options.func ) options.func = {};
+			
 			// обновим конфиг seed.ui для текущего элемента
 			//var options = $.extend(true, {}, this.config, seed.core.fn._dataset(obj));
 			var url = options.url.reload || options.url.post;
@@ -373,6 +393,8 @@
 				$.get(url, {'show': options.module.main, 'mime':'txt', 'cache': false}, function(data) {
 					var ans = $('<div>').html(data);
 					self.$container.html( ans.find(self.$container.selector).html() );
+					self.activate();
+					
 					if( $.isFunction(options.func.reload) ) options.func.reload.call(self, options);
 				});
 			}
