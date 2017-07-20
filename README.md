@@ -7,6 +7,8 @@ Javascript: http://seedunit.ru/libs.html
 
 Projects included Seed:
 
+* https://giftsday.ru/
+* http://xindaorussia.ru/
 * http://www.azimutyachts.ru/
 * http://www.azimutyachts.me/
 * http://www.azimutyachts.ua/
