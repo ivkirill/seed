@@ -195,61 +195,48 @@ try {
 	seed.isFunction = function(func) {
 		return Object.prototype.toString.call(func) === '[object Function]';
 	}
+
+	// реализация DOM Ready
+	// готовность DOM
+	seed.isReady = false;
+
+	// массив для хранения Promise до наступления DOM Ready
+	seed.readyArray = [];
 	
-	// биндим событие по domReady
+	// функция готовности, убиваем если у нас загрузился DOM
+	seed.completed = function() {
+		document.removeEventListener( "DOMContentLoaded", seed.completed );
+		window.removeEventListener( "load", seed.completed );
+		seed.isReady = true;
+		seed.ready();
+	}
+
+	// Ждем когда будет выполенен запрос на seed.ready()
+	document.addEventListener( "DOMContentLoaded", seed.completed );
+	window.addEventListener( "load", seed.completed );
+	
+	// биндим событие по DOM Ready
 	seed.ready = function(func) {
-		//if (document.readystate != 'loading') func();
-		//else document.addEventListener('DOMContentLoaded', func);
+		// если не функция
+		if( func && !seed.isFunction(func) ) return;
 		
-		var readyBound = false;
-		var DOMReadyCallback = ( typeof func === "function" ) ? func : function() {};
-
-		// исполенение переданной функции после события, убиываем события
-		var DOMContentLoaded = function() {
-			if ( document.addEventListener ) document.removeEventListener( "DOMContentLoaded", DOMContentLoaded, false );
-			else document.detachEvent( "onreadystatechange", DOMContentLoaded );
-			DOMReady();
-		};
-
-		// Когда все готово
-		var DOMReady = function() {
-			// Проверяем DOM
-			if ( !seed.isReady ) {
-				// запоминаем состояние
-				seed.isReady = true;
-				// вызываем функции, которые определены 
-				DOMReadyCallback();
-			}
-		};
-
-		var bindReady = function() {
-			var toplevel = false;
-
-			// выходим при повторном запуске
-			if (readyBound) return;
-			readyBound = true;
-
-			// Запускаем если уже все определено
-			if ( document.readyState !== "loading" ) DOMReady();
-
-			// для Mozilla, Opera and webkit 
-			if ( document.addEventListener ) {
-				document.addEventListener( "DOMContentLoaded", DOMContentLoaded, false );
-				window.addEventListener( "load", DOMContentLoaded, false );
-			}
-			// для IE
-			else if ( document.attachEvent ) {
-				document.attachEvent( "onreadystatechange", DOMContentLoaded );
-				window.attachEvent( "onload", DOMContentLoaded );
-				// Если это iframe
-				try {
-					toplevel = window.frameElement == null;
-				} catch (e) {}
-			}
-		};
-
-		seed.isReady = false;
-		bindReady();
+		// когда массив функций существует и DOM готов
+		if( seed.readyArray.length && seed.isReady === true ) {
+			seed.readyArray.map(function(func) {
+				func();
+			});
+			seed.readyArray = [];
+		}
+		
+		// когда массив функций НЕ существует и DOM готов
+		else if (seed.readyArray.length == 0 && seed.isReady === true) {
+			return func();
+		}
+		
+		// когда массив функций НЕ существует или DOM не готов
+		else {
+			seed.readyArray.push(func);
+		}
 	}
 	
 	// Загрузка файла по url
@@ -375,7 +362,7 @@ try {
 		if( obj === 'dataset' ) {
 			var scripts = document.querySelectorAll('script');
 			scripts.forEach(function(el) {
-				if( /seed\.js$/.test(el.src) ) config = seed.extend(seed.config, seed._dataset( el ) );
+				if( /main/.test(el.dataset.seed ) ) config = seed.extend(seed.config, seed._dataset( el ) );
 			});
 		}
 		else {
@@ -859,8 +846,8 @@ try {
 					if (seed.config.debug) console.info('Модуль ' + url + ' загружен');
 
 					// IE memory leak
-					//s.onload = s.onreadystatechange = null;
-					//n.removeChild( s );
+					s.onload = s.onreadystatechange = null;
+					n.removeChild( s );
 					
 					resolve();
 				}
@@ -871,7 +858,6 @@ try {
 	}
 	
 	seed.amd._lazyReady = function(module, selector) {
-
 		seed.config.selector.lazy[selector] = function(selector) {
 			if( document.querySelector(selector) ) seed.amd.modules[module].data.require = true;
 			if( seed.amd.modules[module].data.require === true ) return seed.amd._pending( seed.amd.modules[module] );
