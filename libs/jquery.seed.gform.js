@@ -166,12 +166,13 @@
 
 			this.$context = ( $(this.config.selector.context).length ) ? $(this.config.selector.context) : false;
 
+			
 			// находим URL для отправки
-			this.config.url.post = this.config.url.post
-				|| this.$el.attr('action')
+			this.config.url.post = this.$el.attr('action')
 				|| this.$el.attr('data-action')
 				|| this.$el.attr('data-config-action')
 				|| this.$el.attr('data-gform-action')
+				|| this.config.url.post
 				|| window.location.href;
 
 			if( this.$el.get(0).tagName == 'FORM' || self.$el.find('form').length || this.config.emulate === true ) {
@@ -649,7 +650,7 @@
 
 				return false;
 			}
-			else if(valid && this.config.validate == 'only') {
+			else if(valid && ( this.config.validate == 'only' || validation == 'only') ) {
 				if(self.config.debug) { console.log('only'); }
 				self.valid = true;
 
