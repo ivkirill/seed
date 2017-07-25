@@ -196,60 +196,40 @@ try {
 		return Object.prototype.toString.call(func) === '[object Function]';
 	}
 	
-	// биндим событие по domReady
+	// реализация DOM Ready
+	// готовность DOM
+	seed.isReady = false;
+	// массив для хранения функций до наступления DOM Ready
+	seed.readyArray = [];
+	// функция готовности, убиваем если у нас загрузился DOM
+	seed.completed = function() {
+		document.removeEventListener( "DOMContentLoaded", seed.completed );
+		window.removeEventListener( "load", seed.completed );
+		seed.isReady = true;
+		seed.ready();
+	}
+
+	// Ждем когда будет выполенен запрос на seed.ready()
+	document.addEventListener( "DOMContentLoaded", seed.completed );
+	window.addEventListener( "load", seed.completed );
+	
+	// биндим событие по DOM Ready
 	seed.ready = function(func) {
-		//if (document.readystate != 'loading') func();
-		//else document.addEventListener('DOMContentLoaded', func);
-		
-		var readyBound = false;
-		var DOMReadyCallback = ( typeof func === "function" ) ? func : function() {};
+		// когда массив функций существует и DOM готов
+		if( seed.readyArray.length && seed.isReady === true ) {
+			// запуск сохраненных функции
+			seed.readyArray.forEach(function(func) { func() });
+			// очищаем массив функций
+			seed.readyArray = [];
+			return;
+		}
 
-		// исполенение переданной функции после события, убиываем события
-		var DOMContentLoaded = function() {
-			if ( document.addEventListener ) document.removeEventListener( "DOMContentLoaded", DOMContentLoaded, false );
-			else document.detachEvent( "onreadystatechange", DOMContentLoaded );
-			DOMReady();
-		};
-
-		// Когда все готово
-		var DOMReady = function() {
-			// Проверяем DOM
-			if ( !seed.isReady ) {
-				// запоминаем состояние
-				seed.isReady = true;
-				// вызываем функции, которые определены 
-				DOMReadyCallback();
-			}
-		};
-
-		var bindReady = function() {
-			var toplevel = false;
-
-			// выходим при повторном запуске
-			if (readyBound) return;
-			readyBound = true;
-
-			// Запускаем если уже все определено
-			if ( document.readyState !== "loading" ) DOMReady();
-
-			// для Mozilla, Opera and webkit 
-			if ( document.addEventListener ) {
-				document.addEventListener( "DOMContentLoaded", DOMContentLoaded, false );
-				window.addEventListener( "load", DOMContentLoaded, false );
-			}
-			// для IE
-			else if ( document.attachEvent ) {
-				document.attachEvent( "onreadystatechange", DOMContentLoaded );
-				window.attachEvent( "onload", DOMContentLoaded );
-				// Если это iframe
-				try {
-					toplevel = window.frameElement == null;
-				} catch (e) {}
-			}
-		};
-
-		seed.isReady = false;
-		bindReady();
+		// если передали функцию
+		if( func && seed.isFunction(func) ) {
+			// когда массив функций НЕ существует и DOM готов
+			// иначе, добавляем функцию в массив функций
+			(seed.readyArray.length == 0 && seed.isReady === true) ? func() : seed.readyArray.push(func); 
+		}
 	}
 	
 	// Загрузка файла по url
@@ -375,7 +355,7 @@ try {
 		if( obj === 'dataset' ) {
 			var scripts = document.querySelectorAll('script');
 			scripts.forEach(function(el) {
-				if( /seed\.js$/.test(el.src) ) config = seed.extend(seed.config, seed._dataset( el ) );
+				if( /main/.test(el.dataset.seed ) ) config = seed.extend(seed.config, seed._dataset( el ) );
 			});
 		}
 		else {
