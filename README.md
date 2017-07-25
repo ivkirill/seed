@@ -1,5 +1,5 @@
 # seed
-2.1.3
+2.1.5
 
 Simple Flex Framework 
 Javascript: http://seedunit.ru/libs.html
@@ -8,6 +8,7 @@ Javascript: http://seedunit.ru/libs.html
 Projects included Seed:
 
 * https://giftsday.ru/
+* https://scic.ru/
 * http://xindaorussia.ru/
 * http://www.azimutyachts.ru/
 * http://www.azimutyachts.me/
