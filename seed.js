@@ -354,7 +354,7 @@ try {
 		// читаем конфиг из data- атрибутов файла script, подключемого для seed.js
 		if( obj === 'dataset' ) {
 			var scripts = document.querySelectorAll('script');
-			scripts.forEach(function(el) {
+			Array.prototype.forEach.call(scripts, function(el) {
 				if( /main/.test(el.dataset.seed ) ) config = seed.extend(seed.config, seed._dataset( el ) );
 			});
 		}
