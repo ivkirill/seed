@@ -196,13 +196,11 @@ try {
 		return Object.prototype.toString.call(func) === '[object Function]';
 	}
 
-	// реализация DOM Ready
+	//----------- реализация DOM Ready
 	// готовность DOM
 	seed.isReady = false;
-
-	// массив для хранения Promise до наступления DOM Ready
+	// массив для хранения переданных функций до наступления DOM Ready
 	seed.readyArray = [];
-	
 	// функция готовности, убиваем если у нас загрузился DOM
 	seed.completed = function() {
 		document.removeEventListener( "DOMContentLoaded", seed.completed );
@@ -214,7 +212,7 @@ try {
 	// Ждем когда будет выполенен запрос на seed.ready()
 	document.addEventListener( "DOMContentLoaded", seed.completed );
 	window.addEventListener( "load", seed.completed );
-	
+
 	// биндим событие по DOM Ready
 	seed.ready = function(func) {
 		// если не функция
@@ -222,22 +220,24 @@ try {
 		
 		// когда массив функций существует и DOM готов
 		if( seed.readyArray.length && seed.isReady === true ) {
-			seed.readyArray.map(function(func) {
-				func();
-			});
-			seed.readyArray = [];
+			// запуск сохраненных функции
+			seed.readyArray.map(function(func) { func(); }); 
+			// очищаем массив функций
+			seed.readyArray = []; 
 		}
 		
-		// когда массив функций НЕ существует и DOM готов
+		// когда массив функций пуст и DOM готов, то сразу выполняем переданную функцию
 		else if (seed.readyArray.length == 0 && seed.isReady === true) {
 			return func();
 		}
 		
-		// когда массив функций НЕ существует или DOM не готов
+		// когда массив функций НЕ существует или DOM не готов, то добавляем функцию в массив хранения
 		else {
 			seed.readyArray.push(func);
 		}
 	}
+	//!----------- реализация DOM Ready ^^^^^^^^
+	
 	
 	// Загрузка файла по url
 	// Принимает url

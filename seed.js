@@ -199,10 +199,8 @@ try {
 	// реализация DOM Ready
 	// готовность DOM
 	seed.isReady = false;
-
 	// массив для хранения Promise до наступления DOM Ready
 	seed.readyArray = [];
-	
 	// функция готовности, убиваем если у нас загрузился DOM
 	seed.completed = function() {
 		document.removeEventListener( "DOMContentLoaded", seed.completed );
@@ -217,25 +215,20 @@ try {
 	
 	// биндим событие по DOM Ready
 	seed.ready = function(func) {
-		// если не функция
-		if( func && !seed.isFunction(func) ) return;
-		
 		// когда массив функций существует и DOM готов
 		if( seed.readyArray.length && seed.isReady === true ) {
-			seed.readyArray.map(function(func) {
-				func();
-			});
+			// запуск сохраненных функции
+			seed.readyArray.forEach(function(func) { func() });
+			// очищаем массив функций
 			seed.readyArray = [];
+			return;
 		}
-		
-		// когда массив функций НЕ существует и DOM готов
-		else if (seed.readyArray.length == 0 && seed.isReady === true) {
-			return func();
-		}
-		
-		// когда массив функций НЕ существует или DOM не готов
-		else {
-			seed.readyArray.push(func);
+
+		// если передали функцию
+		if( func && seed.isFunction(func) ) {
+			// когда массив функций НЕ существует и DOM готов
+			// иначе, добавляем функцию в массив функций
+			(seed.readyArray.length == 0 && seed.isReady === true) ? func() : seed.readyArray.push(func); 
 		}
 	}
 	
