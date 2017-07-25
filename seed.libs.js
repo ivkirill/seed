@@ -210,6 +210,11 @@ seed.libs = {
 		"path" : "/js/jquery/jquery.json.js",
 		"depents": [seed.config.jquery]
 	},
+	"common.swipe" : {
+		"path" : "/js/jquery/jquery.swipe.js",
+		"depents": [seed.config.jquery]
+	},
+
 
 // библиотеки jQuery UI
 	"ui.dialog" : {
