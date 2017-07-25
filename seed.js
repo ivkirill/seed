@@ -199,7 +199,7 @@ try {
 	// реализация DOM Ready
 	// готовность DOM
 	seed.isReady = false;
-	// массив для хранения Promise до наступления DOM Ready
+	// массив для хранения функций до наступления DOM Ready
 	seed.readyArray = [];
 	// функция готовности, убиваем если у нас загрузился DOM
 	seed.completed = function() {
