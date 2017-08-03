@@ -170,7 +170,7 @@
 			var self = this;
 			
 			// обновим конфиг seed.ui для текущего запуска от кнопки
-			var options = $.extend(true, {}, this.config, seed.core.fn._dataset(obj));
+			var options = $.extend(true, {}, this.config, seed._dataset(obj));
 			if(!options.title) options.title = $(obj).attr('data-title') || $(obj).attr('title');
 			
 			// создаем модальное окно по кнопке
@@ -222,7 +222,7 @@
 			var $item = $(obj).parents(this.config.selector.item + ':first');
 			
 			// обновим конфиг seed.ui для текущего запуска от кнопки
-			var options = $.extend(true, {}, this.config, seed.core.fn._dataset(obj));
+			var options = $.extend(true, {}, this.config, seed._dataset(obj));
 			if(!options.title) options.title = $item.attr('title') || $item.attr('data-title');
 			
 			// создаем модальное окно по кнопке
@@ -278,7 +278,7 @@
 			}
 
 			// обновим конфиг seed.ui для текущего запуска от формы
-			var options = $.extend(true, {}, options, $.extend(true, {}, this.config, seed.core.fn._dataset(obj.get(0))));
+			var options = $.extend(true, {}, options, $.extend(true, {}, this.config, seed._dataset(obj.get(0))));
 			
 			obj.seedGform({
 				'lazy' : true,
@@ -313,7 +313,7 @@
 						
 						if( self.updated === true ) self.reload(options);
 						
-//						console.log( self.name, config.url, self.config.url, seed.core.fn._dataset(obj) );
+//						console.log( self.name, config.url, self.config.url, seed._dataset(obj) );
 //						if( $.isFunction(options.func.reload) ) options.func.reload.call(self, options);
 					}
 				}
@@ -328,7 +328,7 @@
 			var $item = $(obj).parents(this.config.selector.item + ':first').addClass('bg-warning warning');
 			
 			// обновим конфиг seed.ui для текущего запуска от кнопки
-			var options = $.extend(true, {}, this.config, seed.core.fn._dataset(obj));
+			var options = $.extend(true, {}, this.config, seed._dataset(obj));
 			if(!options.title) options.title = $item.attr('title') || $item.attr('data-title');
 			
 			$(obj).seedModal({
@@ -386,7 +386,7 @@
 			if( !options.func ) options.func = {};
 			
 			// обновим конфиг seed.ui для текущего элемента
-			//var options = $.extend(true, {}, this.config, seed.core.fn._dataset(obj));
+			//var options = $.extend(true, {}, this.config, seed._dataset(obj));
 			var url = options.url.reload || options.url.post;
 			
 			if( this.$list.length ) {

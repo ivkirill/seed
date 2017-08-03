@@ -1,47 +1,9 @@
 ﻿/* 
  * seed amd Core
- * @version 2.1.0
+ * @version 2.1.5
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-
-/*
-// тестируем фоновое логирование
-window.loging = function() {
-	console.log(arguments)
-};
-
-// разширяем console.log();
-(function() {
-	var exLog = console.log;
-	var exInfo = console.info;
-	
-	console.log = function(msg) {
-		exLog.apply(this, arguments);
-		
-		window.loging(arguments);
-	}
-	
-	console.info = function(msg) {
-		exInfo.apply(this, arguments);
-		window.loging(arguments);
-	}
-})();
-
-try {
-	var head = document.querySelector('head');
-	var log = document.createElement('meta');
-	head.insertBefore(log, head.firstChild);
-	
-	window.loging = function(msg) {
-		//console.log(msg, msg.toString());
-		log.innerText += Date.now() + ': ' + msg + '\n';
-	}
-	
-
-} catch(e) {}
-*/
-
 (function(window, document, undefined) {
 	'use strict';
 
@@ -80,7 +42,6 @@ try {
 	if (!typeof Promise) {
 		return;
 	}
-
 	
 	// создаем объект seed, если он не существует
 	if (!window.seed) {
@@ -354,7 +315,7 @@ try {
 		// читаем конфиг из data- атрибутов файла script, подключемого для seed.js
 		if( obj === 'dataset' ) {
 			var scripts = document.querySelectorAll('script');
-			scripts.forEach(function(el) {
+			Array.prototype.forEach.call(scripts, function(el) {
 				if( /main/.test(el.dataset.seed ) ) config = seed.extend(seed.config, seed._dataset( el ) );
 			});
 		}

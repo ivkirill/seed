@@ -362,8 +362,6 @@ console.log(self);
 
 
 		load: function(page, callback) {
-
-console.log(arguments, this);
 			var self = this;
 
 			this.config.url.current = this.query || this.config.url.current || window.location.href;
