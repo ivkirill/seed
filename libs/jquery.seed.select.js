@@ -36,6 +36,8 @@
 			'search': false,
 			'unlisted' : false,
 			'proxy' : false,
+			
+			'autosubmit' : true,
 
 			'selector': {
 				'auto' : '[data-seed="select"]'
@@ -182,7 +184,7 @@
 
 			this.$input.on({
 				'enter.seed.select' : function(e) {
-					self.$input.parents('form:first').submit();
+					if( self.config.autosubmit === true ) self.$input.parents('form:first').submit();
 				},
 				'keyup.seed.select' : function(e) {
 					clearTimeout(self.timer);
@@ -323,7 +325,7 @@
 				self.$input.val( $(this).attr('data-value').replace(/<(|\/)b>/gi,'') ).change();
 				self.$input.trigger('enter.seed.select');
 				self.hide();
-
+				
 				return false;
 			});
 		},

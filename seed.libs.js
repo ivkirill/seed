@@ -4,8 +4,6 @@
 * @author Kirill Ivanov
 */
 
-"use strict";
-
 // проверим существование объекта seed
 if (!window.seed) {
 	window.seed = {};
