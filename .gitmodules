@@ -1,0 +1,3 @@
+[submodule "seedCSS"]
+	path = seedCSS
+	url = https://github.com/ivkirill/seedCSS
