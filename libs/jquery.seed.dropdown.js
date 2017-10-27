@@ -1,4 +1,4 @@
-/* 
+п»ї/* 
 * Seed Framework
 * seedDrop 
 * ver. 1.1
@@ -13,7 +13,7 @@
 		$.seed = {};
 	};
 
-// данные для конструктора
+// РґР°РЅРЅС‹Рµ РґР»СЏ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°
 	var name = 'seedDropdown';
 
 	$.seed[name] = {};
@@ -84,10 +84,10 @@
 			}
 
 
-// определим группу
+// РѕРїСЂРµРґРµР»РёРј РіСЂСѓРїРїСѓ
 			this.config.group = this.$dropdown.attr('data-dropdown-group') || this.config.group;
 
-// назначим группу если она не прописана
+// РЅР°Р·РЅР°С‡РёРј РіСЂСѓРїРїСѓ РµСЃР»Рё РѕРЅР° РЅРµ РїСЂРѕРїРёСЃР°РЅР°
 			if( !this.$dropdown.attr('data-dropdown-group') ) {
 				this.$dropdown.attr('data-dropdown-group', this.config.group);
 			}
@@ -118,7 +118,7 @@
 
 					this.$dropdown.removeClass('off').addClass('dropped active on effect');
 
-					// callback при отображении контента
+					// callback РїСЂРё РѕС‚РѕР±СЂР°Р¶РµРЅРёРё РєРѕРЅС‚РµРЅС‚Р°
 					self.config.func.show(self);
 
 					this.rebind('off');
@@ -204,13 +204,13 @@
 
 			this.$dropdown.removeClass('dropped active on').addClass('off');
 
-			//снимаем бинды с окружения, если они были
+			//СЃРЅРёРјР°РµРј Р±РёРЅРґС‹ СЃ РѕРєСЂСѓР¶РµРЅРёСЏ, РµСЃР»Рё РѕРЅРё Р±С‹Р»Рё
 			if( this.config.outside ) {
 				$('html').off(this.config.event.on + this.config.group);
 			}
 
 
-// callback при скрытии контента
+// callback РїСЂРё СЃРєСЂС‹С‚РёРё РєРѕРЅС‚РµРЅС‚Р°
 			this.config.func.hide(this);
 		}
 	});

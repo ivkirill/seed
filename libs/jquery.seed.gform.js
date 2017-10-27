@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * seedGform
 * ver. 3.1
@@ -333,6 +333,7 @@
 				args.$el = $('<div>',{'class':'input-holder ' + this.config.cssclass.column}).appendTo( args.$group);
        				if(args.type != 'submit') {
 					args.$icon = $('<div>',{'class':'input-status fa', 'aria-hidden':'true'}).appendTo( args.$el);
+					args.$placeholder = $('<div>',{'class':'input-placeholder hide', 'data-title': args.title}).appendTo( args.$el);
 				}
 				this._createObj(args);
 			}
@@ -425,7 +426,8 @@
 
 			// если поле является textarea
 			else if (args.type == 'textarea') {
-				args.$input = $('<textarea>', {'class':'form-control'}).text( args.value ).prependTo( args.$el);
+				args.$input = $('<textarea>', {'class':'form-control input-form'}).text( args.value ).prependTo( args.$el);
+				args.$placeholder.removeClass('hide');
 			}
 
 			// если поле является hidden
@@ -442,6 +444,7 @@
 			}
 			else {
 				args.$input = $('<input>', { 'type':args.type, 'class':'input-form form-control'}).prependTo( args.$el);
+				args.$placeholder.removeClass('hide');
 			}
 
 			// если существует input тогда обработаем его
@@ -708,7 +711,7 @@
 			var $holder = obj.parent('.input-holder');
 			var $status = $holder.find('.input-status');
 
-			$holder.removeClass('has-success has-error');
+			$holder.removeClass('has-success has-error has-value');
 			$status.removeClass('fa-remove fa-check');
 			obj.removeClass('valid invalid').removeAttr('data-error');
 
@@ -768,6 +771,8 @@
 				$status.addClass('fa-check');
 				obj.addClass('valid').removeClass('invalid');
 			}
+			
+			if( obj.val() != '' ) $holder.addClass('has-value');
 
        
 			return valid;

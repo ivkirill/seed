@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * seedFilter
 * ver. 1.1
@@ -28,10 +28,24 @@
 
 			'ajax' : false,
 			'await' : 800,
+			
+			'history' : true,
+			'paging' : false,
 
 			'dependence' : false,
 			'hide' : true,
-
+			'overlay' : true,
+			
+			'convert' : false,
+			
+			'rules' : {
+				separator: '/',
+				join: true,
+				repeater: ',',
+				allow: '',
+				deny: ''
+			},
+			
 			'module' : {
 				'main' : null, // модуль того что фильтруем!,
 				'filter' : null,
@@ -43,6 +57,7 @@
 				'list' : '[role="filtering"]',
 				'items' : '> *',
 				'dependence' : '[role="toolbar"]',
+				'external' : '', // внешние формы для обьединения запроса
 				'pages' : '[role="pages"]',
 				'total' : '[role="total"]:first'
 			},
@@ -51,23 +66,24 @@
 				'__off' : 'dynamic.seed.filter'
 			},
 			'url': {
-				'current' : window.location.href
+				'current' : window.location.href,
+				'tial' : ''
 			},
 
 			'func' : {
-//callback-функция выполняющая после инициализации фильтра
+				//callback-функция выполняющая после инициализации фильтра
 				'ready' : null, 
-//callback-функция выполняющая после парсинга QS параметров
+				//callback-функция выполняющая после парсинга QS параметров
 				'after_parse' : null,
-//callback-функция выполняющая перед сериализацей формы
+				//callback-функция выполняющая перед сериализацей формы
 				'preserialize' : null,
-//callback-функция выполняющая после сериализации формы и до оправки
+				//callback-функция выполняющая после сериализации формы и до оправки
 				'before_send' : null,
-//callback-функция выполняющая после сериализации формы и оправки, ВМЕСТО стандартной функции информационных сообщений.
+				//callback-функция выполняющая после сериализации формы и оправки, ВМЕСТО стандартной функции информационных сообщений.
 				'success' : null,
-//callback-функция выполняющая вместо сабмита фильтра
+				//callback-функция выполняющая вместо сабмита фильтра
 				'submit' : null,
-//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об ошибке
+				//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об ошибке
 				'error' : null,
 				'slide' : null
 			},
@@ -107,15 +123,14 @@
 
 			this.config.url.current = this.$el.attr('action') || this.config.url.current;
 
-
-// найдем количество и выведем его
+			// найдем количество и выведем его
 			this.total = this.$el.attr('data-total') || $(this.config.selector.list).attr('data-total');
 
 			if( this.total ) {
 				this.$el.find( self.config.selector.total ).text( this.total );
 			}
 
-// если нет строки запроса и нет элементов, то отключаем фильтр
+			// если нет строки запроса и нет элементов, то отключаем фильтр
 			if( !$(this.config.selector.list).find(this.config.selector.items).length && !window.location.search.length && this.config.hide && this.config.ajax != 'static' ) {
 				this.$el.hide();
 				return false;
@@ -126,26 +141,21 @@
 
 			this.cssclass = this.$el.attr('class');
 
-
-// проиницилизируем тулбары
-			if( this.$el.find(this.config.selector.dependence).length ) {
-				this.toolbars = [];
-				self.toolbarsInit();
-			}
-
+			// массив тулбаров
+			this.toolbars = [];
 			this.$sliders = $('.range-slider, [role="range"]');
 
 			if( this.$sliders.length ) {
 				require('ui.slider', function() {
-					self.uiSliderInit().bind().parseQS();
+					self.toolbarsInit().uiSliderInit().bind().parseQS();
 				})
 			}
 			else {
-				this.bind().parseQS();
+				this.toolbarsInit().bind().parseQS();
 			}
 		},
 
-// создаем бинды для элементов библиотеки
+		// создаем бинды для элементов библиотеки
 		bind: function() {
 			var self = this;
 
@@ -153,13 +163,11 @@
 				var $input = $(this);
 				( !$input.attr('checked') ) ? $input.attr('checked', 'checked') : $input.removeAttr('checked');
 				self.update();
-//				return false;
 			});
 
-// обрабатываем элементы type="radio"
+			// обрабатываем элементы type="radio"
 			this.$el.on('click', 'input[type="radio"]:not(.independent, [readonly])', function() {
 				self.update();
-//				return false;
 			});
 
 			this.$el.on('click', 'input[type="button"]', function() {
@@ -193,23 +201,11 @@
 				}
 			})
 
-
-//			if(this.config.module.func == 'product') {
-				this.$el.on('keyup.seed.filter', 'input[data-seed="select"]', function(e) {
-					if(e.keyCode == 13) {
-						self.update();
-					}
-				});
-/*
-				this.$el.on('input', 'input[data-seed="select"]', function(e) {
-					$(this).val( $(this).val().replace(/^\s/,'') );
-				});
-
-				this.$el.on('enter.seed.select', 'input[data-seed="select"]', function(e) {
+			this.$el.on('keyup.seed.filter', 'input[data-seed="select"]', function(e) {
+				if(e.keyCode == 13) {
 					self.update();
-				});
-*/
-//			}
+				}
+			});
 
 			this.$el.on('submit', function() {
 				if( self.config.func.submit ) {
@@ -241,6 +237,7 @@
 
 			$('body').on('click show', this.config.selector.dependence+' .caption', function(e) {
 				var $caption = $(this);
+				
 				$.each(self.toolbars, function(i, toolbar) {
 					if( $caption.get(0) == toolbar.$caption.get(0) ) {
 						if( $caption.hasClass('closed') || e.type == 'show' ) {
@@ -282,11 +279,13 @@
 
 				self.toolbars.push( toolbar );
 			});
-
+			
+			return this;
 		},
 
+		// инициализация UI слайдеров
 		uiSliderInit: function() {
-		        var self = this;
+		    var self = this;
 			
 			this.$el.find(self.$sliders.selector).each(function() {
 				var $slider = $(this);
@@ -343,25 +342,55 @@
 				}
 			}
 
-			if( this.config.func.preserialize ) { (this.config.func.preserialize)(self); }
+			if( this.config.func.preserialize ) { (this.config.func.preserialize)(this); }
 
-			this.readonly = this.$el.find(':input[readonly]').attr('disabled', 'disabled');
-
-			this.query = this.$el.serialize().replace(/[a-z0-9\._]+=&/g,'').replace(/[a-z0-9\._]+=$/,'').replace(/(\&re.+?=)/g,'&$1').replace(/\&\s/g,'&').replace(/\s\&/g,'&').replace(/&$/g,'');
-
-			this.pagequery = (/\?/.test(window.location.search) && /\/first/.test(window.location.search) ) ? ( window.location.search.replace(/.*first([a-zA-Z]+).*/,'first$1'+'=0')) : (this.config.url.current.replace(/\?.*/,'') + '?first'+this.config.module.func+'=0');
-			this.submitUrl = this.pagequery + ((this.query.length) ? ( '&'+this.query ) : '');
-
+			this.$readonly = this.$el.add(this.config.selector.external).find(':input[readonly]').attr('disabled', 'disabled');
+			this.query = this.$el.add(this.config.selector.external).serialize()
+				.replace(/[a-z0-9\._]+=&/g,'')
+				.replace(/[a-z0-9\._]+=$/,'')
+				.replace(/(\&re.+?=)/g,'&$1')
+				.replace(/\&\s/g,'&')
+				.replace(/\s\&/g,'&')
+				//.replace(/\+/g,' ')
+				.replace(/&$/g,'');
+			
+			
+			this.pagequery = '';
+			// если мы разрешили передавать пагинацию
+			if( this.config.paging === true ) {
+				this.pagequery = this.config.url.current.replace(/\?.*/,'');
+			}
+			// если нет, то сбросим пагинацию на первую страницу
+			else {
+				this.pagequery = (/\?/.test(window.location.search) && /\/first/.test(window.location.search))
+					? ( window.location.search.replace(/.*first([a-zA-Z]+).*/,'first$1'+'=0')) 
+					: (this.config.url.current.replace(/\?.*/,'') + '?first'+this.config.module.func+'=0');
+					
+				this.query = this.query.replace(/&?first[a-zA-Z]+=[a-z0-9]+(?=&|$)/gi,'');
+			}
+			
+			this.submitUrl = this.pagequery + (/\?/.test(this.pagequery) ? '&' : '?' ) + ((this.query.length) ? this.query : '');
+			this.historyUrl = this.submitUrl;
+			
+			// кастомное преобразование QS запроса
+			if( this.config.func.query ) {
+				this.historyUrl = (this.config.func.query)(this);
+			}
+			
+			if( this.config.convert === true ) {
+				this.historyUrl = this.convert();				
+			}
+			
 			if( this.config.ajax == 'custom' ) {
 				if( this.config.func.custom ) {
-					(this.config.func.custom)(this);
+					this.config.func.custom.call(self, this);
 				}
 			}
 			else if( this.config.ajax === true ) {
 				this.submit();
 			}
 			else if( this.config.ajax === 'static' ) {
-				window.history.pushState({}, 'page', this.submitUrl);
+				if( this.config.history === true ) window.history.pushState({}, 'page', this.historyUrl);
 
 				if( self.config.func.success ) {
 					(self.config.func.success)(self);
@@ -370,6 +399,8 @@
 		},
 
 		overlay: function(key) {
+			if( !this.config.overlay ) return false;
+			
 			if( key === true || key === 'undefined' ) {
 				this.$overlay = ( !$('#overlay-filter').length ) ? $('<div>',{'id':'overlay-filter', 'class':'seed-overlay'}).html('<div class="loader"></div><div class="loader-text">'+this.config.locale.interface.processing+'</div>').appendTo( $('body'), {'dymanic':false}) : $('#overlay-filter:first').show(); 
 			}
@@ -382,27 +413,31 @@
 		},
 
 		submit: function() {
-		        var self = this;
+		    var self = this;
 			// очищаем таймер, чтобы не вызывать обновление второй раз
 			clearTimeout(self.timer);
-
+		
 			if (this.blocked) { return false; }
-
-//создаем оверлэй                                                                                                                          
+			
+			//создаем оверлэй                                                                                                                          
 			this.overlay(true);
 
 			if(window.history.pushState && this.config.ajax === true) {
-				window.history.pushState({}, 'page', this.submitUrl);
+				
+				if( this.config.history === true || this.config.convert === true ) window.history.pushState({}, 'page', this.historyUrl);
 
 				var qs = {};
 				qs['mime'] = 'txt';
 				qs['show'] = this.config.module.main;
-
-
+				
+				qs = $.param(qs);
+				
+				// добавляем хвост URL
+				qs = qs + this.config.url.tail;
 
 				$.ajax({
 					url: self.submitUrl,
-					data: $.param(qs),
+					data: qs,
 					cache: false,
 					beforeSend: function() {
 						self.blocked = true;
@@ -445,8 +480,9 @@
 							self.$answer = $('<div>').html(data);
 
 							var $block = self.$answer.find(self.config.selector.list);
-							self.total = self.$answer.find(self.config.selector.list).attr('data-total') || self.$answer.find(self.config.selector.auto).attr('data-total') || self.total;
 
+							self.total = self.$answer.find(self.config.selector.list).attr('data-total') || self.$answer.find(self.config.selector.auto).attr('data-total') || self.total;
+							
 							if(self.seedPage1) $(self.config.selector.list).filter(':first').seedPage('destroy');
 
 							$(self.config.selector.list).replaceWith($block);
@@ -464,11 +500,12 @@
 								}
 							}
 
-
 							// найдем список страниц, если он определен для выборки, заменим его на новый
 							var $pages = self.$answer.find(self.config.selector.pages);
 							if( $pages.length ) {
-								$('body').find(self.config.selector.pages).replaceWith($pages);
+								$('body').find(self.config.selector.pages).each(function(i) {
+									$(this).replaceWith($pages.get(i));
+								})
 							}
 	        	
 							if( self.config.dependence == 'true' || self.config.dependence === true) {
@@ -476,7 +513,7 @@
 							}
 
 							if( self.config.func.success ) {
-								(self.config.func.success)(self);
+								(self.config.func.success)(self, data);
 							}
 
 							self.reinit();
@@ -504,28 +541,31 @@
 			}
 		},
 
-// разблокировка функционала
+		// разблокировка функционала
 		unblock: function() {
-			if( this.readonly) this.readonly.removeAttr('disabled');
+			if( this.$readonly.length ) this.$readonly.removeAttr('disabled');
 
 			this.blocked = false;
 			this.overlay(false);
 		},
 
-// обрабатываем пустой ответ фильтра
+		// обрабатываем пустой ответ фильтра
 		emptyListing: function() {
-			if( this.empty_title ) {
-				if( this.empty_title.length ) {
-					this.empty_title.remove();
+			if( this.$empty_title ) {
+				if( this.$empty_title.length ) {
+					this.$empty_title.remove();
+					this.$empty_title = false;
 				}
 			}
 
-			if( !$(this.config.selector.list).find(this.config.selector.items).length ) {
-				this.empty_title = $('<h3>',{'class':'none'}).text(this.config.locale.interface.empty).appendTo( $(this.config.selector.list), {'dymanic':false});
+			if( $(this.config.selector.list).find(this.config.selector.items).length === 0 ) {
+				this.$empty_title = ( $(this.config.selector.list).find('.caption-empty-list').length )
+					? $(this.config.selector.list).find('.caption-empty-list')
+					: $('<h3>', {'class':'caption-empty-list none'}).text(this.config.locale.interface.empty).appendTo( $(this.config.selector.list) );
 			}
 		},
 
-// функционал зависимости блоков фильтра
+		// функционал зависимости блоков фильтра
 		dependence: function() {
 			var $dependences = this.$answer.find( this.config.selector.dependence );
 
@@ -537,36 +577,40 @@
 			this.uiSliderInit().parseQS();
 		},
 
-//распарсим QS (realQuery)
+		//распарсим QS (realQuery)
 		parseQS: function() {
 			var self = this;
 
-			var query = window.location.search || this.config.url.current;
-			if (query) {
+			var query = this.submitUrl || this.config.url.current || window.location.search;
+			
+			if (query.length) {
 				query = decodeURIComponent(query);
-				query = query.replace(/\+/gi,' ').replace(/%2F/gi,'/').replace(/%2C/gi,',').replace(/%2B/gi,'+').replace(/^\?/gi,'');
-
+				query = query.replace(/\+/gi,' ').replace(/%2F/gi,'/').replace(/%2C/gi,',').replace(/%2B/gi,' ').replace(/^(.*)\?/gi,'').replace(/^\?/gi,'')
+				
 				$.each(query.split('&'), function(i,data) {
+					var $el;
+					
 					if(/=/.test(data)) {
 						var name = data.split('=')[0].replace(/^r\d+/,'');
 						var value = data.split('=')[1].replace(/^\^/,'');
-//данные для блока сортировки
+						//данные для блока сортировки
 						if(/sort/.test(name) ) {
-							var el = self.findFilterElement(name, value);
+							$el = self.findFilterElement(name, value);
 							return;
 						}
 						if(/desc/.test(name)) {
-							var el = self.findFilterElement(name, value);
+							$el = self.findFilterElement(name, value);
 							return;
 						}
 						if(/first/.test(name)) {
 							return;
 						}
 
-						self.findFilterElement(name, value);
+						$el = self.findFilterElement(name, value);
 					}
 
 				});
+				
 				this.emptyListing();
 			}
 
@@ -576,29 +620,109 @@
 
 			return this;
 		},
+		
+		convert: function() {
+			var self = this;
+			var uri = this.historyUrl.replace(/\?(.*)/gi,'');
+			var query = this.historyUrl.replace(/(.*)\?/gi,'');
+			var allow = [];
+			var deny = [];
+			
+			var rules = $.extend({}, self.config.rules, {
+				allow: /,/.test(self.config.rules.allow) ? self.config.rules.allow.split(',') : false,
+				deny: /,/.test(self.config.rules.deny) ? self.config.rules.deny.split(',') : false,
+			}, true );
+			
+			// конвертация ключа
+			function convertKey(key, value) {
+				return key.replace( (
+					( /^(sort|desc|first|quant)/.test(key) ) ? /^(sort|desc|first|quant).*/gi : /.*_(.*)$/gi
+				),'$1') + '-' + value;
+			}
+				
+			function sorter(a,b) {
+				// ставим параметр фильтра всегда первым
+				if( /^filter/.test(a) ) return -1;
+				if( /^filter/.test(b) ) return 1;
+
+				// ставим сортировку, направления сортировки, пагинацию и офсеты последними
+				if(/^(sort|first|desc)/.test(a) ) return 1;
+				if(/^(sort|first|desc)/.test(b) ) return -1;
+
+				// сортируем остальные по алфавиту
+				if( a > b ) return 1;
+				if( a < b ) return -1;
+				return 0;
+			}
+			
+			// обрабатываем QS, раскидываем параметры по разрешенным и запрещенным
+			query = query.replace(/([^=&]+)=([^&]*)/g, function(m, key, value) {
+				key = decodeURIComponent(key).toLowerCase();
+				value = decodeURIComponent(value).toLowerCase();
+				
+				// игнорим это
+				if( $.type(rules.deny) === 'array' ) {
+					var matched = '_';
+					$.each(rules.deny, function(i, rule) {
+						if( (new RegExp(rule)).test(key) ) matched = m;
+					});
+					
+					if( matched != m ) allow.push(convertKey(key, value));
+					return matched;
+				}
+				// обрабатываем это
+				else if( $.type(rules.allow) === 'array' ) {
+					var matched = m;
+					$.each(rules.allow, function(i, rule) {
+						if( (new RegExp(rule)).test(key) ) {
+							allow.push(convertKey(key, value));
+							matched = '_';
+						}
+					});
+					return matched;
+				}
+				else {
+					allow.push(convertKey(key, value));
+					return '_';
+				}
+			}).replace(/(|\_)\&\_/gi,'').replace(/^(_|)&/,'');
+			
+			return uri.replace('.html','') + allow.sort(sorter).reduce(function(a,b) {
+				var re = new RegExp("\\" + rules.separator + "?(.+?)\-(.+)");
+				var str = a + ( ( a.replace(re, '$1') == b.replace(re, '$1') && rules.join ) ? (rules.repeater + b.replace(re, '$2') ) : (rules.separator + b ) );
+				return str;
+			}, '') + ((query.length) ? rules.separator + '?' + query : rules.separator);
+		},
 
 		findFilterElement: function(name, value) {
-
 			var self = this;
-
-			var $input = this.$el.find('[name="'+name+'"]');
+			
+			var $input = this.$el.add(this.config.selector.external).add(this.config.selector.dependence).find('[name="'+name+'"]');
+			
 			if( !$input.length ) { return false; }
 
 			if( $input.get(0).tagName == 'SELECT' ) {
-				$input.find('option[value="'+value+'"]').attr('selected', true);
+				$input.find('option[value="'+value+'"]').filter(function() {
+					return $(this).attr('value').toLowerCase() == value.toLowerCase()
+				}).attr('selected', true);
 				$input.blur();
 			}
 
 			if( $input.get(0).tagName == 'INPUT' ) {
 				if( $input.attr('type') == 'radio' ) {
-//					self.$el.find('[name="'+name+'"]').removeAttr('checked');
-					$input.filter('[value="'+value+'"]').attr('checked', 'checked').blur();
+					$input.filter(function() {
+						return $(this).attr('value').toLowerCase() == value.toLowerCase()
+					}).attr('checked', 'checked').blur();
 				}
 				else if( $input.attr('type') == 'checkbox' ) {
-					$input.filter('[value="'+value+'"]').attr('checked', 'checked').blur();
+					$input.filter(function() {
+						return $(this).attr('value').toLowerCase() == value.toLowerCase()
+					}).attr('checked', 'checked').blur();
 				}
 				else { $input.val(value); }
 			}
+			
+			$input.parents(self.config.selector.dependence+':first').find('.caption').removeClass('closed');
 
 			return $input;
 

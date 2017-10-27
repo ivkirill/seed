@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * seedCarousel 
 * ver. 3.0
@@ -63,7 +63,7 @@
 
 			'url': {
 				'ajax' : window.location.href,
-				'tial' : null
+				'tail' : ''
 			},
 			'selector': {
 				'auto' : '[data-seed="carousel"], [role="carousel"]',
@@ -426,8 +426,10 @@
 			if(this.config.progress && this.config.progressbar == 'line') {
 				this.$bar.removeClass('run');
 			}
+			
+			var animation = this.animation[this.config.animation] || this.animation['css'];
 
-			this.animation[this.config.animation](self, i);
+			animation(self, i);
 
 			this.$nav.find('i').removeClass('next prev active').end().find('i[data-group="'+this.active+'"]').addClass('active').next('i').addClass('next').end().prev('i').addClass('prev');
 			
@@ -479,10 +481,12 @@
 			qs['show'] = this.module;
 			qs['mime'] = 'txt';
 			qs['first'+this.module_function] = (this.current + this.config.preload) * this.config.group;
+			qs = $.param(qs);
+			qs = qs + self.config.url.tail
 
 			$.ajax({
 				url: self.config.url.ajax,
-				data: $.param(qs) + ((self.config.url.tail) ? self.config.url.tail : ''),
+				data: qs,
 				cache: false,
 				beforeSend: function() {
 					self.blocked = true;
@@ -567,6 +571,13 @@
 					self.$groups.fadeOut( self.config.animation_time ).removeClass('active');
 					self.$groups.filter('[data-group="'+self.active+'"]').addClass('active').fadeIn(self.config.animation_time, function() { self._callback(); }).find('.carousel-caption, .carousel-text').show();
 				},
+				
+				css : function(self) {
+					self.$groups.removeClass('active current');
+					self.$box.find('.carousel-group[data-group="'+self.active+'"]').addClass('active');
+					self.$box.find('.carousel-group[data-group="'+self.current+'"]').addClass('current');
+					self._callback();					
+				},
 
 				slide : function(self, i) {
 					self.$el.find('.carousel-caption, .carousel-text').show();
@@ -577,7 +588,7 @@
 					var $current = self.$box.find('.carousel-group[data-group="'+self.current+'"]').addClass('current');
 
 					if( i == self.current ) {
-                                                 self._callback(); 
+						self._callback(); 
 					}
 
 					if(i < self.current || i == 'prev') {
@@ -750,7 +761,6 @@
 
 					});
 				},
-
 
 				animationGlassBlockVertical: function(self) {
 					var self = this;

@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * Gallery 
 * ver. 1.3
@@ -275,8 +275,10 @@
 					if( self.typecur == 'img' ) { 
 						self.img = $('<img>',{'src': self.src})
 						.css({'width':self.x,'height':self.y})
-						.attr({'title': (self.config.zoom) ? self.config.locale.interface.zoom : ''})
 						.appendTo( self.$photo );
+						
+						// ставим правильный тайтл
+						self._setTitle();
 					}
 
 					// если текущий тип не img
@@ -429,6 +431,7 @@
 					self._getSizes();
 					self.win = true;
 					self._animate();
+					self._setTitle();
 				}
 			});
 
@@ -516,7 +519,7 @@
 
 			this.name = img.name;
 			this.text = img.text;
-	
+			
 			return this;
 		},
 
@@ -553,6 +556,17 @@
 				$('<source>',{'src': img_video.ogv, 'type':'video/ogv'}).appendTo( $video);
 			}
 		},
+		
+		// добавляем правильные тайтлы для изображения
+		_setTitle: function(title) {
+			var img = this.$photo.find('img');
+			if( this.$box.hasClass('zoom') ) {
+				
+				if( !title ) img.attr({'title': (this.config.zoom) ? this.config.locale.interface.zoom : ''});
+				else img.attr({'title': title});
+			}
+			else img.removeAttr('title');
+		},		
 
 		_zoom: function() {
 			if(this.type != 'img') { return false; }
@@ -561,7 +575,7 @@
 				$('html, body').removeClass('zoomed');
 
 				this.$box.removeClass('zoomed zoomed-x zoomed-y');
-				this.$photo.find('img').attr({'title': this.config.locale.interface.zoom});
+				this._setTitle(this.config.locale.interface.zoom);
 			}
 			else {
 				this.zoomed = true;
@@ -570,8 +584,9 @@
 
 				if( $('body').width() < this.zx ) { classes += ' zoomed-x'; }
 				if( $('body').height() < this.zy ) { classes += ' zoomed-y'; }
-				this.$box.addClass(classes)
-				this.$photo.find('img').attr({'title': this.config.locale.interface.zoomed});
+				this.$box.addClass(classes);
+				this._setTitle(this.config.locale.interface.zoomed);
+
 			}
 			this._animate();
 		},

@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * seedPage 
 * ver. 1.4
@@ -196,7 +196,7 @@
 			this.$holder = this.$wrapper.parent();
 			this.$holder.addClass('page-holder');		
 
-//Создание областей загрузки и кнопок
+			//Создание областей загрузки и кнопок
 			this.$ajaxblock = $('<div>', {'class': 'loader page-loader'}).html('<span><i class="'+this.config.cssclass.loader+'"></i>' + this.config.locale.interface.loading + '</span>').insertAfter( this.$wrapper);
 
 			this.$button_prev = $('<div>', {'class': 'btn btn-prev ' + this.config.cssclass.button }).text(this.config.locale.interface.page_prev).insertBefore( this.$wrapper);
@@ -217,28 +217,27 @@
 
 			var newUrl = '';
 
-// если включена функции preload
+			// если включена функции preload
 			if( this.config.preload === true ) {
-// проверим есть ли знак вопроса в нашем урле
+				// проверим есть ли знак вопроса в нашем урле
 				if( /\?/.test(this.config.url.current) ) {
-// если знак вопроса есть, то проверим если параметр first
+					// если знак вопроса есть, то проверим если параметр first
 					if( /first/.test(this.config.url.current) ) {
-// заменим first на this.offset_func
+						// заменим first на this.offset_func
 						newUrl = this.config.url.current.replace(/first[a-zA-Z]+\=\d+/, this.offset_func);
 					}
-// допишем this.offset_func в конце строки
+					// допишем this.offset_func в конце строки
 					else {
 						newUrl = this.config.url.current + '&' + this.offset_func;
 					}
 				}
 				else {
-// напишем this.offset_func
+					// напишем this.offset_func
 					newUrl = this.config.url.current + '?' + this.offset_func;
 				}
-
 				this.config.url.current = newUrl;
 			}
-// если функция preload выключена
+			// если функция preload выключена
 			else {
 				newUrl = (/\?/.test(window.location.search) ) ? ( ( /first/.test(window.location.search) ) ? window.location.search.replace(/first[a-zA-Z]+\=\d+/, this.offset_func) : window.location.href + '&'+this.offset_func ) : (window.location.href + '?'+this.offset_func);
 
@@ -266,14 +265,14 @@
 			}
 		},
 
-// определение направления скролла
+		// определение направления скролла
 		scrollDirection: function() {
 			var st = $(window).scrollTop();
 			this.scroll_direction = (st > this.scroll_position) ? 1 : 0;
 			this.scroll_position = st;
 		},
 
-// проверка видимости элемента на экране пользователя
+		// проверка видимости элемента на экране пользователя
 		isElementVisible: function(el, delta) {
 			var type = ( typeof delta === 'number' ) ? 'in' : 'over';
 			var delta = delta || 0;
@@ -295,7 +294,6 @@
 			var self = this;
 			this.$button_next.on({
 				'click' : function() {
-console.log(self);
 					if(self.config.debug) { console.log('click next'); }
 					self.counter = 0;
 					self.load('next');
@@ -393,6 +391,9 @@ console.log(self);
 					this.query = this.config.url.current + '&' + this.offset_func.replace(/first([a-zA-Z]+)\=\d+/,'first$1'+'='+this.page_load_items);
 				}
 			}
+			else {
+				this.query = this.config.url.current + '?first'+ this.config.module.func  +'='+this.page_load_items;
+			}
 
 			this.counter++;
 
@@ -404,8 +405,6 @@ console.log(self);
 			}
 
 			this.query = this.query.replace('&&', '&');
-
-console.log(this.query);
 
 			var qs = {};
 			qs['mime'] = 'txt';

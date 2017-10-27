@@ -1,6 +1,6 @@
 ﻿/* 
  * seed amd Core
- * @version 2.1.5
+ * @version 2.2.0
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
@@ -55,7 +55,8 @@
 		'lazy' : false,
 		'jquery' : 'jquery.2.1.4',
 		'selector' : {
-			'lazy' : {}
+			'lazy' : {},
+			'cached': {}
 		},
 		'amd': {
 			'cache': true,
@@ -226,10 +227,11 @@
 		});
 	}
 	
-	seed.lazy = function(func) {
+	seed.lazy = function(func, selector) {
 		// определяе selector для DOM
-		var selector = ( typeof this.selector == 'string' && !/^</.test(this.selector) ) ? this.selector : ( ( seed.isObject(this.selector) && typeof this.selector.selector ) ? this.selector.selector : false );
+		var selector = selector || ( typeof this.selector == 'string' && !/^</.test(this.selector) ) ? this.selector : ( ( seed.isObject(this.selector) && typeof this.selector.selector ) ? this.selector.selector : false );
 
+		console.log()
 		// если не было передано selector или функции то отключаем функционал
 		if( !seed.isFunction(func) || !selector ) return false;
 		seed.config.selector.lazy[selector] = func;
@@ -241,7 +243,7 @@
 	seed.observe = function() {
 		// если браузер не поддерживает функцию обзервера, то это грустно...
 		if (!window.MutationObserver) return;
-
+		
 		var observer = new MutationObserver(function(mutations) {
 			mutations.forEach(function(mutation) {
 				var nodes = mutation.addedNodes;
@@ -250,26 +252,65 @@
 				// если массив нодов нулевой или состоит из текстового нода, то его пропускаем
 				if (nodes.length === 0 || (nodes.length === 1 && nodes.nodeType === 3)) return; 
 				
-				for(var selector in seed.config.selector.lazy) { 
-					var newNodes = [];
-
-					nodes.forEach(function(node) {
-						if( node.nodeType === 1 && node.nodeName != 'JDIV') {
-							if( node.matches(selector) && !node.matches('[data-config-lazy="false"]') ) newNodes.push(node);
-							
-							var childs = node.querySelectorAll(selector);
-							childs = Array.prototype.slice.call(childs);
-							if( childs.length ) {
-								childs.forEach(function(node) {
-									newNodes.push(node);
-								});
-							}
-						}
-					});
+				// если есть нужные нам ноды
+				nodes.forEach(function(node) {
+					//if( node.matches('[data-config-lazy="false"]') ) console.log('FALSE', node);
 					
-					if(newNodes.length) seed.config.selector.lazy[selector].call(newNodes, selector);
-					if( seed.config.performance ) console.info('End:', performance.now());
-				}
+					// проверяем ноду на соотвествие, нет не подходит, переходим к следующей
+					if( node.nodeType !== 1 
+						|| node.nodeName == 'JDIV' 
+						|| node.nodeName == 'SCRIPT' 
+						|| node.nodeName == 'STYLE'
+						|| node.matches('[data-config-lazy="false"]')
+						|| node.nodeName == 'STYLE'
+					) return;
+
+					// нода нам подходим, начинаем её прогонять через список селекторов на соотвествие
+					for(var selector in seed.config.selector.lazy) {
+						var escapeAttr = seed.config.selector.cached[selector]
+							|| (seed.config.selector.cached[selector] = window.btoa(selector.replace(/"/g,"'")).replace(/=/g,''));
+					
+						// создаем список найденных нодов
+						var newNodes = [];
+					
+						// пушим найденные ноды, исключаем уже инициализированные по селектору и который мы отключили
+						if( node.matches(selector) 
+							&& !node.matches('['+escapeAttr+']')
+						) newNodes.push(node);
+						
+						// найдем дочерние ноды
+						var childs = node.querySelectorAll(selector);
+						childs = Array.prototype.slice.call(childs);
+
+						// если нет ни дочерних, ни прямых, то завершаем цикл
+						if( childs.length == 0 && newNodes.length == 0 ) {
+							if( seed.config.performance ) console.info('End:', performance.now());						
+							continue;
+						}
+						
+						// если есть добавляем к списку найденных нодов
+						if( childs.length ) {
+							childs.forEach(function(node) {
+								// пушим найденные ноды, исключаем уже инициализированные по селектору и который мы отключили
+								if( node.matches(selector) 
+									&& !node.matches('[data-config-lazy="false"]')
+									&& !node.matches('['+escapeAttr+']')
+								) newNodes.push(node);								
+							});
+						}
+
+						// если ноды все найдены то запускаем связанную с ними функцию
+						if(newNodes.length > 0) {
+							seed.config.selector.lazy[selector].call(newNodes, selector);
+							
+							// пометим ноды исполненными
+							newNodes.forEach(function(node) {
+								node.setAttribute(escapeAttr, '');
+							});
+						}
+						if( seed.config.performance ) console.info('End:', performance.now());						
+					}
+				});
    			});
    		});
 
@@ -485,7 +526,6 @@
 			
 			// если в конфиге модуля есть определенный селектор и включена функция lazy
 			if(module.data.selector && seed.config.lazy === true) seed.amd._lazyReady(module.name, module.data.selector);
-			
 			return (seed.state == 'ready') ? (( config.data.plugin !== true ) ? seed.amd._pending(module) : module) : module;
 		}
 	}
@@ -579,7 +619,7 @@
 				if (seed.config.debug) console.log('Модуль ', module.name, 'необходим. Зависимостей нет');
 				seed.amd._get(module).then(function(module) {
 					resolve(module);
-					if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
+					if( seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 					if( seed.config.performance ) console.info('Loaded:', performance.now());
 				}, function(reject) {
 					console.error('Неудалось загрузить модуль', module, reject);
@@ -789,7 +829,7 @@
 			
 			s.type = 'text/javascript';
 			s.defer = 'defer';
-			s.src = url + ((!seed.config.amd.cache ) ? ('?' + Date.now()) : '');
+			s.src = url + ((!seed.config.amd.cache ) ? '?nocache' : '');
 			
 			if( seed.config.amd.charset ) s.charset = seed.config.amd.charset;
 
@@ -811,8 +851,10 @@
 		});
 	}
 	
+	// amd. Создает связку между селектором и модулем
+	// Принимает имя модуля и селектор
+	// создает пряму связь между селектором и модулем
 	seed.amd._lazyReady = function(module, selector) {
-
 		seed.config.selector.lazy[selector] = function(selector) {
 			if( document.querySelector(selector) ) seed.amd.modules[module].data.require = true;
 			if( seed.amd.modules[module].data.require === true ) return seed.amd._pending( seed.amd.modules[module] );

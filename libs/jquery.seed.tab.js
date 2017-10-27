@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * seedTab 
 * ver. 1.2
@@ -27,7 +27,7 @@
 
 			'hash' : window.location.hash.replace('#',''),
 			'group' : null,
-			'empty' : null,
+			'empty' : true,
 			'selector': {
 				'auto' : '[data-seed="tab"]',
 				'tabmenu' : '[role="tabmenu"]',
@@ -60,7 +60,8 @@
 			this.group = this.config.group || this._getAttr('group') || 'default';
 			this.empty = this.config.empty || this._getAttr('empty') || false;
 
-			if( this.empty === true && ( this.$el.find('*').length < 0 || this.$el.text().length < 5 ) ) {
+			// проверяем таб на дочерние элементы, если стоит флаг запрета, то не обрабатываем пустой элемент.
+			if( this.empty === false && ( this.$el.find('> *').length < 0 || this.$el.text().length < 5 ) ) {
 				return false;
 			}
 
@@ -77,7 +78,7 @@
 					this.$tabmenu = $(this.config.cssclass.tabmenu+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$tabmenu = $('<div>',{'class': this.config.cssclass.tabmenu, 'data-group':this.group, 'role': 'tabmenu'}).insertBefore(this.$el, {'dynamic':false});
+					this.$tabmenu = $('<div>',{'class': this.config.cssclass.tabmenu, 'data-group':this.group, 'role': 'tabmenu'}).insertBefore(this.$el );
 				}
 			}
 
@@ -92,11 +93,11 @@
 					this.$tablist = $(this.config.cssclass.tablist+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$tablist = $('<div>', {'class': this.config.cssclass.tablist, 'data-group':this.group, 'role':'tablist'}).insertBefore(this.$el, {'dynamic':false});
+					this.$tablist = $('<div>', {'class': this.config.cssclass.tablist, 'data-group':this.group, 'role':'tablist'}).insertBefore(this.$el );
 				}
 			}
 
-// определяем меню табов
+			// определяем меню табов
 			if( this.$tabmenu.find(this.config.selector.menu).length ) {
 				this.$menu = this.$tabmenu.find(this.config.selector.menu);
 			}
@@ -105,32 +106,39 @@
 					this.$menu = $('.'+this.config.cssclass.menu+'[data-group="'+this.group+'"]');
 				}
 				else {
-					this.$menu = $('<ul>', {'class': this.config.cssclass.menu, 'data-group':this.group}).prependTo( this.$tabmenu, {'dynamic':false});
+					this.$menu = $('<ul>', {'class': this.config.cssclass.menu, 'data-group':this.group}).prependTo( this.$tabmenu );
 				}
 			}
-                                                                                        
 
-// определяем список табов
-			this.$tabs = ( !this.$tablist.find('.tabs').length ) ? $('<div>', {'class': 'tabs'}).prependTo( this.$tablist, {'dynamic':false}) : this.$tablist.find('.tabs');
+			// определяем список табов
+			this.$tabs = ( !this.$tablist.find('.tabs').length ) ? $('<div>', {'class': 'tabs'}).prependTo( this.$tablist ) : this.$tablist.find('.tabs');
 
-			this.$el.appendTo( this.$tabs, {'dynamic':false});
+			this.$el.appendTo( this.$tabs );
 
-// создаем заголовок и помешаем его в меню
-			this.$caption = $('<li>',{'class':'title '+this.hash,'data-name': this.hash, 'role':'button', 'aria-controls': 'content-tab-'+this.hash }).appendTo( this.$menu, {'dynamic':false});
+			// определяем заголовок или создаем его и помешаем его в меню
+			this.$caption = ( this.$menu.find('li[data-name="'+this.hash+'"]').length )
+				? this.$menu.find('li[data-name="'+this.hash+'"]')
+				: $('<li>',{'class':'title '+this.hash,'data-name': this.hash, 'role':'button', 'aria-controls': 'content-tab-'+this.hash }).appendTo( this.$menu );
 
-// создаем кастомную запись для заголовка, если функция существует
-			if( this.config.func.caption ) {
-				this.$title = this.config.func.caption(self);
-			}
-// если существует вложенный элемент с роль заголовка то используем его
-			else if( this.$el.find('> [role="tab-caption"]').length ) {
-				this.$title = this.$el.find('> [role="tab-caption"]');
+			// определим текст заголовка, если есть
+			if( this.$caption.find('span').length ) {
+				this.$title = this.$caption.find('span');
 			}
 			else {
-				this.$title = $('<span>').text(this.title);
-			}
+				// создаем кастомную запись для заголовка, если функция существует
+				if( this.config.func.caption ) {
+					this.$title = this.config.func.caption(self);
+				}
+				// если существует вложенный элемент с роль заголовка то используем его
+				else if( this.$el.find('> [role="tab-caption"]').length ) {
+					this.$title = this.$el.find('> [role="tab-caption"]');
+				}
+				else {
+					this.$title = $('<span>').text(this.title);
+				}
 
-			this.$title.appendTo( this.$caption, {'dynamic':false});
+				this.$title.appendTo( this.$caption );
+			}
 
 			this.bind();
 		},

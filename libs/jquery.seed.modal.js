@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * Seed Framework
  * seedModal 
  * ver. 1.2
@@ -30,7 +30,7 @@
 			'width': null,
 			'overlay': false,
 			'ajax': false,
-			'name': '',
+			'name': 'default',
 			'draggable': true,
 
 			'module': {
@@ -49,7 +49,8 @@
 			},
 			'url': {
 				'current': window.location.href,
-				'ajax': null
+				'ajax': null,
+				'tail': ''
 			},
 
 			'func': {
@@ -254,8 +255,10 @@
 			});
 
 			var $source = this.$body.find('.h1:first, h1:first');
+			self.title = this.config.title || this.$el.attr('title') || $source.text();
 
-			this.$caption.text(this.config.title || this.$el.attr('title') || $source.text());
+			this.$caption.text(self.title);
+			this.$html.attr({'data-title': self.title});
 
 			$source.remove();
 
@@ -286,14 +289,19 @@
 				if ($.isFunction(this.config.func.query)) {
 					qs = this.config.func.query.call(self, qs);
 				}
-
+				
+				qs = $.param(qs);
+				
+				// добавляем хвост URL
+				qs = qs + this.config.url.tail;
+				
 				if (this.config.debug) {
 					console.log(this.config.url.ajax, qs);
 				}
 
 				$.ajax({
 					url: self.config.url.ajax,
-					data: $.param(qs),
+					data: qs,
 					type: 'GET',
 					dataType: 'html',
 					async: false,
