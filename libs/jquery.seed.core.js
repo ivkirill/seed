@@ -176,42 +176,6 @@
 
 		/* перенес в seed.js
 		// парсинг data-config- атрибутов в объект
-		_dataset: function(el) {
-			var config = {};
-			if(!el || el.nodeType != 1) return config;
-			
-			var attributes = el.attributes;
-			if( attributes ) {
-				[].forEach.call(attributes, function(attr) {
-					if (/^data-config-/.test(attr.name)) {
-
-						var key = attr.name.replace('data-config-','');
-						var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
-						if( value === 'false' ) value = false;
-						if( value === 'true' ) value = true;
-						
-						if (/-/.test(key)) {
-							var keys = key.split('-')
-							if( !config[keys[0]] ) config[keys[0]] = {};
-
-							if( keys[2] ) {
-								if( !config[keys[0][keys[1]]] ) config[keys[0]][keys[1]] = {};
-								config[keys[0]][keys[1]][keys[2]] = value;
-							}
-							else {
-								config[keys[0]][keys[1]] = value;
-							}
-						}
-						else {
-							config[key] = value;
-						}
-
-					}
-				});
-			}
-
-			return config;
-		},
 		*/
 		
 		_init: function() {
@@ -258,7 +222,6 @@
 					// если элемент был последний в списке, вызовем callback-функцию инициализации библиотеки, если она определена
 					if( ( this._$list.length == this._index || this._name == 'seedGallery') && $.isFunction(this.config.func.ready) ) {
 						(self.config.func.ready)(self);
-
 					}
 					
 					// создаем обсервер для ленивого запуска библиотеки при необходимости
@@ -277,9 +240,10 @@
 						1. читаем объект конфига, который определен в ядре - core._defaults
 						2. читаем конфиг конкретной библиотеки - this.defaults
 						3. читаем определенные глобальные опции для всех библиотек - seed.config.defaults
-						4. читаем определенные глобальные локализации для всех библиотек - seed.config.locale
-						5. читаем локальные опции вызова библиотеки
-						6. читаем data-config конкретного элемента
+						4. читаем определенные глобальные опции для каждой библиотеки - seed.config[name]
+						5. читаем определенные глобальные локализации для всех библиотек - seed.config.locale[name]
+						6. читаем локальные опции вызова библиотеки
+						7. читаем data-config конкретного элемента
 					*/
 					
 					/*
@@ -294,7 +258,12 @@
 					this.config = $.extend(true, {}, core._defaults, this.defaults);
 
 					// добавляем глобальные опции для библиотек
-					this.config = $.extend(true, this.config, seed.config.defaults);					
+					this.config = $.extend(true, this.config, seed.config.defaults);
+					
+					 // добавляем в конфиг глобальные опции вызова отдельной библиотеки
+					if( seed.config[this._name] ) {
+						this.config = $.extend(true, this.config, seed.config[this._name]);
+					}
 
 					 // добавляем в конфиг глобально определенную локализацию
 					if( seed.config.locale[this._name] ) {

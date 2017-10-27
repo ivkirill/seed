@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * User Interface
 * ver. 1.0
@@ -91,7 +91,6 @@
 								$('.tooltip').remove();
 								modal.ui.updated = false;
 								modal.ui.reload(modal.ui.options);
-								console.log(modal);
 								
 								$(modal.ui.options.selector.item).removeClass('bg-warning warning');
 								modal.close();
@@ -388,9 +387,27 @@
 			// обновим конфиг seed.ui для текущего элемента
 			//var options = $.extend(true, {}, this.config, seed._dataset(obj));
 			var url = options.url.reload || options.url.post;
+			// создаем объект QS
+			var qs = {};
+			
+			// если есть параметры сортировки и фильтрации в текущем окне
+			if( window.location.search ) {
+				//qs = $.extend(qs, JSON.parse('{"' + decodeURI(window.location.search.replace(/\?/g,"").replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}'));
+				
+				qs = $.extend(qs, window.location.search.replace(/\?/g,"").replace(/([^=&]+)=([^&]*)/g, function(m, key, value) {
+					qs[decodeURIComponent(key)] = decodeURIComponent(value);
+				}));
+			}
 			
 			if( this.$list.length ) {
-				$.get(url, {'show': options.module.main, 'mime':'txt', 'cache': false}, function(data) {
+				// объединяем все параметры: необходимые для получение ответ и фильтрационные
+				qs = $.extend(qs, {
+					'show': options.module.main,
+					'mime':'txt',
+					'cache': false
+				});
+				
+				$.get(url, $.param(qs), function(data) {
 					var ans = $('<div>').html(data);
 					self.$container.html( ans.find(self.$container.selector).html() );
 					self.activate();

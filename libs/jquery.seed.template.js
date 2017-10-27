@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Базовый паттерн Seed Framework
 * pluginName 
 * ver. 1.1

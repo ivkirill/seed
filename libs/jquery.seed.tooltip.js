@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * seedTooltip
 * ver. 1.3

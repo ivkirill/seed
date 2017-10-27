@@ -1,4 +1,4 @@
-/* 
+﻿/* 
 * Seed Framework
 * SeedBuy
 * ver. 1.3
