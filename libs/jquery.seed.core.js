@@ -5,17 +5,17 @@
  */
 
 // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
-;(function ($, window, document, undefined) {
+;(function ($, seed, window, document, undefined) {
 	'use strict';
 
 	// поддержка 'selector' для jQuery 3+
-	var oldInit = jQuery.fn.init;
-	jQuery.fn.init = function(selector) {
+	var oldInit = $.fn.init;
+	$.fn.init = function(selector) {
 		var ret = oldInit.apply( this, arguments );
 		ret.selector = ( selector && selector.selector !== undefined ) ? selector.selector : ((typeof selector === "string") ? selector : '');
 		return ret;
 	};
-	jQuery.fn.init.prototype = jQuery.fn;
+	$.fn.init.prototype = $.fn;
 
 	// создаем объект seed, если он не существует
 	if (!window.seed) {
@@ -151,15 +151,15 @@
 			};
 
 // добавляем метод к методам jQuery 
-			if (typeof jQuery != 'undefined') {
-				jQuery.fn.requestFullScreen = function() {
+			if (typeof $ != 'undefined') {
+				$.fn.requestFullScreen = function() {
 					return this.each(function() {
 						if (fullScreenApi.supportsFullScreen) {
 							fullScreenApi.requestFullScreen(this);
 						}
 					});
 				};
-				jQuery.fn.cancelFullScreen = function() {
+				$.fn.cancelFullScreen = function() {
 					return this.each(function() {
 						if (fullScreenApi.supportsFullScreen) {
 							fullScreenApi.cancelFullScreen(this);
@@ -472,4 +472,4 @@
 	$.fn.seedLazy = seed.lazy;
 	
 	return $;
-})(jQuery, window, document);
+})(jQuery, seed, window, document);
