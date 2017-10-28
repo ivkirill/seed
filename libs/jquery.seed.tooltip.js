@@ -8,7 +8,7 @@
 * TODO: учесть горизонтальный скроллинг для отображения подсказки
 */
 
-;(function ($, window, document, undefined) {
+;(function ($, seed, window, document, undefined) {
 	'use strict';
 
 	if (!$.seed) {
@@ -291,4 +291,4 @@
 
 	
 	var module = new $.fn.seedCore(name, $.seed[name]);
-})(jQuery, window, document);
+})(jQuery, seed, window, document);

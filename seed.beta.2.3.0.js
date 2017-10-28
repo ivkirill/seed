@@ -1,12 +1,11 @@
 ﻿/* 
  * seed amd Core
- * @version 2.2.1
+ * @version 2.2.0
  * @author Kirill Ivanov
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
 (function(window, document, undefined) {
 	'use strict';
-
 	// добавим заглушку консоли, если ее нет
 	if (typeof console == "undefined") {
 		window.console = {
@@ -53,13 +52,14 @@
 		'debug' : false,
 		'performance' : false,
 		'lazy' : false,
+		'scoped': false, // строгая инкапсуляция, инкапсулируем все глобальные переменные внешних модулей в локальные, т.е. например jQuery будет доступен только внутри модулей
 		'jquery' : 'jquery.2.1.4',
 		'selector' : {
 			'lazy' : {},
 			'cached': {}
 		},
 		'amd': {
-			'cache': true,
+			'cache': true, // кешируем все зависимости
 			'charset': 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
 			'path': '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
 		},
@@ -227,26 +227,15 @@
 		});
 	}
 	
-	seed.lazy = function(func) {
+	seed.lazy = function(func, selector) {
 		// определяе selector для DOM
-		var selector = ( typeof this == 'string' && !/^</.test(this) )
-			? this
-			: (( typeof this.selector == 'string' && !/^</.test(this.selector) )
-				? this.selector 
-				: (( seed.isObject(this.selector) && typeof this.selector.selector ) 
-					? this.selector.selector 
-					: false ));
+		var selector = selector || ( typeof this.selector == 'string' && !/^</.test(this.selector) ) ? this.selector : ( ( seed.isObject(this.selector) && typeof this.selector.selector ) ? this.selector.selector : false );
 
 		// если не было передано selector или функции то отключаем функционал
 		if( !seed.isFunction(func) || !selector ) return false;
 		seed.config.selector.lazy[selector] = func;
 		
 		return document.querySelectorAll(selector);
-	}
-	
-	// экспортируем метод seedLazy
-	window.seedLazy = function(selector, func) {
-		seed.lazy.call(selector, func);
 	}
 	
 	// создание наблюдателя
@@ -264,6 +253,8 @@
 				
 				// если есть нужные нам ноды
 				nodes.forEach(function(node) {
+					//if( node.matches('[data-config-lazy="false"]') ) console.log('FALSE', node);
+					
 					// проверяем ноду на соотвествие, нет не подходит, переходим к следующей
 					if( node.nodeType !== 1 
 						|| node.nodeName == 'JDIV' 
@@ -524,7 +515,7 @@
 					data: config.data,
 					values: {},
 					value: null,
-					source : null
+					source: null
 				};
 			}
 			
@@ -604,10 +595,8 @@
 							if (seed.config.debug) console.info('%cМодуль полностью загружен и исполнен', 'color: #F00; font-weight: bold', module.name);
 							if( seed.config.performance ) console.info('Loaded:', performance.now());
 						}, function(reject) {
-							console.error('Неудалось загрузить модуль');
-							console.error(module);
-							console.error(reject);
-							reject(module);
+							console.error('Неудалось загрузить модуль', module, reject);
+							reject;
 						});
 					}, function(module) {
 						if (seed.config.debug) console.log('Модуль ', module.name, 'не будет загружен. Зависимости не прошли проверку');
@@ -719,24 +708,47 @@
             // URL модуля
             var url = url || module.data.path || false;
 			
-            // Если url модуля есть, то будем его подгружать
-            if (url) {
-				seed.amd._include(url).then(function(source) {
-					if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
-					// обновим модуль
-					seed.amd._update(module, { source: source });
-
-					// вызываем _restore метод
-					resolve(seed.amd._callback(module));
-				}, function(error) {
-					console.error("Ошибка!", error);
-					// модуль не загружен
-					reject(error, module);
-				});
+				// Если url модуля есть, то будем его подгружать
+				if (url) {
+					seed.amd._include(url).then(function() {
+						if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
+						// вызываем _restore метод
+						resolve(seed.amd._callback(module));
+					}, function(error) {
+						console.error("Ошибка!", error);
+						// модуль не загружен
+						reject(error, module);
+					});
+				}
+				// Если url нет
+				else resolve(seed.amd._callback(module));
+			/*
+			if( seed.config.scoped === false ) {
+			
 			}
-
-            // Если url нет
-            else resolve(seed.amd._callback(module));
+			// если включена строгая инкапсуляция
+			else {
+				// Если url модуля есть, то будем его подгружать
+				if (url) {
+					// получаем source модуля по url
+					seed.fetch(url).then(function(source) {
+						if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
+						// обновим модуль, сохраним source
+						seed.amd._update(module, { source: source });					
+						
+						// вызываем _exec метод
+						resolve(seed.amd._exec(module));
+					}, function(error) {
+						console.error("Ошибка!", error);
+						// модуль не загружен
+						reject(error, module);
+					});
+					
+				}
+				// Если url нет
+				else resolve(seed.amd._exec(module));
+			}
+			*/
         });
 	}
 	
@@ -745,25 +757,20 @@
 	// Возвращает модуль
 	seed.amd._callback = function(module) {
 		if (seed.config.debug) console.log('   _callback', module.name, module);
-		
-		// сохраним хранилище для текущего модуля
+
+		// текущее хранилище модуля
 		var storage = seed.amd._storage(module);
-
-		var storage_apply = Object.keys(storage).map(function (key) {
-			return (key != 'items' && key != 'selector' && storage[key] !== undefined ) ? storage[key] : null;
-		}).filter(function (key) {
-			return key !== null;
-		});
-
-		storage[module.name] = module.callback.apply(storage, storage_apply);
-		
+		// все значения по зависмостям
+		var args = seed.amd._arguments(storage);
+		// исполняем callback функцию
+		storage[module.name] = module.callback.apply(storage, args);
+		// сохраняем ответ функции
 		seed.amd._save(module, storage[module.name]);
-		
 		// обновим конфиг модуля
 		return seed.amd._update(module, {values : storage, value: storage[module.name]});
 	}
 	
-	// amd. Возращаем из хранилища все данные по родительским модуялм
+	// amd. Возращает из хранилища все данные по родительским модуялм
 	// Принимает модуль
 	// Возвращает обьект
 	seed.amd._storage = function(module) {
@@ -784,6 +791,17 @@
 		}
 		
 		return storage;
+	}
+	
+	// amd. Возращает списко всех значений из хранилища в формате
+	// Принимает модуль
+	// Возвращает обьекты	
+	seed.amd._arguments = function(storage) {
+		return Object.keys(storage).map(function (key) {
+			return (key != 'items' && key != 'selector' && storage[key] !== undefined ) ? storage[key] : null;
+		}).filter(function (key) {
+			return key !== null;
+		});
 	}
 	
 	// amd. Сохраняет значение, которое вернула функция модуля
@@ -812,12 +830,42 @@
 	// Возвращает анонимную функцию
 	seed.amd._exec = function(module) {
 		if (seed.config.debug) console.log(' _exec', module.name, module.depents);
+			//console.log('exec', module);
 		
-		var func = (module.callback || '').toString();
-		var callback = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));
-		console.log( module );
-		
-		return new Function('args','return (function(args) { seed.ready(function() {'+ (module.source || '') + '\n' + callback + '}) })(args)');
+	
+			// текущий callback модуля, который мы задали
+			
+			// функцию в строку
+			var func = (module.callback || function() {}).toString();
+			// тело функции
+			var func_body = func.slice(func.indexOf("{") + 1, func.lastIndexOf("}"));//.replace('return jQuery', 'return jQuery.noConflict(true)');
+			// аргументы функции
+			var func_args = func.slice(func.indexOf("(")+1, func.indexOf(")")) || '';
+			// подгруженные внешние исходники
+			var source = module.source || '';
+			
+			if( !func_args && module.depents.length > 0 ) {
+				// сохраним хранилище для текущего модуля
+				var storage = seed.amd._storage(module);
+				var args = seed.amd._arguments(storage);
+				console.log('exec depents', module, storage, args);
+				
+				module.depents.forEach(function(name) {
+					console.log('RESULT', seed.amd.modules[name].result);
+					
+					if(seed.amd.modules[name].result) func_args += seed.amd.modules[name].result + ',';
+				});
+			}
+			
+			// новый callback с оберткой инкапсуляции
+			module.callback = function() {
+				var module = eval('(function('+func_args+') {"use strict"; console.log("CCC", this, arguments);  '+ source + '\n' + func_body + '}).apply(this, arguments);');
+				// если модуль jQuery, то отключаем его от глобального использования
+				if( window.jQuery ) module.noConflict(true);
+				return module;
+			};
+			
+			return seed.amd._callback(module);
 	}
 
 	// amd. Создает script и добавляет его в шапку
@@ -834,7 +882,7 @@
 			
 			s.type = 'text/javascript';
 			s.defer = 'defer';
-			s.src = url + ((!seed.config.amd.cache ) ? '?nocache' : '');
+			s.src = url + ((!seed.config.amd.cache) ? '?nocache' : '');
 			
 			if( seed.config.amd.charset ) s.charset = seed.config.amd.charset;
 
@@ -890,6 +938,12 @@
 	// ярлыки
 	if (!window.define) window.define = seed.amd.define;
 	if (!window.require) window.require = seed.amd.require;
+	
+	window.seedLazy = function(func) {
+		seed.lazy.apply(this, func);
+	}
+	
+	NodeList.prototype.seedLazy = window.seedLazy;
 
 	return seed.init();
 })(window, document);
