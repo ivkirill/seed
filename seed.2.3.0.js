@@ -5,106 +5,107 @@
  */
 ; // предваряющие точка с запятой предотвращают ошибки соединений с предыдущими скриптами, которые, возможно не были верно «закрыты».
 (function(window, document, undefined) {
-    'use strict';
+  'use strict';
 
-    // добавим заглушку консоли, если ее нет
-    if (typeof console == "undefined") {
-      window.console = {
-        log: function() {},
-        error: function() {},
-        info: function() {}
-      };
-    }
-
-    // Polyfill for "Date.now()"
-    if (!Date.now) {
-      Date.now = function now() {
-        return new Date().getTime();
-      };
-    }
-
-    // Polyfill for "matches"
-    // For browsers that do not support Element.matches() or Element.matchesSelector(), but carry support for document.querySelectorAll()
-    if (!Element.prototype.matches) {
-      Element.prototype.matches =
-        Element.prototype.matchesSelector ||
-        Element.prototype.mozMatchesSelector ||
-        Element.prototype.msMatchesSelector ||
-        Element.prototype.oMatchesSelector ||
-        Element.prototype.webkitMatchesSelector ||
-        function(s) {
-          var matches = (this.document || this.ownerDocument).querySelectorAll(s),
-            i = matches.length;
-          while (--i >= 0 && matches.item(i) !== this) {}
-          return i > -1;
-        };
-    }
-
-    if (!typeof Promise) {
-      return;
-    }
-
-    // создаем объект seed, если он не существует
-    if (!window.seed) {
-      window.seed = {};
-    }
-
-    // дефолтный конфиг проекта
-    seed.config = {
-      debug: false,
-      performance: false,
-      lazy: false,
-      scoped: false, // строгая инкапсуляция, инкапсулируем все глобальные переменные внешних модулей в локальные, т.е. например jQuery будет доступен только внутри модулей
-      jquery: 'jquery.2.1.4',
-      selector: {
-        lazy: {},
-        cached: {}
-      },
-      amd: {
-        cache: true, // кешируем все зависимости
-        charset: 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
-        path: '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
-      },
-      locale: {}, // локализация библиотек ядра
-      defaults: {}
+  // добавим заглушку консоли, если ее нет
+  if (typeof console == "undefined") {
+    window.console = {
+      log: function() {},
+      error: function() {},
+      info: function() {}
     };
+  }
 
-    if (seed.config.performance) console.info('Start:', performance.now());
+  // Polyfill for "Date.now()"
+  if (!Date.now) {
+    Date.now = function now() {
+      return new Date().getTime();
+    };
+  }
 
-    // Helpers
-    // вспомогательные методы
+  // Polyfill for "matches"
+  // For browsers that do not support Element.matches() or Element.matchesSelector(), but carry support for document.querySelectorAll()
+  if (!Element.prototype.matches) {
+    Element.prototype.matches =
+      Element.prototype.matchesSelector ||
+      Element.prototype.mozMatchesSelector ||
+      Element.prototype.msMatchesSelector ||
+      Element.prototype.oMatchesSelector ||
+      Element.prototype.webkitMatchesSelector ||
+      function(s) {
+        var matches = (this.document || this.ownerDocument).querySelectorAll(s),
+          i = matches.length;
+        while (--i >= 0 && matches.item(i) !== this) {}
+        return i > -1;
+      };
+  }
 
-    // парсинг data-config- атрибутов в объект
-    seed._dataset = function(el) {
-      var config = {};
-      if (!el || el.nodeType != 1) return config;
+  if (!typeof Promise) {
+    return;
+  }
 
-      var attributes = el.attributes;
-      if (attributes) {
-        [].forEach.call(attributes, function(attr) {
-            if (/^data-config-/.test(attr.name)) {
+  // создаем объект seed, если он не существует
+  if (!window.seed) {
+    window.seed = {};
+  }
 
-              var key = attr.name.replace('data-config-', '');
-              var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
-              if (value === 'false') value = false;
-              if (value === 'true') value = true;
+  // дефолтный конфиг проекта
+  seed.config = {
+    debug: false,
+    performance: false,
+    lazy: false,
+    scoped: false, // строгая инкапсуляция, инкапсулируем все глобальные переменные внешних модулей в локальные, т.е. например jQuery будет доступен только внутри модулей
+    jquery: 'jquery.2.1.4',
+    selector: {
+      lazy: {},
+      cached: {}
+    },
+    amd: {
+      cache: true, // кешируем все зависимости
+      charset: 'UTF-8', // при значении false, скрипты будут загружаться согласно charset страницы
+      path: '/js/seed/seed.libs.js' // URL для конфига плагинов по умолчанию
+    },
+    locale: {}, // локализация библиотек ядра
+    defaults: {}
+  };
 
-              if (/-/.test(key)) {
-                var keys = key.split('-');
+  if (seed.config.performance) console.info('Start:', performance.now());
 
-                if (!config[keys[0]]) config[keys[0]] = {};
-                if (keys[2]) {
-                  if (!config[keys[0][keys[1]]]) config[keys[0]][keys[1]] = {};
-                  config[keys[0]][keys[1]][keys[2]] = value;
-                } else
-                  config[keys[0]][keys[1]] = value;
-              }
-            } else {
-              config[key] = value;
+  // Helpers
+  // вспомогательные методы
+
+  // парсинг data-config- атрибутов в объект
+  seed._dataset = function(el) {
+    var config = {};
+    if (!el || el.nodeType != 1) return config;
+
+    var attributes = el.attributes;
+    if (attributes) {
+      [].forEach.call(attributes, function(attr) {
+        if (/^data-config-/.test(attr.name)) {
+
+          var key = attr.name.replace('data-config-', '');
+          var value = (/^[0-9]+$/.test(attr.value)) ? parseInt(attr.value) : attr.value;
+          if (value === 'false') value = false;
+          if (value === 'true') value = true;
+
+          if (/-/.test(key)) {
+            var keys = key.split('-');
+
+            if (!config[keys[0]]) config[keys[0]] = {};
+            if (keys[2]) {
+              if (!config[keys[0][keys[1]]]) config[keys[0]][keys[1]] = {};
+              config[keys[0]][keys[1]][keys[2]] = value;
             }
-
+            else {
+              config[keys[0]][keys[1]] = value;
+            }
           }
-        });
+          else {
+            config[key] = value;            
+          }
+        }
+      });
     }
 
     return config;
@@ -171,7 +172,8 @@
   }
 
   // Ждем когда будет выполенен запрос на seed.ready()
-  document.addEventListener("DOMContentLoaded", seed.completed); window.addEventListener("load", seed.completed);
+  document.addEventListener("DOMContentLoaded", seed.completed);
+  window.addEventListener("load", seed.completed);
 
   // биндим событие по DOM Ready
   seed.ready = function(func) {
