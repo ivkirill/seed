@@ -238,6 +238,11 @@
 		return document.querySelectorAll(selector);
 	}
 	
+	// экспортируем метод seedLazy
+	window.seedLazy = function(selector, func) {
+		seed.lazy.call(selector, func);
+	}	
+	
 	// создание наблюдателя
 	seed.observe = function() {
 		// если браузер не поддерживает функцию обзервера, то это грустно...
@@ -708,6 +713,7 @@
             // URL модуля
             var url = url || module.data.path || false;
 			
+			if( seed.config.scoped === false ) {
 				// Если url модуля есть, то будем его подгружать
 				if (url) {
 					seed.amd._include(url).then(function() {
@@ -721,10 +727,7 @@
 					});
 				}
 				// Если url нет
-				else resolve(seed.amd._callback(module));
-			/*
-			if( seed.config.scoped === false ) {
-			
+				else resolve(seed.amd._callback(module));			
 			}
 			// если включена строгая инкапсуляция
 			else {
@@ -735,7 +738,7 @@
 						if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
 						// обновим модуль, сохраним source
 						seed.amd._update(module, { source: source });					
-						
+
 						// вызываем _exec метод
 						resolve(seed.amd._exec(module));
 					}, function(error) {
@@ -746,9 +749,8 @@
 					
 				}
 				// Если url нет
-				else resolve(seed.amd._exec(module));
+				else resolve(seed.amd._callback(module));
 			}
-			*/
         });
 	}
 	
@@ -830,11 +832,6 @@
 	// Возвращает анонимную функцию
 	seed.amd._exec = function(module) {
 		if (seed.config.debug) console.log(' _exec', module.name, module.depents);
-			//console.log('exec', module);
-		
-	
-			// текущий callback модуля, который мы задали
-			
 			// функцию в строку
 			var func = (module.callback || function() {}).toString();
 			// тело функции
@@ -844,22 +841,24 @@
 			// подгруженные внешние исходники
 			var source = module.source || '';
 			
+			// если нет прямых переданных аргументов, но есть зависимости
 			if( !func_args && module.depents.length > 0 ) {
 				// сохраним хранилище для текущего модуля
 				var storage = seed.amd._storage(module);
 				var args = seed.amd._arguments(storage);
-				console.log('exec depents', module, storage, args);
+				var arr = [];
 				
-				module.depents.forEach(function(name) {
-					console.log('RESULT', seed.amd.modules[name].result);
-					
-					if(seed.amd.modules[name].result) func_args += seed.amd.modules[name].result + ',';
-				});
+				for (var name in storage) {
+					if( seed.amd.modules[name] ) if(seed.amd.modules[name].result) arr.push(seed.amd.modules[name].result);
+					if( /jquery/.test(name) ) arr.push('jQuery');
+				}
+				// оставим только уникальные значения и сделаем строку
+				func_args = seed.unique(arr).join(',');
 			}
 			
 			// новый callback с оберткой инкапсуляции
 			module.callback = function() {
-				var module = eval('(function('+func_args+') {"use strict"; console.log("CCC", this, arguments);  '+ source + '\n' + func_body + '}).apply(this, arguments);');
+				var module = eval('(function('+func_args+') {"use strict"; '+ source + '\n' + func_body + '}).apply(this, arguments);');
 				// если модуль jQuery, то отключаем его от глобального использования
 				if( window.jQuery ) module.noConflict(true);
 				return module;

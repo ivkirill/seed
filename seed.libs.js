@@ -13,60 +13,70 @@ if (!window.seed) {
 seed.libs = {
 	"jquery.1.4.2" : {
 		path: "/js/jquery/jquery-1.4.2.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.1.7.1" : {
 		path: "/js/jquery/jquery-1.7.1.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.1.7.2" : {
 		path: "/js/jquery/jquery-1.7.2.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.1.8.1" : {
 		path: "/js/jquery/jquery.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.1.9.1" : {
 		path: "/js/jquery/jquery-1.9.1.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.2.0.1" : {
 		path: "/js/jquery/jquery-2.0.1.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.2.1.3" : {
 		path: "/js/jquery/jquery-2.1.3.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.2.1.4" : {
 		path: "/js/jquery/jquery-2.1.4.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.3.0.0" : {
 		path: "/js/jquery/jquery-3.0.0.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
 	},
 	"jquery.3.2.1" : {
 		path: "/js/jquery/jquery-3.2.1.min.js",
+		result: 'jQuery',
 		callback: function() {
 			return jQuery;
 		}
@@ -74,9 +84,17 @@ seed.libs = {
 
 
 // библиотеки seed
+	"seed" : {
+		result: 'seed',
+		callback: function() {
+			return window.seed;
+		}		
+	},
+
 	"seed.core" : {
 		path: "/js/seed/libs/jquery.seed.core.min.js",
-		depents: [seed.config.jquery]
+		depents: [seed.config.jquery],
+		result: 'seed'
 	},
 	"seed.basket" : {
 		path: "/js/seed/libs/jquery.seed.basket.min.js",

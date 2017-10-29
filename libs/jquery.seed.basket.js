@@ -269,8 +269,7 @@
 
 // обновление статуса корзины
 		info: function() {
-		        var self = this;
-
+			var self = this;
 			var qs = {}
 			qs['mime'] = 'txt';
 			qs['event'] = 'info';
@@ -292,8 +291,7 @@
 
 // обновление статуса корзины
 		status: function() {
-		        var self = this;
-
+		    var self = this;
 			var qs = {}
 			qs['mime'] = 'txt';
 			qs['show'] = this.config.module.status;
