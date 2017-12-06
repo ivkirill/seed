@@ -72,7 +72,8 @@
 			},
 
 			'func' : {
-				'open' : null
+				'open' : null,
+				'build' : null
 			},
 			'locale' : {
 				'error' : {
@@ -178,6 +179,12 @@
 			} 
 
 			this.bind();
+			
+			// кастомная callback функция создания основных областей
+			if( $.isFunction(self.config.func.build) ) {
+				( self.config.func.build )(self);
+				if( self.config.debug ) { console.info(self._name+': func.build inited!'); }
+			}
 		},
 
 		bind: function() {
@@ -211,7 +218,8 @@
 				$button.on('click touchend',function(e) {
 					if( !$(this).hasClass('active') ) { self._page(i); }
 					else if( $(this).hasClass('active') && self.progress ) { self._page(i); }
-					return false;
+					
+					if( !$(this).find('a').length ) return false;
 				});
 		
 

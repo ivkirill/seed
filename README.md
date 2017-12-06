@@ -24,6 +24,11 @@ Projects included Seed:
 * http://redstarlabs.net/
 * http://giftsprice.ru/
 
+update 2.3.1
+
+* добавление опция в конфиги библиотек seed
+* исправление минорных ошибок
+
 update 2.3.0 
 
 * Строгая инкапсуляция:
@@ -32,4 +37,3 @@ update 2.3.0
 * Рефакторинг seed.observer, теперь ноды обработанные мутационной функцией помечаются, и не передаются второй раз в функцию.
   Ранее, они исключались только после того как observer обновлял массив addedNodes.
 * В seed.js добавлен метод window.seedLazy(selector, func), аналог метода $(selector).seedLazy(func) внутри seed.core.js
-

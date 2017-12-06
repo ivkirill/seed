@@ -26,19 +26,21 @@
 			'debug': false,
 			'evented': false,
 
-			'ajax' : false,
-			'await' : 800,
+			'ajax': false,
+			'submit': 'any',
 			
-			'history' : true,
-			'paging' : false,
+			'await': 800,
+			
+			'history': true,
+			'paging': false,
 
-			'dependence' : false,
-			'hide' : true,
-			'overlay' : true,
+			'dependence': false,
+			'hide': true,
+			'overlay': true,
 			
-			'convert' : false,
+			'convert': false,
 			
-			'rules' : {
+			'rules': {
 				separator: '/',
 				join: true,
 				repeater: ',',
@@ -67,7 +69,7 @@
 			},
 			'url': {
 				'current' : window.location.href,
-				'tial' : ''
+				'tail' : ''
 			},
 
 			'func' : {
@@ -121,7 +123,7 @@
 
 			if( this.$el.attr('data-filter-hide') == 'false' ) { this.config.hide = false; }
 
-			this.config.url.current = this.$el.attr('action') || this.config.url.current;
+			this.config.url.current = this.config.url.current || this.$el.attr('action');
 
 			// найдем количество и выведем его
 			this.total = this.$el.attr('data-total') || $(this.config.selector.list).attr('data-total');
@@ -162,21 +164,33 @@
 			this.$el.on('click', 'input[type="checkbox"]:not(.independent, [readonly])', function() {
 				var $input = $(this);
 				( !$input.attr('checked') ) ? $input.attr('checked', 'checked') : $input.removeAttr('checked');
-				self.update();
+				if(self.config.submit == 'any') self.update();
 			});
 
 			// обрабатываем элементы type="radio"
 			this.$el.on('click', 'input[type="radio"]:not(.independent, [readonly])', function() {
-				self.update();
+				
+				// костыль для сортировки admos-gifts
+				if( $(this).attr('data-reverse') && $(this).attr('data-sort') == $(this).attr('value') ) {
+					var $inputs = $('body').find('input[name="'+$(this).attr('data-reverse')+'"]');
+					var value = $inputs.first().val();
+					value = (value == '1') ? '0' : '1';
+					
+					$inputs.each(function() {
+						$(this).val(value);
+					})
+				}
+				
+				if(self.config.submit == 'any') self.update();
 			});
 
 			this.$el.on('click', 'input[type="button"]', function() {
-				self.update();
+				if(self.config.submit == 'any') self.update();
 				return false;
 			});
 
 			this.$el.on('change', 'select[name]', function() {
-				self.update();
+				if(self.config.submit == 'any') self.update();
 			});
 
 			this.$el.on('input', 'input:not(input[data-seed="select"])', function() {
@@ -193,7 +207,7 @@
 
 				self.timer = setTimeout(function() {
 					clearTimeout(self.timer);
-					self.update();
+					if(self.config.submit == 'any') self.update();
 				}, self.config.await);
 
 				if( $(this).attr('type') != 'hidden' ) {
@@ -203,7 +217,7 @@
 
 			this.$el.on('keyup.seed.filter', 'input[data-seed="select"]', function(e) {
 				if(e.keyCode == 13) {
-					self.update();
+					if(self.config.submit == 'any') self.update();
 				}
 			});
 
@@ -286,7 +300,7 @@
 		// инициализация UI слайдеров
 		uiSliderInit: function() {
 		    var self = this;
-			
+
 			this.$el.find(self.$sliders.selector).each(function() {
 				var $slider = $(this);
 
@@ -323,7 +337,7 @@
 						}
 					},
 					stop : function() {
-						self.update();
+						if(self.config.submit == 'any') self.update();
 					},
 					create: function( event, ui ) {
 					}
@@ -354,7 +368,6 @@
 				//.replace(/\+/g,' ')
 				.replace(/&$/g,'');
 			
-			
 			this.pagequery = '';
 			// если мы разрешили передавать пагинацию
 			if( this.config.paging === true ) {
@@ -371,7 +384,7 @@
 			
 			this.submitUrl = this.pagequery + (/\?/.test(this.pagequery) ? '&' : '?' ) + ((this.query.length) ? this.query : '');
 			this.historyUrl = this.submitUrl;
-			
+
 			// кастомное преобразование QS запроса
 			if( this.config.func.query ) {
 				this.historyUrl = (this.config.func.query)(this);
@@ -380,7 +393,7 @@
 			if( this.config.convert === true ) {
 				this.historyUrl = this.convert();				
 			}
-			
+
 			if( this.config.ajax == 'custom' ) {
 				if( this.config.func.custom ) {
 					this.config.func.custom.call(self, this);
@@ -423,7 +436,6 @@
 			this.overlay(true);
 
 			if(window.history.pushState && this.config.ajax === true) {
-				
 				if( this.config.history === true || this.config.convert === true ) window.history.pushState({}, 'page', this.historyUrl);
 
 				var qs = {};
@@ -433,12 +445,12 @@
 				qs = $.param(qs);
 				
 				// добавляем хвост URL
-				qs = qs + this.config.url.tail;
+				qs = qs + (this.config.url.tail || '');
 
 				$.ajax({
 					url: self.submitUrl,
 					data: qs,
-					cache: false,
+					cache: true,
 					beforeSend: function() {
 						self.blocked = true;
 						if( self.config.func.before_send ) {
@@ -580,7 +592,6 @@
 		//распарсим QS (realQuery)
 		parseQS: function() {
 			var self = this;
-
 			var query = this.submitUrl || this.config.url.current || window.location.search;
 			
 			if (query.length) {
@@ -594,6 +605,8 @@
 						var name = data.split('=')[0].replace(/^r\d+/,'');
 						var value = data.split('=')[1].replace(/^\^/,'');
 						//данные для блока сортировки
+						/*
+							избыточно, все далет одна функция
 						if(/sort/.test(name) ) {
 							$el = self.findFilterElement(name, value);
 							return;
@@ -602,6 +615,7 @@
 							$el = self.findFilterElement(name, value);
 							return;
 						}
+						*/
 						if(/first/.test(name)) {
 							return;
 						}
@@ -623,7 +637,7 @@
 		
 		convert: function() {
 			var self = this;
-			var uri = this.historyUrl.replace(/\?(.*)/gi,'');
+			var uri = this.historyUrl.replace(/\?(.*)/gi,'').replace(/\/$/,'');
 			var query = this.historyUrl.replace(/(.*)\?/gi,'');
 			var allow = [];
 			var deny = [];
@@ -700,11 +714,12 @@
 			var $input = this.$el.add(this.config.selector.external).add(this.config.selector.dependence).find('[name="'+name+'"]');
 			
 			if( !$input.length ) { return false; }
-
+			
 			if( $input.get(0).tagName == 'SELECT' ) {
 				$input.find('option[value="'+value+'"]').filter(function() {
 					return $(this).attr('value').toLowerCase() == value.toLowerCase()
 				}).attr('selected', true);
+				
 				$input.blur();
 			}
 

@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * seed amd Core
  * @version 2.3.0
  * @author Kirill Ivanov
@@ -269,7 +269,6 @@
           if (node.nodeType !== 1 ||
             node.nodeName == 'JDIV' ||
             node.nodeName == 'SCRIPT' ||
-            node.nodeName == 'STYLE' ||
             node.matches('[data-config-lazy="false"]') ||
             node.nodeName == 'STYLE'
           ) return;
@@ -712,24 +711,9 @@
       // URL модуля
       var url = url || module.data.path || false;
 
-      if (seed.config.scoped === false) {
-        // Если url модуля есть, то будем его подгружать
-        if (url) {
-          seed.amd._include(url).then(function() {
-            if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
-            // вызываем _restore метод
-            resolve(seed.amd._callback(module));
-          }, function(error) {
-            console.error("Ошибка!", error);
-            // модуль не загружен
-            reject(error, module);
-          });
-        }
-        // Если url нет
-        else resolve(seed.amd._callback(module));
-      }
+	  
       // если включена строгая инкапсуляция
-      else {
+      if (seed.config.scoped === true || module.data.exec === true) {
         // Если url модуля есть, то будем его подгружать
         if (url) {
           // получаем source модуля по url
@@ -746,6 +730,22 @@
             reject(error, module);
           });
 
+        }
+        // Если url нет
+        else resolve(seed.amd._callback(module));
+      }	  
+      else {
+        // Если url модуля есть, то будем его подгружать
+        if (url) {
+          seed.amd._include(url).then(function() {
+            if (seed.config.debug) console.info('   Внешний файл для модуля', module.name, 'загружен');
+            // вызываем _restore метод
+            resolve(seed.amd._callback(module));
+          }, function(error) {
+            console.error("Ошибка!", error);
+            // модуль не загружен
+            reject(error, module);
+          });
         }
         // Если url нет
         else resolve(seed.amd._callback(module));
@@ -860,7 +860,7 @@
     module.callback = function() {
       var module = eval('(function(' + func_args + ') {"use strict"; ' + source + '\n' + func_body + '}).apply(this, arguments);');
       // если модуль jQuery, то отключаем его от глобального использования
-      if (window.jQuery) module.noConflict(true);
+      //if (window.jQuery) module.noConflict(true);
       return module;
     };
 
@@ -880,7 +880,6 @@
       var d = false;
 
       s.type = 'text/javascript';
-      s.defer = 'defer';
       s.src = url + ((!seed.config.amd.cache) ? '?nocache' : '');
 
       if (seed.config.amd.charset) s.charset = seed.config.amd.charset;
