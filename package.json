@@ -1,0 +1,22 @@
+{
+  "name": "seedunit",
+  "version": "2.1.5",
+  "description": "Seed JS + SeedCSS",
+  "main": "seed.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ivkirill/seed.git"
+  },
+  "author": "Kirill Ivanov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ivkirill/seed/issues"
+  },
+  "homepage": "https://github.com/ivkirill/seed#readme"
+}

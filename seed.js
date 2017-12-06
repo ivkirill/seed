@@ -1,4 +1,4 @@
-﻿/* 
+/* 
  * seed amd Core
  * @version 2.3.0
  * @author Kirill Ivanov
