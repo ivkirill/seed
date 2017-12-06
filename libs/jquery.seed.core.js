@@ -15,6 +15,7 @@
 		ret.selector = ( selector && selector.selector !== undefined ) ? selector.selector : ((typeof selector === "string") ? selector : '');
 		return ret;
 	};
+	
 	$.fn.init.prototype = $.fn;
 
 	// создаем объект seed, если он не существует
@@ -23,7 +24,6 @@
 		window.seed.config = {};
 		window.seed.config.locale = {};
 	}
-
 
 	// ядро seed lib
 	function core(name, library) {
@@ -224,13 +224,13 @@
 						(self.config.func.ready)(self);
 					}
 					
-					// создаем обсервер для ленивого запуска библиотеки при необходимости
+					// создаем обсервер для ленивого запуска библиотеки при необходимости	
 					if( this.config.lazy && this._$list.length == this._index ) {
 						this._$list.seedLazy(function(nodes) {
-							$(nodes)[core._name]();
+							$(nodes)[core._name](self.config);
 						});
 					}
-
+					
 					return this;
 				},
 				
@@ -433,19 +433,11 @@
 				return (evented) ? false : list.each(init);
 			}
 
-			var noConflict = $.fn[core._name];
-
 			$.fn[core._name] = Plugin;
 			$.fn[core._name].Constructor = Seed;
-			
+		
 			seed[core._name] = Plugin;
 
-			// noConflict для библиотеки
-			$.fn[core._name].noConflict = function() {
-				$.fn[core._name] = noConflict;
-				return this;
-			}
-			
 			// автозапуск библиотеки для элементов определенных по умолчанию
 			$(function() {
 				// автозапуск элементов обработки по DOM ready

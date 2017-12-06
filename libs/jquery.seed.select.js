@@ -130,10 +130,9 @@
 				this.$caret = $('<i>').addClass('caret').appendTo( this.$wrap, {'dynamic':false} );
 				this._options();
 
-// если в селекте всего один элемент, то выберем его
+				// если в селекте всего один элемент, то выберем его
 				if( this.$el.find('option:not(:disabled)').length == 1 ) {
 					this.$menu.find('li:first a').trigger('click', false);
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!					this.$menu.find('li:first a').click();
 				}
 			}
 
@@ -146,7 +145,6 @@
 
 			if( this.element == 'select' ) {
 				$('body').on('change blur', this._$list.selector, function(e) {
-
 					var option = self.$input.find('option:selected');
 					self.$holder.removeClass('btn-danger');
 					self.$caption.html( option.html() );
@@ -195,14 +193,13 @@
 
 
 					self.string = $(this).val();
-//console.log(self.string)
-//удаляем пробелы
+					//удаляем пробелы
 					if( /^\s/g.test(self.string) ) {
 						$(this).val( $(this).val().replace(/^\s/,'') );
 						self.string = self.string.replace(/^\s/,'');
 					}
 
-//Биндим клавиши: вверх, вниз, enter 
+					//Биндим клавиши: вверх, вниз, enter 
 					if(e.keyCode == 40 || e.keyCode == 38 || e.keyCode == 13) {
 						var $active = self.$menu.find('>*.active:first');
 

@@ -17,7 +17,7 @@
 	var name = 'seedUI';
 
 	$.seed[name] = {};
-	$.seed[name].VERSION  = '1.0';
+	$.seed[name].VERSION  = '1.1';
 	$.seed[name]._inited = [];
 
 	$.extend($.seed[name], {
@@ -394,9 +394,9 @@
 			if( window.location.search ) {
 				//qs = $.extend(qs, JSON.parse('{"' + decodeURI(window.location.search.replace(/\?/g,"").replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}'));
 				
-				qs = $.extend(qs, window.location.search.replace(/\?/g,"").replace(/([^=&]+)=([^&]*)/g, function(m, key, value) {
-					qs[decodeURIComponent(key)] = decodeURIComponent(value);
-				}));
+				window.location.search.replace(/\?/g,"").replace(/([^=&]+)=([^&]*)/g, function(m, key, value) {
+					if(key) qs[decodeURIComponent(key)] = decodeURIComponent(value);
+				});				
 			}
 			
 			if( this.$list.length ) {
@@ -406,6 +406,8 @@
 					'mime':'txt',
 					'cache': false
 				});
+				
+				console.log(qs);
 				
 				$.get(url, $.param(qs), function(data) {
 					var ans = $('<div>').html(data);

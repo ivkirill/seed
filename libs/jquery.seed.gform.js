@@ -81,38 +81,27 @@
 			'url': {
 				'post' : null
 			},
-
 			'func' : {
 				//кастомная функция сбора данных из формы
 				'merge' : null,
-
 				//callback-функция выполняющая после инициализации формы
 				'ready' : null, 
-
 				//callback-функция если валидация не пройдена
 				'notvalid' : null, 
-
 				//callback-функция выполняющая после валидации, сбора данных из всех полей формы и ВМЕСТО ajax отправки формы и всех информационных сообщений.
 				'ajax_custom' : null,
-
 				//callback-функция выполняющая перед сериализацей формы
 				'ajax_preserialize' : null,
-
 				//callback-функция выполняющая после сериализации формы и до оправки
 				'ajax_before_send' : null,
-
 				//callback-функция выполняющая после сериализации формы и оправки, ВМЕСТО стандартной функции информационных сообщений.
 				'ajax_success' : null,
-
 				//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об ошибке
 				'ajax_error':null,
-
 				//callback-функция выполняющая после сериализации формы, оправки и при получение ответа об удаче, но при этом в ответе data есть ошибка
 				'ajax_success_error' : null,
-
 				//callback-функция выполняющая после ajax отправки формы и после всех информационных сообщений.
 				'ajax_success_callback' : null
-
 			},
 
 			'locale' : {
@@ -165,7 +154,9 @@
 			if( this.$el.attr('data-gform-required_status') ) { this.config.required_status = this.$el.attr('data-gform-required_status'); }
 
 			this.$context = ( $(this.config.selector.context).length ) ? $(this.config.selector.context) : false;
-
+			
+			this.$el.removeClass('form-status__loading form-status__success form-status__error form-status');
+			if( this.$context.length ) this.$context.removeClass('form-status__loading form-status__success form-status__error form-status');
 			
 			// находим URL для отправки
 			this.config.url.post = this.$el.attr('action')
@@ -175,7 +166,7 @@
 				|| this.config.url.post
 				|| window.location.href;
 
-			if( this.$el.get(0).tagName == 'FORM' || self.$el.find('form').length || this.config.emulate === true ) {
+			if( ( ( this.$el.get(0).tagName == 'FORM' || this.$el.find('form').length ) && this.config.emulate !== false )|| this.config.emulate === true ) {
 				this.$form = ( self.$el.get(0).tagName == 'FORM' || this.config.emulate === true ) ? self.$el : self.$el.find('form:first');
 				this.$form.attr({
 					'novalidate':'novalidate'
@@ -232,13 +223,17 @@
 			var self = this;
 			this.$holder = $('<div>', {'class':'form-wrapper'}).appendTo( this.$el);
 // создаем форму
-			this.$form = $('<form>', {
+			this.$form = (this.$el.find('form:first').length)
+				? this.$el.find('form:first')
+				: $('<form>').appendTo( this.$holder);
+				
+			this.$form.attr({
 				'class':'gform gform-'+ this._index +' ' + this.config.cssclass.form,
 				'role':'form',
 				'action': this.config.url.post,
 				'novalidate':'novalidate',
 				'method' : this.config.method
-			}).appendTo( this.$holder);
+			});
 
 // создаем инпут для проверки защиты от спама :)
 			$('<input>', {
@@ -261,8 +256,8 @@
 			if(this.config.enctype == 'true') { this.$form.attr('enctype','multipart/form-data'); }
 
 // создаем инпут для сбора полей функцей merge	
-			if( this.config.merge == true ) {
-				this.config.name_text = ( this.config.form_event == 'update' ) ? 'Text' : 'text';
+			if( this.config.merge === true ) {
+				this.config.name_text = this.config.name_text || ( this.config.form_event == 'update' ) ? 'Text' : 'text';
 
 				if( this.config.dbtable !== null ) {
 					this.config.name_text = this.config.dbtable + '_txt_text';
@@ -271,7 +266,7 @@
 				$('<input>', {
 					'name' :  this.config.name_text,
 					'type' : 'hidden'
-				}).appendTo( self.$form);
+				}).appendTo(self.$form);
 			}
 
 			this.bind();
@@ -299,8 +294,16 @@
 			args = this._converting(args);
 
 			if (!args.tip) { args.tip = ''; }
-
-			args.$group = $('<div>',{'class':'form-group ' + ((args.name) ? 'form-group-'+args.name.toLowerCase() : '') }).appendTo( this.$form);
+			
+			// родитель для вставки элемента формы
+			var $target = this.$form;
+			if( args.target ) {
+				if( this.$form.find(args.target).length ) {
+					$target = this.$form.find(args.target)
+				}
+			}
+			
+			args.$group = $('<div>',{'class':'form-group ' + ((args.name) ? 'form-group-'+args.name.toLowerCase() : '') }).appendTo( $target );
 
 			if(args.hide) { args.$group.addClass('gform-hidden hidden hide'); }
 
@@ -520,7 +523,14 @@
 			if(args.readonly === true) { args.$input.attr('readonly','readonly'); }
 			if(args.required === true) { args.$input.attr('required','required'); }
 			if(args.nomerge === true) { args.$input.attr('data-merge','false'); }
-			if(args.merge === false) { args.$input.attr('data-merge','false'); }
+			if(args.merge === false) {
+				args.$input.attr('data-merge','false');
+				if(args.items) {
+					
+					args.$el.find('input').attr('data-merge','false');
+					
+				} 
+			}
 			if(args.multiple === true) { args.$input.attr('multiple','multiple'); }
 
 			if(args.accept && args.type == 'file') { args.$input.attr('accept', args.accept ); }
@@ -545,13 +555,15 @@
 			if(args.random === true && !args.items && !args.value) { args.$input.val( this._randomString() ); }
 			if(args.pattern && !args.items) { args.$input.data('pattern', args.pattern); }
 
-			if(typeof args.mask == 'string') {
-				try {
-					require('common.mask', function() {
-						args.$input.mask(args.mask, {placeholder:args.placeholder});
-					});
+			if(typeof args.mask == 'string' ) {
+				if( args.mask.length > 0 ) {
+					try {
+						require('common.mask', function() {
+							args.$input.mask(args.mask, {placeholder:args.placeholder});
+						});
+					}
+					catch(e) {}
 				}
-				catch(e) {}
 			}
 
 			if( args.name == 'update' ) { this.config.form_event = 'update'; }
@@ -616,7 +628,7 @@
 		
 		// определяем текущие элементы формы
 		_getFields: function() {
-			return ( this.config.emulate == true ) ? this.$form.find(this.config.selector.emulate) : this.$form.find(':input:not(input[type="image"], [type="submit"])');
+			return ( this.config.emulate === true ) ? this.$form.find(this.config.selector.emulate) : this.$form.find(':input:not(input[type="image"], [type="submit"])');
 		},
 
 		// валидация и отравка формы
@@ -666,12 +678,12 @@
 			else {
 				if( this.config.debug ) { console.log('merge'); }
 
-				if( this.config.emulate == false ) {
+				if( this.config.emulate === false ) {
 
 					self.$form.find('input[name="from"]').val(window.location.href);
 
 					// если есть объединение полей, то выполним его, учитывая кастомную функцию					
-					if( this.config.merge == true ) { (this.config.func.merge) ? (this.config.func.merge)() : this.merge(); }
+					if( this.config.merge === true ) { (this.config.func.merge) ? (this.config.func.merge)() : this.merge(); }
 
 					if( this.config.func.ajax_custom ) {
 						(this.config.func.ajax_custom)(self);
@@ -778,18 +790,18 @@
 			return valid;
 		},
 
-// скролл к элементу в фокусе
+		// скролл к элементу в фокусе
 		_scrollToObj: function(obj) {
 			$('html, body').stop().animate({scrollTop: obj.parent().position().top}, 100, function() { obj.focus() });
 		},
 
-// функция сбора данных для отправки
+		// функция сбора данных для отправки
 		merge: function() {
 			var self = this;
 			this.$form.find('input[name="from"]').val(window.location.href);
 
 			this.text = '';
-// собираем все данные в поле Text для письма
+			// собираем все данные в поле Text для письма
 
 			if( this.config.letter == 'html' ) {
 				self.delimiter = '<br>';
@@ -893,6 +905,9 @@
 					form_data.append( $input.attr('data-name') || $input.attr('name'), $input.val() || $input.text() );
 				}
 			});
+			
+			// добавляем from для API Plarson
+			form_data.append('from', window.location.href);
 
 			// т.к. отправить formData можно только через XHR, то сделаем эмуляцию обычного submit, включим обновление страницы после success
 			if( !this.config.ajax ) this.config.reload = true;
@@ -903,22 +918,25 @@
 		ajax: function(form_data) {
 			var self = this;
 
+			// если поле from не было передано, добавляем его сами
+			if( !this.$form.find('input[name="from"]').length ) this.$form.append(
+				$('input', {
+					type: 'hidden',
+					name: 'from',
+					value: window.location.href
+				}));
+
+				// если передано поле mime=json, значит отправлять будем как JSON
+			if( this.$form.find('input[name="mime"]').length ) {
+				if( this.$form.find('input[name="mime"]').val() == 'json' ) this.config.dataType = 'json';
+			} 
+			
 			// выполняем функцию пресериализации
 			if( this.config.func.ajax_preserialize ) (this.config.func.ajax_preserialize)(self);
-
+			
 			// определяем formData
 			this.form_data = (form_data) ? form_data : new FormData( this.$form.get(0) );
 			
-			// для браузеров которые тупые и не знают что такое formData.get()
-			try {
-				// если поле from не было передано, добавляем его сами
-				if( !this.form_data.get('from') ) this.form_data.append('from', window.location.href);
-
-				// если передано поле mime=json, значит отправлять будем как JSON
-				if( this.form_data.get('mime') == 'json' ) this.config.dataType = 'json';
-			}
-			catch(e) {}
-
 			// лог для дебага
 			if(this.config.debug) { console.dir(this.form_data); }
 			
@@ -932,6 +950,7 @@
 				context: this.config.context || this.$context || this.$el,
 				beforeSend: function() {
 					self.$form.find('[type="submit"]').addClass('btn-loading');
+					$(this).addClass('form-status form-status__loading');
 					
 					// если включена функция reload, то не показываем статусные сообщения
 					if( self.config.reload ) return;
@@ -961,6 +980,7 @@
 						(self.config.func.ajax_error)(self, data);
 					}
 					else {
+						$(this).addClass('form-status form-status__error');
 						$(this).html('');
 						$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>Ошибка ответа сервера</span></div>').appendTo( $(this));
 					}
@@ -998,6 +1018,7 @@
 								if( data.error ) error = true;
 							}
 							if( error ) {
+								$(this).addClass('form-status form-status__error');
 								$('<div class="h2 gform-status status fail" data-time="'+ self._getTimeNow() +'"><i class="fa fa-times"></i> <span>'+ self._ajaxHeader('error', ans) +'</span></div>').appendTo( $(this));
 
 								// если задана функция обработки ошибки, внутри удачного ответа, то запустим ее
@@ -1012,6 +1033,8 @@
 								}
 							}
 							else {
+								$(this).addClass('form-status form-status__success');
+								
 								$('<div class="h2 gform-status status success" data-time="'+ self._getTimeNow() +'"><i class="fa fa-check"></i> <span>'+ self._ajaxHeader('success', ans) +'</span></div>').appendTo( $(this));
 								if( self.config.auth ) {
 									window.location.reload(true);

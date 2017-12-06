@@ -293,7 +293,7 @@
 				qs = $.param(qs);
 				
 				// добавляем хвост URL
-				qs = qs + this.config.url.tail;
+				qs = qs + (this.config.url.tail || '');
 				
 				if (this.config.debug) {
 					console.log(this.config.url.ajax, qs);

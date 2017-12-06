@@ -92,7 +92,7 @@ seed.libs = {
 	},
 
 	"seed.core" : {
-		path: "/js/seed/libs/jquery.seed.core.min.js",
+		path: "/js/seed/libs/jquery.seed.core.js",
 		depents: [seed.config.jquery],
 		result: 'seed'
 	},
@@ -127,7 +127,7 @@ seed.libs = {
 		depents: ["seed.core"]
 	},
 	"seed.gform" : {
-		path: "/js/seed/libs/jquery.seed.gform.min.js",
+		path: "/js/seed/libs/jquery.seed.gform.js",
 		selector: "[data-seed='gform'], [data-seed='validate']",
 		depents: ["seed.core", "seed.tooltip"]
 	},
